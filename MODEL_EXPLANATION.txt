@@ -1,0 +1,115 @@
+================================================================================
+                    BONE FRACTURE DETECTION MODEL EXPLANATION
+                     Why We Selected and Designed Our Pipeline
+================================================================================
+
+This document details the machine learning models utilized in this project, 
+explaining the architectural choices, training strategies, and the technical and 
+clinical rationale behind them.
+
+--------------------------------------------------------------------------------
+1. THE CORE BACKBONE: ResNet-50
+--------------------------------------------------------------------------------
+At the heart of the system is ResNet-50 (Residual Network with 50 layers), a 
+deep convolutional neural network pretrained on the ImageNet dataset.
+
+Why ResNet-50?
+  * Residual Connections (Skip Connections):
+    - Deep networks suffer from the "vanishing gradient" problem during backprop.
+      ResNet solves this by using shortcut paths that bypass one or more layers.
+    - In medical imaging, this is crucial: early layers learn low-level features
+      (fine cracks, edges, fracture lines), while deeper layers learn global
+      features (bone shape, joints). Skip connections allow the model to retain
+      fine edge details even in the deepest layers.
+  * Optimal Model Capacity for CPU/RAM Constraints:
+    - ResNet-50 contains ~25 million parameters. 
+    - It provides a perfect balance: enough capacity to represent complex medical
+      features, while remaining lightweight enough to train and run inference
+      on CPU-only machines with limited RAM (8 GB) without causing out-of-memory
+      (OOM) crashes. Larger models like ResNet-101 or DenseNet-201 would exhaust
+      the RAM immediately under unfreezing conditions.
+  * Transfer Learning Capabilities:
+    - Initializing with ImageNet weights provides a rich set of pre-developed
+      edge-detectors and texture-detectors, saving hundreds of hours of training
+      time and preventing overfitting on smaller medical datasets.
+
+--------------------------------------------------------------------------------
+2. STAGE 1: Why MURA Medical Pretraining?
+--------------------------------------------------------------------------------
+Instead of immediately training the model on the target fracture dataset 
+(FracAtlas), we perform intermediate pretraining on the Stanford MURA dataset 
+(Musculoskeletal Radiographs).
+
+Why MURA Pretraining?
+  * Medical Feature Domain Adaptation:
+    - ImageNet weights are learned from natural photos (animals, objects, landscapes).
+      X-ray images are monochromatic, have high contrast, display bone densities, 
+      contain medical implants, and rely heavily on texture/shadow gradients.
+    - Training on MURA (40,006 bone and joint scans) adapts the ResNet-50's early 
+      and mid-level convolutional filters to the specific domain of medical 
+      radiology.
+  * Better Generalization:
+    - A backbone that has learned bone features on MURA converges faster and 
+      achieves much higher final accuracy when fine-tuned on the fracture detection
+      task.
+
+--------------------------------------------------------------------------------
+3. STAGE 2: Multi-Head Classifier Architecture
+--------------------------------------------------------------------------------
+For Stage 2 (FracAtlas), the default single-class output layer of ResNet-50 is 
+replaced with a custom multi-head classifier structure.
+
+Why a Multi-Head Classifier?
+  * Joint Feature Learning:
+    - The model extracts a shared 2048-dimensional feature vector from the final
+      global average pooling layer of the ResNet-50 backbone.
+    - This vector is fed into two separate fully connected (FC) classification heads:
+      1. Bone affected Classifier Head (6 classes): Hand (distal radius), 
+         Shoulder (clavicle), Leg (ankle), Hip (femur), Mixed (humerus), and Other.
+      2. Fracture/Severity Classifier Head (4 classes): Normal, Hairline, 
+         Comminuted, and Displaced.
+  * Rationale:
+    - Rather than training two separate models (which would double CPU/RAM usage),
+      a single model learns to perform both tasks. The shared backbone learns 
+      features that are beneficial to both classification tasks, resulting in 
+      better regularization and higher accuracy.
+
+--------------------------------------------------------------------------------
+4. BONE CATEGORY ALIGNMENT: perfect index mapping
+--------------------------------------------------------------------------------
+In the data preparation stage, the custom dataset class (FracAtlasDataset) maps
+classes into specific numeric indices. 
+
+Why exact mapping is crucial:
+  * In the network, classification is a numeric prediction (indices 0 to 5).
+  * We aligned the dataset's internal mapping index order:
+      - 0 -> hand (maps to distal_radius)
+      - 1 -> shoulder (maps to clavicle)
+      - 2 -> leg (maps to ankle)
+      - 3 -> hip (maps to femur)
+      - 4 -> mixed (maps to humerus)
+      - 5 -> other (maps to metatarsal)
+  * This ensures that when the neural network outputs class index `2`, it correctly
+    maps to `ankle` during clinical reporting, avoiding severe clinical errors 
+    (e.g., mislabeling a leg fracture as a collarbone fracture).
+
+--------------------------------------------------------------------------------
+5. THE EXPLAINABILITY COMPONENT: Grad-CAM
+--------------------------------------------------------------------------------
+A major requirement in medical AI is explainability (radiologists must know
+*why* a model made a prediction). We use Grad-CAM (Gradient-weighted Class 
+Activation Mapping).
+
+Why Grad-CAM?
+  * Localization without bounding boxes:
+    - Most fracture datasets do not have bounding box annotations. Grad-CAM uses 
+      gradients flowing back to the final convolutional layer (layer4) to calculate
+      which parts of the image contributed most to the model's prediction.
+  * Visual Verification:
+    - It generates a heat map highlighting the exact fracture site, helping 
+      clinicians immediately verify if the model is focusing on the anatomical 
+      fracture or on background artifacts (such as medical markers or clothing).
+
+================================================================================
+                        END OF MODEL EXPLANATION
+================================================================================

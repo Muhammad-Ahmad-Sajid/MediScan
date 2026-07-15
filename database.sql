@@ -1,0 +1,183 @@
+-- -- ==============================================================================
+-- -- PostgreSQL DDL Script for Bone Fracture Detection & Prognosis System (fracture_db)
+-- -- ==============================================================================
+-- -- INSTRUCTIONS FOR pgAdmin 4:
+-- -- 1. Connect to your default database (usually 'postgres').
+-- -- 2. Open the Query Tool and run: CREATE DATABASE fracture_db;
+-- -- 3. Right-click 'Databases' and refresh, then select and connect to 'fracture_db'.
+-- -- 4. Open the Query Tool on 'fracture_db' and paste/run this entire script.
+-- -- ==============================================================================
+
+-- -- Enable UUID extension to generate IDs automatically
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- -- Drop existing tables to ensure a clean slate (in dependency order)
+-- DROP TABLE IF EXISTS prognosis_results CASCADE;
+-- DROP TABLE IF EXISTS fracture_predictions CASCADE;
+-- DROP TABLE IF EXISTS xray_scans CASCADE;
+-- DROP TABLE IF EXISTS patients CASCADE;
+
+-- -- Drop existing ENUM types
+-- DROP TYPE IF EXISTS dataset_source_enum CASCADE;
+-- DROP TYPE IF EXISTS severity_enum CASCADE;
+-- DROP TYPE IF EXISTS referral_flag_enum CASCADE;
+
+-- -- Create custom ENUM types matching the ML/clinical domains
+-- CREATE TYPE dataset_source_enum AS ENUM ('MURA', 'FracAtlas', 'uploaded');
+-- CREATE TYPE severity_enum AS ENUM ('hairline', 'simple', 'displaced', 'comminuted');
+-- CREATE TYPE referral_flag_enum AS ENUM ('conservative', 'surgical');
+
+-- -- ------------------------------------------------------------------------------
+-- -- Table 1: patients
+-- -- ------------------------------------------------------------------------------
+-- CREATE TABLE patients (
+--     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+--     full_name VARCHAR(255) NOT NULL,
+--     age INT NOT NULL,
+--     gender VARCHAR(50) NOT NULL,
+--     comorbidities TEXT[] DEFAULT '{}' NOT NULL,
+--     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+-- );
+
+-- COMMENT ON TABLE patients IS 'Stores patient personal details and clinical comorbidities';
+-- COMMENT ON COLUMN patients.id IS 'UUID primary key identifying the patient';
+-- COMMENT ON COLUMN patients.full_name IS 'Full legal name of the patient';
+-- COMMENT ON COLUMN patients.age IS 'Age of the patient in years';
+-- COMMENT ON COLUMN patients.gender IS 'Gender of the patient (e.g. Male, Female, Other)';
+-- COMMENT ON COLUMN patients.comorbidities IS 'Array of text items representing patient health comorbidities (e.g., Osteoporosis, Diabetes)';
+-- COMMENT ON COLUMN patients.created_at IS 'Timestamp when the patient record was created';
+
+-- -- ------------------------------------------------------------------------------
+-- -- Table 2: xray_scans
+-- -- ------------------------------------------------------------------------------
+-- CREATE TABLE xray_scans (
+--     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+--     patient_id UUID NOT NULL,
+--     upload_timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+--     original_file_path VARCHAR(512) NOT NULL,
+--     bone_affected VARCHAR(100) NOT NULL,
+--     image_quality_flag VARCHAR(50) DEFAULT 'Good' NOT NULL,
+--     dataset_source dataset_source_enum NOT NULL,
+--     CONSTRAINT fk_xray_scans_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+-- );
+
+-- COMMENT ON TABLE xray_scans IS 'Stores metadata of uploaded X-ray scan images';
+-- COMMENT ON COLUMN xray_scans.id IS 'UUID primary key identifying the X-ray scan';
+-- COMMENT ON COLUMN xray_scans.patient_id IS 'Foreign key referencing patients(id)';
+-- COMMENT ON COLUMN xray_scans.upload_timestamp IS 'Timestamp when the image scan was uploaded';
+-- COMMENT ON COLUMN xray_scans.original_file_path IS 'Absolute path to the raw X-ray scan file stored on disk';
+-- COMMENT ON COLUMN xray_scans.bone_affected IS 'Name of the bone shown in the scan (e.g., Radius, Femur, Tibia)';
+-- COMMENT ON COLUMN xray_scans.image_quality_flag IS 'Status of scan quality (e.g., Good, Blurry, Low Exposure)';
+-- COMMENT ON COLUMN xray_scans.dataset_source IS 'Origin of the image (MURA, FracAtlas, or uploaded by user)';
+
+-- -- ------------------------------------------------------------------------------
+-- -- Table 3: fracture_predictions
+-- -- ------------------------------------------------------------------------------
+-- CREATE TABLE fracture_predictions (
+--     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+--     scan_id UUID NOT NULL UNIQUE,
+--     fracture_detected BOOLEAN NOT NULL,
+--     severity severity_enum NULL, -- Can be NULL if no fracture is detected
+--     confidence_score FLOAT NOT NULL,
+--     heatmap_path VARCHAR(512),
+--     model_version VARCHAR(50) NOT NULL,
+--     CONSTRAINT fk_fracture_predictions_scan FOREIGN KEY (scan_id) REFERENCES xray_scans(id) ON DELETE CASCADE
+-- );
+
+-- COMMENT ON TABLE fracture_predictions IS 'Stores machine learning model predictions for scans';
+-- COMMENT ON COLUMN fracture_predictions.id IS 'UUID primary key identifying the ML prediction';
+-- COMMENT ON COLUMN fracture_predictions.scan_id IS 'Unique foreign key referencing xray_scans(id) (one-to-one)';
+-- COMMENT ON COLUMN fracture_predictions.fracture_detected IS 'True if a bone fracture is detected, False otherwise';
+-- COMMENT ON COLUMN fracture_predictions.severity IS 'Severity rating of the fracture if detected (NULL if no fracture)';
+-- COMMENT ON COLUMN fracture_predictions.confidence_score IS 'Machine learning prediction confidence score between 0.0 and 1.0';
+-- COMMENT ON COLUMN fracture_predictions.heatmap_path IS 'Path to the generated Grad-CAM heatmap visualization file';
+-- COMMENT ON COLUMN fracture_predictions.model_version IS 'Version tag of the ML model used to generate this prediction';
+
+-- -- ------------------------------------------------------------------------------
+-- -- Table 4: prognosis_results
+-- -- ------------------------------------------------------------------------------
+-- CREATE TABLE prognosis_results (
+--     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+--     prediction_id UUID NOT NULL UNIQUE,
+--     rest_weeks_min INT NOT NULL,
+--     rest_weeks_max INT NOT NULL,
+--     cast_type VARCHAR(100) NOT NULL,
+--     plaster_required BOOLEAN NOT NULL,
+--     weight_bearing_status VARCHAR(100) NOT NULL,
+--     referral_flag referral_flag_enum NOT NULL,
+--     clinician_override BOOLEAN DEFAULT FALSE NOT NULL,
+--     override_notes TEXT NULL,
+--     override_timestamp TIMESTAMP WITH TIME ZONE NULL,
+--     CONSTRAINT fk_prognosis_results_prediction FOREIGN KEY (prediction_id) REFERENCES fracture_predictions(id) ON DELETE CASCADE
+-- );
+
+-- COMMENT ON TABLE prognosis_results IS 'Stores recovery prognosis recommendations and clinician overrides';
+-- COMMENT ON COLUMN prognosis_results.id IS 'UUID primary key identifying the prognosis report';
+-- COMMENT ON COLUMN prognosis_results.prediction_id IS 'Unique foreign key referencing fracture_predictions(id) (one-to-one)';
+-- COMMENT ON COLUMN prognosis_results.rest_weeks_min IS 'Minimum recommended recovery/rest duration in weeks';
+-- COMMENT ON COLUMN prognosis_results.rest_weeks_max IS 'Maximum recommended recovery/rest duration in weeks';
+-- COMMENT ON COLUMN prognosis_results.cast_type IS 'Type of cast or support suggested for the injury (e.g., Short Arm Cast, Boot)';
+-- COMMENT ON COLUMN prognosis_results.plaster_required IS 'Boolean flag indicating if a plaster cast is required';
+-- COMMENT ON COLUMN prognosis_results.weight_bearing_status IS 'Restricted weight bearing instructions (e.g., Non-weight bearing, Full)';
+-- COMMENT ON COLUMN prognosis_results.referral_flag IS 'Required clinical action: conservative management or surgical referral';
+-- COMMENT ON COLUMN prognosis_results.clinician_override IS 'Flag indicating if a clinician manually updated these values';
+-- COMMENT ON COLUMN prognosis_results.override_notes IS 'Reason or notes for the clinician override';
+-- COMMENT ON COLUMN prognosis_results.override_timestamp IS 'Timestamp when the clinician override occurred';
+
+-- -- ------------------------------------------------------------------------------
+-- -- Indexes for performance optimization
+-- -- ------------------------------------------------------------------------------
+-- CREATE INDEX idx_xray_scans_patient_id ON xray_scans(patient_id);
+-- CREATE INDEX idx_fracture_predictions_scan_id ON fracture_predictions(scan_id);
+-- CREATE INDEX idx_prognosis_results_prediction_id ON prognosis_results(prediction_id);
+
+-- -- ------------------------------------------------------------------------------
+-- -- Sample INSERT Statements to Test the Schema
+-- -- ------------------------------------------------------------------------------
+-- -- 1. Insert Patient
+-- INSERT INTO patients (id, full_name, age, gender, comorbidities)
+-- VALUES (
+--     'da4d84f2-959c-4c6e-b3f5-bfa33e5c9429',
+--     'John Miller',
+--     42,
+--     'Male',
+--     ARRAY['Hypertension']
+-- );
+
+-- -- 2. Insert X-Ray Scan
+-- INSERT INTO xray_scans (id, patient_id, original_file_path, bone_affected, image_quality_flag, dataset_source)
+-- VALUES (
+--     'eb3d8651-7662-4309-847e-4054a88f7b76',
+--     'da4d84f2-959c-4c6e-b3f5-bfa33e5c9429',
+--     'uploads/john_miller_scan.png',
+--     'Tibia',
+--     'Good',
+--     'uploaded'
+-- );
+
+-- -- 3. Insert Fracture Prediction (Fracture Detected, Simple severity)
+-- INSERT INTO fracture_predictions (id, scan_id, fracture_detected, severity, confidence_score, heatmap_path, model_version)
+-- VALUES (
+--     '7b337c6d-556b-4ca0-9bfa-fce211ddf443',
+--     'eb3d8651-7662-4309-847e-4054a88f7b76',
+--     TRUE,
+--     'simple',
+--     0.92,
+--     'heatmaps/john_miller_heatmap.png',
+--     'v1.0.0'
+-- );
+
+-- -- 4. Insert Prognosis Result
+-- INSERT INTO prognosis_results (id, prediction_id, rest_weeks_min, rest_weeks_max, cast_type, plaster_required, weight_bearing_status, referral_flag, clinician_override)
+-- VALUES (
+--     'a53fe304-44cd-4b10-8bde-d51d5c21345d',
+--     '7b337c6d-556b-4ca0-9bfa-fce211ddf443',
+--     6,
+--     8,
+--     'Long Leg Plaster Cast',
+--     TRUE,
+--     'Non-weight bearing',
+--     'conservative',
+--     FALSE
+-- );
+-- TRUNCATE TABLE patients CASCADE;

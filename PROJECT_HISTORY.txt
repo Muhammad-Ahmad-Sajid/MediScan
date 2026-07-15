@@ -1,0 +1,138 @@
+================================================================================
+                    BONE FRACTURE DETECTION PROJECT HISTORY
+                       From Zero to Architectural Mastery
+================================================================================
+
+This document chronicles the design, development, challenges, and solutions of 
+the X-ray Bone Fracture Detection and Classification System. It is designed to
+give you a comprehensive guide from the initial concept 
+to the fully optimized, production-ready implementation.
+
+--------------------------------------------------------------------------------
+1. PROJECT OVERVIEW & ARCHITECTURE
+--------------------------------------------------------------------------------
+The project's objective is to build a robust diagnostic assistant that takes 
+raw digital X-ray scans, detects if a bone fracture is present, identifies the
+affected bone category, determines the severity of the fracture, and highlights
+the clinical area of concern using Grad-CAM heatmaps.
+
+The modeling pipeline is divided into two distinct transfer-learning stages:
+
+STAGE 1: Medical Pretraining (MURA)
+  * Dataset: MURA (Musculoskeletal Radiographs) from Stanford ML Group.
+  * Objective: Teach a ResNet-50 backbone general medical/radiological features
+    (identifying bones, joints, tissue boundaries, and implants) rather than 
+    relying solely on generic ImageNet features (dogs, cars, etc.).
+  * Script: train_stage1.py
+  * Outputs: checkpoints/mura_latest.pth and checkpoints/mura_pretrained.pth
+
+STAGE 2: Fracture Fine-Tuning (FracAtlas)
+  * Dataset: FracAtlas (Bone fracture classification and localization).
+  * Objective: Fine-tune the pre-trained MURA ResNet-50 backbone to perform two
+    simultaneous classification tasks (multi-head network):
+      1. Bone Classifier Head: Hand, Clavicle, Ankle, Femur, Humerus, Metatarsal.
+      2. Severity Head: Normal, Hairline, Comminuted, Displaced.
+  * Script: train_stage2.py
+  * Outputs: checkpoints/best_model.pth
+
+--------------------------------------------------------------------------------
+2. KEY CHALLENGES OVERCOME (THE HISTORY)
+--------------------------------------------------------------------------------
+During development, you encountered several critical architectural, system-
+level, and dataset-level roadblocks on a Windows CPU-only environment with 8 GB
+of RAM. Here is how they were solved:
+
+CHALLENGE A: Clinical Classification Mismatch
+  * Symptoms: Uploading a leg scan resulted in a predicted bone class of "clavicle"
+    (shoulder) or "distal radius" (hand), despite high prediction confidence.
+  * Cause: A mismatch between the index mapping of the dataset loader and the
+    inference mapping. The dataset loader mapped classes as:
+      leg -> index 1, hip -> index 2, shoulder -> index 3
+    But the model/inference decoder interpreted the indices as:
+      index 1 -> clavicle (shoulder), index 2 -> ankle (leg), index 3 -> femur (hip)
+  * Solution: Aligned the BONE_MAP in dataset.py to match the model class order:
+      hand (0), shoulder (1), leg (2), hip (3), mixed (4), other (5).
+      This instantly corrected all clinical bone prediction mappings.
+
+CHALLENGE B: Windows CPU Multithreading Crashes (c10.dll)
+  * Symptoms: The training scripts suffered from random, unlogged segmentation
+    faults and access violations in PyTorch's backend C++ library (c10.dll).
+  * Cause: OpenMP, Intel MKL, and OpenCV conflict when executing multithreaded
+    data loaders and model forward passes on Windows CPU environments.
+  * Solution: Enforced single-threaded execution by disabling multithreading and
+    restricting thread limits in the script headers:
+      - Set torch.set_num_threads(1)
+      - Disabled OpenCV multithreading: cv2.setNumThreads(0)
+      - Enforced environment overrides: OMP_NUM_THREADS=1, MKL_NUM_THREADS=1,
+        OPENBLAS_NUM_THREADS=1, OPENCV_NUM_THREADS=0.
+
+CHALLENGE C: System Out-Of-Memory (OOM) Crashes
+  * Symptoms: Unfreezing the ResNet-50 backbone at Epoch 6 immediately crashed
+    the training process with RuntimeError: [enforce fail at alloc_cpu.cpp] 
+    DefaultCPUAllocator: not enough memory.
+  * Cause: Unfreezing all 25M parameters forces PyTorch to maintain gradients
+    and Adam optimizer moment variables in memory. Running batch size 32 on
+    8 GB of physical RAM exceeded the memory limit.
+  * Solution: 
+    1. Reduced batch size to 16, decreasing the intermediate tensor footprints.
+    2. Implemented garbage collection (import gc) and called gc.collect() inside
+       the training loops.
+    3. Explicitly deleted batch tensors (del images, labels, outputs, loss) in 
+       each iteration to free up references before the next batch allocation.
+    This stabilized memory at a constant 1.55 GB of RAM.
+
+CHALLENGE D: Inability to Resume Mid-Epoch
+  * Symptoms: Because training on CPU takes ~2 hours and 47 minutes per epoch, 
+    terminating the script mid-epoch caused the loss of all progress in that epoch.
+  * Cause: PyTorch checkpoints were only written at the end of completed epochs.
+  * Solution: 
+    1. Added a mid-epoch save check to train_epoch() that writes checkpoints
+       every 500 batches.
+    2. Saved the 'batch_idx' and the complete 'optimizer_state_dict' (Adam moments)
+       to mura_latest.pth.
+    3. Modified the resume logic in main() to recognize 'batch_idx', load the
+       optimizer moments, and fast-forward the dataloader past completed batches.
+
+--------------------------------------------------------------------------------
+3. PROJECT DIRECTORY MAP
+--------------------------------------------------------------------------------
+├── checkpoints/
+│   ├── best_model.pth         # Stage 2 (FracAtlas) fully trained model
+│   ├── mura_latest.pth        # Stage 1 (MURA) latest epoch/batch checkpoint
+│   └── mura_pretrained.pth    # Stage 1 (MURA) best epoch weights
+├── src/
+│   ├── data_preparation/
+│   │   └── dataset.py         # FracAtlas custom Dataset and transforms
+│   ├── model/
+│   │   └── fracture_model.py  # Stage 2 multi-head ResNet-50 model
+│   └── database/              # SQLite diagnostic metadata storage
+├── scratch/
+│   └── auto_pause.py          # Auto-pauses training on transition to next epoch
+├── train_stage1.py            # Stage 1 Pretraining script (MURA)
+├── train_stage2.py            # Stage 2 Fine-tuning script (FracAtlas)
+├── inference.py               # Diagnostic inference & Grad-CAM visualizer
+├── main.py                    # Local Flask web dashboard/app
+└── PROJECT_HISTORY.txt        # This document
+
+--------------------------------------------------------------------------------
+4. COMMAND REFERENCE & RUNNING GUIDE
+--------------------------------------------------------------------------------
+
+A. To run Stage 1 pretraining (MURA) with auto-pausing:
+   1. Start the auto-pause daemon:
+      cmd /c "venv\Scripts\python.exe -u scratch/auto_pause.py > auto_pause.log 2>&1"
+   2. Start/resume the training run:
+      cmd /c "venv\Scripts\python.exe -u train_stage1.py --epochs 10 --batch_size 16 --resume > stage1_training.log 2>&1"
+
+B. To run Stage 2 fine-tuning (FracAtlas) on CPU:
+   venv\Scripts\python.exe train_stage2.py --epochs 10 --batch_size 16 --lr 1e-4
+
+C. To run the diagnostic dashboard/app:
+   venv\Scripts\python.exe main.py
+
+D. To verify inference manually on an image:
+   venv\Scripts\python.exe inference.py --image_path path/to/scan.jpg
+
+================================================================================
+                           END OF PROJECT HISTORY
+================================================================================

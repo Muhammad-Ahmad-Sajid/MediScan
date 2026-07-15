@@ -1,0 +1,625 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --primary-color: #1D6FA4;
+  --success-green: #1D9E75;
+  --warning-amber: #BA7517;
+  --danger-red: #A32D2D;
+  --bg-color: #F8FAFC;
+  --card-bg: #FFFFFF;
+  --border-color: #E2E8F0;
+  --nav-bg: #0F172A;
+  --text-dark: #1E293B;
+  --text-light: #64748B;
+  --font-family: 'Inter', sans-serif;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-dark);
+  line-height: 1.5;
+}
+
+/* Navbar */
+.navbar {
+  background-color: var(--nav-bg);
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.role-badge {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.btn-logout:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Containers */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Cards */
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  box-shadow: var(--box-shadow);
+  margin-bottom: 2rem;
+}
+
+/* Login Page */
+#login-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 150px);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-card h2 {
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: var(--font-family);
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(29, 111, 164, 0.1);
+}
+
+.checkbox-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-family);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background-color: #155580;
+}
+
+.btn-primary:disabled {
+  background-color: #94A3B8;
+  cursor: not-allowed;
+}
+
+/* Dashboard Layout */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+/* Messages */
+.msg-error {
+  color: var(--danger-red);
+  background-color: #FEF2F2;
+  border: 1px solid #FECACA;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+
+.msg-success {
+  color: var(--success-green);
+  background-color: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+
+/* Upload Area */
+.upload-area {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--bg-color);
+  transition: all 0.2s;
+  margin-bottom: 1rem;
+}
+
+.upload-area:hover, .upload-area.dragover {
+  border-color: var(--primary-color);
+  background-color: #F0F9FF;
+}
+
+.upload-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: var(--text-light);
+}
+
+.upload-text {
+  color: var(--text-light);
+  margin-bottom: 0.5rem;
+}
+
+.file-name {
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-top: 1rem;
+}
+
+/* Loading Spinner */
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border-left-color: var(--primary-color);
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Results Panel */
+.results-panel {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.images-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.image-card {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.image-card img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.badge-large {
+  font-size: 1.25rem;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.badge-green { background-color: #ECFDF5; color: var(--success-green); border: 1px solid var(--success-green); }
+.badge-red { background-color: #FEF2F2; color: var(--danger-red); border: 1px solid var(--danger-red); }
+.badge-amber { background-color: #FFFBEB; color: var(--warning-amber); border: 1px solid var(--warning-amber); }
+
+/* Details Grid */
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-item {
+  margin-bottom: 0.5rem;
+}
+
+.detail-label {
+  color: var(--text-light);
+  font-size: 0.875rem;
+  display: block;
+}
+
+.detail-value {
+  font-weight: 600;
+}
+
+/* Scan History List */
+.history-controls {
+  margin-bottom: 2rem;
+}
+
+.scan-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.scan-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--box-shadow);
+}
+
+.scan-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.scan-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 0.5rem 1rem;
+  width: auto;
+}
+
+.btn-outline:hover {
+  background-color: #F0F9FF;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.modal-content img {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 8px;
+}
+
+.modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .images-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .scan-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .scan-actions {
+    flex-direction: column;
+  }
+  
+  .btn-outline {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   NEW: MODULE SELECTOR STYLES
+   ========================================================================== */
+.module-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .module-selector {
+    grid-template-columns: 1fr;
+  }
+}
+
+.module-card {
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  box-shadow: var(--box-shadow);
+}
+
+.module-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.module-card.selected {
+  transform: scale(1.02);
+}
+
+.module-card#module-fracture.selected {
+  border-color: var(--primary-color);
+  background-color: rgba(29, 111, 164, 0.03);
+}
+
+.module-card#module-arthritis.selected {
+  border-color: var(--success-green);
+  background-color: rgba(29, 158, 117, 0.03);
+}
+
+.module-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.module-info h3 {
+  margin-bottom: 0.25rem;
+  font-size: 1.25rem;
+}
+
+.module-info p {
+  color: var(--text-light);
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.module-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+#module-fracture .module-badge {
+  background-color: rgba(29, 111, 164, 0.1);
+  color: var(--primary-color);
+}
+
+#module-arthritis .module-badge {
+  background-color: rgba(29, 158, 117, 0.1);
+  color: var(--success-green);
+}
+
+/* ==========================================================================
+   NEW: ARTHRITIS GRADE BADGES & STYLES
+   ========================================================================== */
+.grade-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.grade-0 { background-color: #4CAF50; } /* Normal - Green */
+.grade-1 { background-color: #9E9E9E; } /* Doubtful - Gray */
+.grade-2 { background-color: #FFEB3B; color: #333; } /* Mild - Yellow */
+.grade-3 { background-color: #FF9800; } /* Moderate - Amber */
+.grade-4 { background-color: #F44336; } /* Severe - Red */
+
+.recommendation-box {
+  background-color: #E8F4FD;
+  border-left: 4px solid var(--primary-color);
+  padding: 1rem;
+  border-radius: 0 4px 4px 0;
+  margin-top: 1rem;
+}
+
+/* Severity Scale Bar */
+.severity-scale {
+  display: flex;
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 1rem 0;
+  gap: 2px;
+  background-color: white;
+}
+
+.scale-segment {
+  flex: 1;
+  background-color: #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748B;
+  transition: background-color 0.3s ease;
+}
+
+.scale-segment.active-0 { background-color: #4CAF50; color: white; }
+.scale-segment.active-1 { background-color: #9E9E9E; color: white; }
+.scale-segment.active-2 { background-color: #FFEB3B; color: #333; }
+.scale-segment.active-3 { background-color: #FF9800; color: white; }
+.scale-segment.active-4 { background-color: #F44336; color: white; }
+
+/* ==========================================================================
+   NEW: HISTORY TAB SWITCHER
+   ========================================================================== */
+.tab-switcher {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-light);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: var(--primary-color);
+}
+
+.tab-btn.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CortexRay - Patient History</title>
+    <link rel="stylesheet" href="/templates/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">&#x1F9B4; CortexRay</div>
+        <div class="nav-right hidden" id="nav-user-info">
+            <span id="user-name"></span>
+            <span id="user-role" class="role-badge"></span>
+            <button id="btn-logout" class="btn-logout">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- LOGIN SECTION -->
+        <section id="login-section" class="hidden">
+            <div class="card login-card">
+                <h2>&#x1F9B4; CortexRay Login</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                    <div id="login-error" class="msg-error hidden"></div>
+                </form>
+            </div>
+        </section>
+
+        <!-- HISTORY SECTION -->
+        <section id="history-section" class="hidden">
+            <div class="history-controls">
+                <a href="/" id="link-dashboard" style="color: var(--primary-color); font-weight: 500; display: inline-block; margin-bottom: 1rem; text-decoration: none;">&larr; Back to Dashboard</a>
+                <div class="card" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
+                        <label for="search-patient-id">Patient ID</label>
+                        <input type="text" id="search-patient-id" class="form-control" placeholder="Enter Patient ID (e.g. 1)">
+                    </div>
+                    <button id="btn-search" class="btn btn-primary" style="width: auto;">Search History</button>
+                </div>
+                <div id="search-error" class="msg-error hidden"></div>
+            </div>
+
+            <div id="patient-info" class="card hidden">
+                <h2 id="hist-patient-name" style="color: var(--primary-color);"></h2>
+                <div style="color: var(--text-light); margin-bottom: 1rem; font-weight: 500;">
+                    <span id="hist-patient-age"></span> yrs | <span id="hist-patient-gender"></span>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <strong>Comorbidities:</strong> <span id="hist-patient-comorb"></span>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <div style="background: var(--bg-color); padding: 1.5rem 1rem; border-radius: 4px; flex: 1; text-align: center; border: 1px solid var(--border-color);">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary-color); line-height: 1;" id="stat-total">0</div>
+                        <div style="color: var(--text-light); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500;">Total Scans</div>
+                    </div>
+                    <div style="background: var(--bg-color); padding: 1.5rem 1rem; border-radius: 4px; flex: 1; text-align: center; border: 1px solid var(--border-color);">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--danger-red); line-height: 1;" id="stat-fractures">0</div>
+                        <div style="color: var(--text-light); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500;">Fractures Detected</div>
+                    </div>
+                    <div style="background: var(--bg-color); padding: 1.5rem 1rem; border-radius: 4px; flex: 1; text-align: center; border: 1px solid var(--border-color);">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--warning-amber); line-height: 1;" id="stat-surgical">0</div>
+                        <div style="color: var(--text-light); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500;">Surgical Referrals</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-switcher hidden" id="history-tabs">
+                <button id="tab-fracture" class="tab-btn active" onclick="switchHistoryTab('fracture')">Fracture Scans</button>
+                <button id="tab-arthritis" class="tab-btn" onclick="switchHistoryTab('arthritis')">Arthritis Scans</button>
+            </div>
+            <h3 style="margin-bottom: 1rem; color: var(--text-dark);">Scan History</h3>
+            <div id="scan-list">
+                <!-- Scans injected here -->
+                <div class="card" style="text-align: center; color: var(--text-light); padding: 3rem;">Enter a Patient ID and click search to view scan history.</div>
+            </div>
+        </section>
+    </div>
+
+    <!-- FULLSCREEN MODAL -->
+    <div id="heatmap-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button id="modal-close" class="modal-close">&times;</button>
+            <img id="modal-image" src="" alt="Heatmap Fullscreen">
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8000";
+
+        function checkAuth() {
+            const token = sessionStorage.getItem("cortexray_token");
+            if (token) {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('history-section').classList.remove('hidden');
+                document.getElementById('nav-user-info').classList.remove('hidden');
+                document.getElementById('user-name').innerText = sessionStorage.getItem("cortexray_name") || "User";
+                document.getElementById('user-role').innerText = sessionStorage.getItem("cortexray_role") || "Staff";
+            } else {
+                document.getElementById('login-section').classList.remove('hidden');
+                document.getElementById('history-section').classList.add('hidden');
+                document.getElementById('nav-user-info').classList.add('hidden');
+            }
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            const token = sessionStorage.getItem("cortexray_token");
+            if (!options.headers) options.headers = {};
+            if (token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                sessionStorage.removeItem("cortexray_token");
+                checkAuth();
+                throw new Error("Session expired. Please login again.");
+            }
+            if (response.status === 403) {
+                throw new Error("Access denied.");
+            }
+            return response;
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+            const submitBtn = e.target.querySelector('button');
+            
+            errorDiv.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Logging in...";
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', email);
+                formData.append('password', password);
+
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || "Login failed");
+                sessionStorage.setItem("cortexray_token", data.access_token);
+                sessionStorage.setItem("cortexray_name", data.user?.full_name || email.split('@')[0]);
+                sessionStorage.setItem("cortexray_role", data.user?.role || "Doctor");
+                checkAuth();
+            } catch (err) {
+                errorDiv.innerText = err.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Login";
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            sessionStorage.removeItem("cortexray_token");
+            checkAuth();
+        });
+
+        let currentHistoryTab = 'fracture';
+        let currentPatientIdSearch = null;
+
+        document.getElementById('btn-search').addEventListener('click', async () => {
+            const patientId = document.getElementById('search-patient-id').value.trim();
+            if (!patientId) return;
+            currentPatientIdSearch = patientId;
+            await loadHistory(currentPatientIdSearch, currentHistoryTab);
+        });
+
+        async function switchHistoryTab(tab) {
+            currentHistoryTab = tab;
+            document.getElementById('tab-fracture').classList.remove('active');
+            document.getElementById('tab-arthritis').classList.remove('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            if (currentPatientIdSearch) {
+                await loadHistory(currentPatientIdSearch, tab);
+            }
+        }
+
+        async function loadHistory(patientId, tab) {
+            const errorDiv = document.getElementById('search-error');
+            const btnSearch = document.getElementById('btn-search');
+            errorDiv.classList.add('hidden');
+            const scanList = document.getElementById('scan-list');
+            scanList.innerHTML = '<div class="loading-container"><div class="spinner"></div><div>Loading history...</div></div>';
+            document.getElementById('patient-info').classList.add('hidden');
+            document.getElementById('history-tabs').classList.add('hidden');
+
+            btnSearch.disabled = true;
+            btnSearch.innerText = "Searching...";
+
+            try {
+                const endpoint = tab === 'arthritis' 
+                    ? `${API_BASE}/patients/${patientId}/arthritis-history` 
+                    : `${API_BASE}/patients/${patientId}/history`;
+                    
+                const response = await fetchWithAuth(endpoint);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || "Failed to load patient history");
+
+                document.getElementById('history-tabs').classList.remove('hidden');
+                
+                if (tab === 'arthritis') {
+                    renderArthritisHistory(data);
+                } else {
+                    renderHistory(data);
+                }
+            } catch (err) {
+                errorDiv.innerText = err.message;
+                errorDiv.classList.remove('hidden');
+                scanList.innerHTML = '';
+            } finally {
+                btnSearch.disabled = false;
+                btnSearch.innerText = "Search History";
+            }
+        }
+
+        function renderHistory(data) {
+            document.getElementById('patient-info').classList.remove('hidden');
+            document.getElementById('hist-patient-name').innerText = data.full_name || "Unknown Patient";
+            document.getElementById('hist-patient-age').innerText = data.age || "N/A";
+            document.getElementById('hist-patient-gender').innerText = data.gender || "N/A";
+            document.getElementById('hist-patient-comorb').innerText = (data.comorbidities && data.comorbidities.length > 0) ? data.comorbidities.join(', ') : "None";
+
+            const scans = data.scans || [];
+            
+            document.getElementById('stat-total').innerText = scans.length;
+            document.getElementById('stat-fractures').innerText = scans.filter(s => s.prediction && s.prediction.fracture_detected).length;
+            document.getElementById('stat-surgical').innerText = scans.filter(s => s.prediction && s.prediction.prognosis && s.prediction.prognosis.referral_flag === "surgical").length;
+
+            const scanList = document.getElementById('scan-list');
+            scanList.innerHTML = '';
+
+            if (scans.length === 0) {
+                scanList.innerHTML = '<div class="card" style="text-align: center; color: var(--text-light); padding: 3rem;">No scans found for this patient</div>';
+                return;
+            }
+
+            scans.sort((a, b) => new Date(b.upload_timestamp || 0) - new Date(a.upload_timestamp || 0));
+
+            scans.forEach(scan => {
+                const isFracture = scan.prediction && scan.prediction.fracture_detected;
+                const fracBadge = isFracture 
+                    ? `<span class="badge badge-red">FRACTURE DETECTED</span>`
+                    : `<span class="badge badge-green">NO FRACTURE</span>`;
+                
+                let flagClass = "badge-green";
+                let flagText = "CLEAR";
+                if (scan.prediction) {
+                    const conf = scan.prediction.confidence_score * 100;
+                    if (conf < 80) { flagClass = "badge-red"; flagText = "INCONCLUSIVE"; }
+                    else if (conf < 90) { flagClass = "badge-amber"; flagText = "LOW CONFIDENCE"; }
+                }
+                const flagBadge = `<span class="badge ${flagClass}">${flagText}</span>`;
+
+                const dateStr = scan.upload_timestamp ? new Date(scan.upload_timestamp).toLocaleString() : "Unknown date";
+                
+                let progHtml = "";
+                let refBadge = "";
+                if (scan.prediction && scan.prediction.prognosis) {
+                    const prog = scan.prediction.prognosis;
+                    progHtml = `<div style="margin-top: 0.5rem;"><strong>Rest:</strong> ${prog.rest_weeks_min}-${prog.rest_weeks_max} weeks &nbsp;|&nbsp; <strong>Immobilisation:</strong> ${prog.cast_type}</div>`;
+                    const rClass = prog.referral_flag === "surgical" ? "badge-red" : "badge-green";
+                    refBadge = `<span class="badge ${rClass}">${prog.referral_flag.toUpperCase()}</span>`;
+                }
+
+                let dlButton = "";
+                if (flagText !== "INCONCLUSIVE") {
+                    dlButton = `<button class="btn btn-outline" onclick="downloadReport('${scan.id}', this, false)">&#x1F4E5; Download Report</button>`;
+                }
+
+                const cardHtml = `
+                    <div class="scan-card">
+                        <div class="scan-header">
+                            <div>
+                                <div style="font-weight: 600; font-size: 1.125rem;">${dateStr}</div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                                <span class="badge" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: var(--text-dark);">${scan.bone_affected || "Unknown"}</span>
+                                ${fracBadge}
+                            </div>
+                        </div>
+                        <div class="details-grid" style="margin-bottom: 0;">
+                            <div class="detail-item">
+                                <span class="detail-label">Confidence</span>
+                                <span class="detail-value">${scan.prediction ? (scan.prediction.confidence_score * 100).toFixed(1) + '%' : 'N/A'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Flag</span>
+                                ${flagBadge}
+                            </div>
+                        </div>
+                        <div style="font-size: 0.875rem;">
+                            ${progHtml}
+                            ${refBadge ? `<div style="margin-top: 0.5rem;"><strong>Referral:</strong> ${refBadge}</div>` : ''}
+                        </div>
+                        <div class="scan-actions">
+                            <button class="btn btn-primary" style="width: auto;" onclick="openHeatmap('${scan.prediction && scan.prediction.heatmap_path ? scan.prediction.heatmap_path : ''}')">View Heatmap</button>
+                            ${dlButton}
+                        </div>
+                        <div id="dl-error-${scan.id || scan.scan_id}" class="msg-error hidden" style="margin-top: 1rem;"></div>
+                    </div>
+                `;
+                scanList.innerHTML += cardHtml;
+            });
+        }
+
+        function renderArthritisHistory(data) {
+            document.getElementById('patient-info').classList.remove('hidden');
+            document.getElementById('hist-patient-name').innerText = data.full_name || "Unknown Patient";
+            document.getElementById('hist-patient-age').innerText = data.age || "N/A";
+            document.getElementById('hist-patient-gender').innerText = data.gender || "N/A";
+            document.getElementById('hist-patient-comorb').innerText = (data.comorbidities && data.comorbidities.length > 0) ? data.comorbidities.join(', ') : "None";
+
+            const scans = data.scans || [];
+            
+            document.getElementById('stat-total').innerText = scans.length;
+            document.getElementById('stat-fractures').innerText = scans.filter(s => s.grade >= 3).length; // Map fractures block to severe for arthritis
+            document.getElementById('stat-fractures').nextElementSibling.innerText = "Severe Cases (Grade 3+)";
+            document.getElementById('stat-surgical').innerText = scans.filter(s => s.confidence_flag !== "clear").length;
+            document.getElementById('stat-surgical').nextElementSibling.innerText = "Reviews Required";
+
+            const scanList = document.getElementById('scan-list');
+            scanList.innerHTML = '';
+
+            if (scans.length === 0) {
+                scanList.innerHTML = '<div class="card" style="text-align: center; color: var(--text-light); padding: 3rem;">No arthritis scans found for this patient</div>';
+                return;
+            }
+
+            scans.sort((a, b) => new Date(b.scan_timestamp || 0) - new Date(a.scan_timestamp || 0));
+
+            scans.forEach(scan => {
+                const gradeBadge = `<span class="grade-badge grade-${scan.grade}" style="font-size: 1rem; padding: 0.25rem 0.75rem; margin: 0;">${scan.grade_name.toUpperCase()}</span>`;
+                
+                let flagClass = "badge-green";
+                let flagText = "HIGH CONFIDENCE";
+                if (scan.confidence_flag !== "clear") {
+                    flagClass = "badge-amber";
+                    flagText = "REVIEW REQUIRED";
+                }
+                const flagBadge = `<span class="badge ${flagClass}">${flagText}</span>`;
+                const dateStr = scan.scan_timestamp ? new Date(scan.scan_timestamp).toLocaleString() : "Unknown date";
+                
+                const dlButton = `<button class="btn btn-outline" onclick="downloadReport('${scan.id}', this, true)">&#x1F4E5; Download Report</button>`;
+
+                const cardHtml = `
+                    <div class="scan-card">
+                        <div class="scan-header">
+                            <div>
+                                <div style="font-weight: 600; font-size: 1.125rem;">${dateStr}</div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                                ${gradeBadge}
+                            </div>
+                        </div>
+                        <div class="details-grid" style="margin-bottom: 0;">
+                            <div class="detail-item">
+                                <span class="detail-label">Confidence</span>
+                                <span class="detail-value">${(scan.confidence * 100).toFixed(1)}%</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Flag</span>
+                                ${flagBadge}
+                            </div>
+                        </div>
+                        <div class="recommendation-box" style="margin-top: 1rem; padding: 0.75rem;">
+                            <strong>Recommendation:</strong> ${scan.clinical_recommendation}
+                        </div>
+                        <div class="scan-actions" style="margin-top: 1.5rem;">
+                            <button class="btn btn-primary" style="width: auto;" onclick="openHeatmap('${scan.heatmap_path ? scan.heatmap_path : ''}')">View Heatmap</button>
+                            ${dlButton}
+                        </div>
+                        <div id="dl-error-${scan.id}" class="msg-error hidden" style="margin-top: 1rem;"></div>
+                    </div>
+                `;
+                scanList.innerHTML += cardHtml;
+            });
+        }
+
+        const modal = document.getElementById('heatmap-modal');
+        window.openHeatmap = (path) => {
+            if (!path || path === 'null' || path === 'undefined') return;
+            const formattedPath = path.startsWith('/') ? path : `/${path}`;
+            document.getElementById('modal-image').src = `${API_BASE}${formattedPath}`;
+            modal.classList.remove('hidden');
+        };
+
+        document.getElementById('modal-close').addEventListener('click', () => modal.classList.add('hidden'));
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        });
+
+        window.downloadReport = async (scanId, btnEl, isArthritis=false) => {
+            if (!scanId) return;
+            const originalText = btnEl.innerHTML;
+            btnEl.innerHTML = 'Downloading...';
+            btnEl.disabled = true;
+            
+            const errDiv = document.getElementById(`dl-error-${scanId}`);
+            if(errDiv) errDiv.classList.add('hidden');
+
+            try {
+                const endpoint = isArthritis ? `${API_BASE}/arthritis/scan/${scanId}/report` : `${API_BASE}/scan/${scanId}/report`;
+                const response = await fetchWithAuth(endpoint);
+                if (!response.ok) throw new Error("Report download failed");
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `CortexRay_Report_${scanId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (err) {
+                if(errDiv) {
+                    errDiv.innerText = err.message;
+                    errDiv.classList.remove('hidden');
+                }
+            } finally {
+                btnEl.innerHTML = originalText;
+                btnEl.disabled = false;
+            }
+        };
+
+        checkAuth();
+    </script>
+</body>
+</html>

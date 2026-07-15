@@ -1,0 +1,43 @@
+# Datasets
+mura_images/
+data/
+archive/
+fracatlas/
+*.csv
+
+# Model checkpoints
+checkpoints/
+*.pth
+
+# Runtime folders
+uploads/
+heatmaps/
+reports/
+mlruns/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Mediscan Datasets
+Mediscan/auto_test/
+Mediscan/bone_age/
+Mediscan/brain_hemorrhage/
+Mediscan/brain_tumor/
+Mediscan/lung_nodule/
+Mediscan/osteoporosis/
+Mediscan/tb/
+Mediscan/test/
+Mediscan/train/
+Mediscan/val/
+myenv311/
+mlflow.db

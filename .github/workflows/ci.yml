@@ -1,0 +1,106 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: "Code Quality Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install flake8 black
+
+      - name: Run flake8
+        run: flake8 . --max-line-length=100 --exclude=__pycache__,.git,venv,.venv,data,mura_images,archive,fracatlas,checkpoints,mlruns,heatmaps,uploads,reports --ignore=E501,W503,E402 || (echo "Please fix flake8 errors" && exit 1)
+
+      - name: Run black
+        run: black --check --line-length=100 . || (echo "Please run 'black .' locally to format your code" && exit 1)
+
+  test:
+    name: "Run Tests"
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create required directories
+        run: mkdir -p uploads heatmaps reports checkpoints
+
+      - name: Run pytest
+        env:
+          DATABASE_URL: sqlite:///./test.db
+          SECRET_KEY: test-secret-key-for-ci-only-not-production
+          ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: "480"
+          UPLOAD_FOLDER: uploads
+          HEATMAP_OUTPUT_FOLDER: heatmaps
+          MODEL_CHECKPOINT_PATH: checkpoints/stage2_best.pth
+        run: pytest tests/ -v --tb=short --ignore=tests/test_api.py
+
+  docker-build:
+    name: "Docker Build Check"
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: docker build -t cortexray:ci-test .
+
+      - name: Verify image and print size
+        run: |
+          docker images cortexray:ci-test
+          echo "Image size:"
+          docker inspect -f "{{ .Size }}" cortexray:ci-test | numfmt --to=iec-i --suffix=B
+
+  summary:
+    name: "Pipeline Summary"
+    runs-on: ubuntu-latest
+    needs: [lint, test, docker-build]
+    if: always()
+    steps:
+      - name: Print summary
+        run: |
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | ------ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker-build.result }} |" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.lint.result }}" = "success" ] && [ "${{ needs.test.result }}" = "success" ] && [ "${{ needs.docker-build.result }}" = "success" ]; then
+            echo "✅ CortexRay CI pipeline passed — ready to merge" >> $GITHUB_STEP_SUMMARY
+            echo "✅ CortexRay CI pipeline passed — ready to merge"
+          else
+            echo "❌ CortexRay CI pipeline failed — check logs above" >> $GITHUB_STEP_SUMMARY
+            echo "❌ CortexRay CI pipeline failed — check logs above"
+            exit 1
+          fi

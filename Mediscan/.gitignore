@@ -1,0 +1,19 @@
+# Datasets
+bone_age/
+dataset/
+data/
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+env/
+myenv311/
+
+# ML Checkpoints and Logs
+checkpoints/
+*.pth
+*.json
+*.log
+*.db

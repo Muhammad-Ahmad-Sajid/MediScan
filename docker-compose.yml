@@ -1,0 +1,84 @@
+# ==============================================================================
+# BONE FRACTURE DETECTION SYSTEM - DOCKER COMPOSE
+# ==============================================================================
+# STARTUP INSTRUCTIONS:
+# 1. First time setup:   docker-compose up --build
+# 2. Normal startup:     docker-compose up
+# 3. Stop everything:    docker-compose down
+# 4. Stop and wipe DB:   docker-compose down -v
+# 5. View app logs:      docker-compose logs -f app
+#
+# ACCESS POINTS (after startup):
+# - FastAPI App:   http://localhost:8080
+# - Swagger Docs:  http://localhost:8080/docs
+# - MLflow UI:     http://localhost:5001
+# ==============================================================================
+
+
+
+services:
+  # --------------------------------------------------------------------------
+  # SERVICE 1: PostgreSQL Database
+  # --------------------------------------------------------------------------
+  db:
+    image: postgres:16
+    container_name: fracture_db_container
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: fracture_db
+    volumes:
+      - fracture_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Changed from 5432 to avoid conflict
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  # SERVICE 2: FastAPI Application
+  # --------------------------------------------------------------------------
+  app:
+    build: .
+    container_name: fracture_app_container
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/fracture_db
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      UPLOAD_FOLDER: /app/uploads
+      HEATMAP_OUTPUT_FOLDER: /app/heatmaps
+      MODEL_CHECKPOINT_PATH: /app/checkpoints/stage2_best.pth
+    volumes:
+      - ./uploads:/app/uploads
+      - ./heatmaps:/app/heatmaps
+      - ./reports:/app/reports
+      - ./checkpoints:/app/checkpoints
+      - ./mlruns:/app/mlruns
+    ports:
+      - "8080:8000"  # Changed from 8000 to avoid conflict
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  # SERVICE 3: MLflow Tracking Server
+  # --------------------------------------------------------------------------
+  mlflow:
+    image: python:3.10-slim
+    container_name: fracture_mlflow_container
+    command: bash -c "pip install mlflow && mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri /mlflow/mlruns"
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+    environment:
+      - MLFLOW_ALLOW_FILE_STORE=true
+    ports:
+      - "5001:5000"  # Changed from 5000 to avoid conflict
+    restart: unless-stopped
+
+volumes:
+  fracture_postgres_data:

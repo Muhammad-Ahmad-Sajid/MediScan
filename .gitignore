@@ -39,5 +39,6 @@ Mediscan/tb/
 Mediscan/test/
 Mediscan/train/
 Mediscan/val/
+Mediscan/retinopathy/
 myenv311/
 mlflow.db

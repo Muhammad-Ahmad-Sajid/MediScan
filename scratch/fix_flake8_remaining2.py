@@ -1,0 +1,11 @@
+with open('main.py', 'r', encoding='utf-8') as f: content = f.read()
+content = content.replace('conn = sqlite3.connect', 'sqlite3.connect')
+content = content.replace('logger.error(f"Error generating TB report: {e}")', 'logger.error("Error generating TB report")')
+content = content.replace('logger.error(f"Error in bone age prediction: {e}")', 'logger.error("Error in bone age prediction")')
+content = content.replace('{e}', '')
+with open('main.py', 'w', encoding='utf-8') as f: f.write(content)
+
+with open('check_models.py', 'r', encoding='utf-8') as f: content = f.read()
+content = content.replace('import os, sys', 'import os\nimport sys')
+content = content.replace('import sys, os', 'import sys\nimport os')
+with open('check_models.py', 'w', encoding='utf-8') as f: f.write(content)

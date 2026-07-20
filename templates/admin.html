@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediScan AI - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#CCFBF1', 400: '#14B8A6', 700: '#0F766E', 800: '#0D5E57' },
+                        navy: '#1E3A5F',
+                        surface: '#FFFFFF',
+                        background: '#F8FAFC'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body class="bg-background text-slate-800 font-sans antialiased overflow-hidden">
+
+    <div class="flex h-screen w-full relative">
+        <div id="sidebar-container"></div>
+
+        <div id="main-content-area" class="flex-1 flex flex-col main-content xl:ml-[250px] overflow-hidden">
+            <div id="navbar-container"></div>
+
+            <main class="flex-1 overflow-y-auto p-6 md:p-8">
+                
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">Admin Panel</h2>
+
+                <!-- Stats Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Stat 1 -->
+                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
+                        <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-4 text-blue-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Total Users</p>
+                            <p class="text-2xl font-bold text-slate-800" id="stat-users">Loading...</p>
+                        </div>
+                    </div>
+                    <!-- Stat 2 -->
+                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
+                        <div class="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mr-4 text-teal-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Total Patients</p>
+                            <p class="text-2xl font-bold text-slate-800" id="stat-patients">Loading...</p>
+                        </div>
+                    </div>
+                    <!-- Stat 3 -->
+                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
+                        <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mr-4 text-amber-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Total Scans</p>
+                            <p class="text-2xl font-bold text-slate-800" id="stat-scans">N/A</p>
+                        </div>
+                    </div>
+                    <!-- Stat 4 -->
+                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
+                        <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center mr-4 text-indigo-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Clinician Overrides</p>
+                            <p class="text-2xl font-bold text-slate-800" id="stat-overrides">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management -->
+                <div class="bg-surface rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800">User Management</h3>
+                        <div class="flex items-center space-x-3">
+                            <select id="user-role-filter" class="text-sm border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
+                                <option value="all">All Roles</option>
+                                <option value="admin">Admins</option>
+                                <option value="doctor">Doctors</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                    <th class="px-6 py-3 font-medium">Name</th>
+                                    <th class="px-6 py-3 font-medium">Email</th>
+                                    <th class="px-6 py-3 font-medium">Role</th>
+                                    <th class="px-6 py-3 font-medium">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-table-body" class="text-sm text-slate-700 divide-y divide-slate-100">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Override Audit Log -->
+                <div class="bg-surface rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                        <h3 class="font-bold text-slate-800">Clinician Override Audit Log</h3>
+                        <p class="text-xs text-slate-500 mt-1">Review cases where the AI diagnosis was manually overridden by a clinician.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                    <th class="px-6 py-3 font-medium">Date</th>
+                                    <th class="px-6 py-3 font-medium">Clinician</th>
+                                    <th class="px-6 py-3 font-medium">Module</th>
+                                    <th class="px-6 py-3 font-medium">Patient</th>
+                                    <th class="px-6 py-3 font-medium">Override Diagnosis</th>
+                                    <th class="px-6 py-3 font-medium">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="override-table-body" class="text-sm text-slate-700 divide-y divide-slate-100">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

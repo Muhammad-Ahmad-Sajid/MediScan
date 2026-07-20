@@ -1,250 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Patient History - MediScan AI</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <style>
-    .tabs {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid var(--border-color);
-      margin-bottom: 2rem;
-      overflow-x: auto;
-    }
-    .tab {
-      padding: 0.75rem 1.5rem;
-      cursor: pointer;
-      font-weight: 600;
-      color: var(--text-light);
-      border-bottom: 3px solid transparent;
-      margin-bottom: -2px;
-      white-space: nowrap;
-    }
-    .tab:hover {
-      color: var(--text-dark);
-    }
-    .tab.active {
-      color: var(--primary-color);
-      border-bottom-color: var(--primary-color);
-    }
-    .history-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.5rem;
-    }
-    .history-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 0.5rem;
-      padding: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .search-bar {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    .search-bar input {
-      flex: 1;
-      padding: 0.75rem;
-      border: 1px solid var(--border-color);
-      border-radius: 0.375rem;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="logo-title"><a href="/" style="text-decoration:none; color:inherit;">MediScan AI</a></div>
-    <div class="user-info">
-      <a href="/" style="color:var(--text-dark); text-decoration:none; margin-right:1rem; font-weight:600;">Dashboard</a>
-      <span id="user-name"></span>
-      <button onclick="logout()">Logout</button>
-    </div>
-  </header>
-
-  <div class="container">
-    <h2>Patient Scan History</h2>
-    
-    <div class="search-bar">
-      <input type="text" id="patient-id-input" placeholder="Enter Patient ID (UUID)">
-      <button onclick="searchPatient()">View History</button>
-    </div>
-
-    <div id="patient-info" style="display:none; margin-bottom:2rem; background:white; padding:1.5rem; border-radius:0.5rem; border:1px solid var(--border-color);">
-      <h3 style="margin-top:0" id="pi-name">Patient Name</h3>
-      <p style="margin:0; color:var(--text-light)">
-        Age: <span id="pi-age"></span> | Gender: <span id="pi-gender"></span> | Registered: <span id="pi-date"></span><br>
-        Comorbidities: <span id="pi-comorb"></span>
-      </p>
-    </div>
-
-    <div id="history-section" style="display:none;">
-      <div class="tabs">
-        <div class="tab active" onclick="switchTab('fracture')">Fracture</div>
-        <div class="tab" onclick="switchTab('arthritis')">Arthritis</div>
-        <div class="tab" onclick="switchTab('osteoporosis')">Osteoporosis</div>
-        <div class="tab" onclick="switchTab('tb')">TB</div>
-        <div class="tab" onclick="switchTab('lung-nodule')">Lung Nodule</div>
-        <div class="tab" onclick="switchTab('brain-tumor')">Brain Tumor</div>
-        <div class="tab" onclick="switchTab('brain-hemorrhage')">Brain Hemorrhage</div>
-        <div class="tab" onclick="switchTab('bone-age')">Bone Age</div>
-        <div class="tab" onclick="switchTab('retinopathy')">Retinopathy</div>
-      </div>
-
-      <div id="history-content" class="history-grid">
-        <!-- Cards injected here -->
-      </div>
-      <div id="empty-state" style="display:none; text-align:center; padding:3rem; color:var(--text-light);">
-        No scans found for this patient in this module.
-      </div>
-    </div>
-  </div>
-
-  <script>
-    let currentPatientId = '';
-    let currentTab = 'fracture';
-    
-    window.onload = () => {
-      const token = sessionStorage.getItem('token');
-      if (!token) window.location.href = '/';
-      
-      fetch('/auth/me', { headers: {'Authorization': `Bearer ${token}`} })
-        .then(r => r.json())
-        .then(d => document.getElementById('user-name').innerText = d.full_name);
-    };
-
-    function logout() {
-      sessionStorage.removeItem('token');
-      window.location.href = '/';
-    }
-
-    async function searchPatient() {
-      const pid = document.getElementById('patient-id-input').value;
-      if (!pid) return;
-      currentPatientId = pid;
-      
-      const res = await fetch(`/patients/${pid}`, {
-        headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        document.getElementById('patient-info').style.display = 'block';
-        document.getElementById('pi-name').innerText = data.full_name;
-        document.getElementById('pi-age').innerText = data.age;
-        document.getElementById('pi-gender').innerText = data.gender;
-        document.getElementById('pi-date').innerText = new Date(data.created_at).toLocaleDateString();
-        document.getElementById('pi-comorb').innerText = data.comorbidities.join(', ') || 'None';
-        
-        document.getElementById('history-section').style.display = 'block';
-        loadHistory(currentTab);
-      } else {
-        alert("Patient not found");
-      }
-    }
-
-    function switchTab(moduleName) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
-      currentTab = moduleName;
-      loadHistory(currentTab);
-    }
-
-    async function loadHistory(moduleName) {
-      const res = await fetch(`/patients/${currentPatientId}/${moduleName}-history`, {
-        headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
-      });
-      
-      const content = document.getElementById('history-content');
-      const empty = document.getElementById('empty-state');
-      content.innerHTML = '';
-      
-      const existingWarning = document.getElementById('bh-warning');
-      if (existingWarning) existingWarning.remove();
-      
-      if (moduleName === 'brain-hemorrhage') {
-          const tabsContainer = document.querySelector('.tabs');
-          tabsContainer.insertAdjacentHTML('afterend', `<div id="bh-warning" style="width:100%; padding:1rem; background-color:#FEFCBF; color:#744210; font-weight:bold; border-radius:0.5rem; margin-bottom:1rem; border:1px solid #F6E05E;">&#9888; This module was trained on 200 images. Results require radiologist confirmation.</div>`);
-      }
-      
-      if (res.ok) {
-        const data = await res.json();
-        if (data.length === 0) {
-          empty.style.display = 'block';
-        } else {
-          empty.style.display = 'none';
-          data.forEach(scan => {
-            const date = scan.upload_timestamp ? new Date(scan.upload_timestamp).toLocaleString() : 'Unknown date';
-            let summary = '';
-            if(moduleName==='fracture') summary = scan.fracture_detected ? 'Fracture Detected' : 'No Fracture';
-            if(moduleName==='arthritis') summary = `Grade ${scan.grade}: ${scan.grade_name}`;
-            if(moduleName==='osteoporosis') summary = scan.has_osteoporosis ? 'Osteoporosis' : 'Normal';
-            if(moduleName==='tb') summary = scan.has_tb ? 'TB Detected' : 'Normal';
-            if(moduleName==='lung-nodule') summary = scan.has_nodule ? 'Lung Nodule Detected' : 'Normal';
-            if(moduleName==='brain-tumor') {
-                summary = scan.tumor_type ? scan.tumor_type.toUpperCase() : 'NO TUMOR';
-                if(scan.glioma_risk_flag) summary += ' (⚠ Risk Alert)';
-            }
-            if(moduleName==='brain-hemorrhage') {
-                summary = scan.has_hemorrhage ? '🚨 HEMORRHAGE DETECTED' : 'No Hemorrhage';
-            }
-            if(moduleName==='retinopathy') {
-                summary = `Grade ${scan.grade}: ${scan.grade_name}`;
-                if(scan.referable_dr) summary += ' (⚠ Referable)';
-                if(scan.grade === 4) summary += ' 🚨';
-            }
-            
-            let cardStyle = "";
-            if(moduleName==='brain-hemorrhage' && scan.has_hemorrhage) {
-                cardStyle = "border-left: 5px solid #C53030;";
-            }
-            
-            const card = document.createElement('div');
-            card.className = 'history-card';
-            if (cardStyle) card.setAttribute("style", cardStyle);
-            
-            if (moduleName === 'bone-age') {
-                let inner = `<div style="color:var(--text-light); font-size:0.875rem; margin-bottom:0.5rem">${date}</div>
-                             <h3 style="margin-top:0; margin-bottom:0.5rem; color:#2B6CB0;">Est. Age: ${scan.predicted_display}</h3>`;
-                if(scan.chronological_age_months !== null) {
-                    let flag = scan.skeletal_age_flag;
-                    let color = "#38A169";
-                    if (flag === "advanced" || flag === "delayed") color = "#D69E2E";
-                    else if (flag === "significantly_advanced" || flag === "significantly_delayed") color = "#E53E3E";
-                    
-                    inner += `<div style="font-size:0.875rem; margin-bottom:0.5rem;">Dev: <strong>${scan.deviation_months > 0 ? '+' : ''}${scan.deviation_months.toFixed(1)}m</strong></div>`;
-                    inner += `<div class="badge" style="background:${color}; color:white; margin-bottom:1rem; display:inline-block;">${flag.replace('_', ' ').toUpperCase()}</div>`;
-                } else {
-                    inner += `<div style="font-size:0.875rem; color:#718096; margin-bottom:1rem;">No chrono age provided</div>`;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediScan AI - Patient History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#CCFBF1', 400: '#14B8A6', 700: '#0F766E', 800: '#0D5E57' },
+                        navy: '#1E3A5F',
+                        surface: '#FFFFFF',
+                        background: '#F8FAFC'
+                    }
                 }
-                inner += `
-                  <div style="display:flex; gap:0.5rem;">
-                    ${scan.heatmap_path ? `<button onclick="window.open('/${scan.heatmap_path}', '_blank')" style="background:var(--secondary-color); font-size:0.75rem">View Heatmap</button>` : ''}
-                    ${scan.report_path ? `<button onclick="window.open('/${scan.report_path}', '_blank')" style="font-size:0.75rem">PDF Report</button>` : ''}
-                  </div>
-                `;
-                card.innerHTML = inner;
-            } else {
-                card.innerHTML = `
-                  <div style="color:var(--text-light); font-size:0.875rem; margin-bottom:0.5rem">${date}</div>
-                  <h3 style="margin-top:0; margin-bottom:0.5rem">${summary}</h3>
-                  <div class="badge confidence-${scan.confidence_flag || 'inconclusive'}" style="display:inline-block; margin-bottom:1rem;">
-                    Confidence: ${scan.confidence_flag}
-                  </div>
-                  <div style="display:flex; gap:0.5rem;">
-                    ${scan.heatmap_path ? `<button onclick="window.open('/${scan.heatmap_path}', '_blank')" style="background:var(--secondary-color); font-size:0.75rem">View Heatmap</button>` : ''}
-                    ${scan.report_path ? `<button onclick="window.open('/${scan.report_path}', '_blank')" style="font-size:0.75rem">PDF Report</button>` : ''}
-                  </div>
-                `;
             }
-            content.appendChild(card);
-          });
         }
-      } else {
-        empty.style.display = 'block';
-      }
-    }
-  </script>
+    </script>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background text-slate-800 font-sans antialiased overflow-hidden">
+
+    <div class="flex h-screen w-full relative">
+        <div id="sidebar-container"></div>
+
+        <div id="main-content-area" class="flex-1 flex flex-col main-content xl:ml-[250px] overflow-hidden">
+            <div id="navbar-container"></div>
+
+            <main class="flex-1 overflow-y-auto p-6 md:p-8">
+                
+                <!-- Patient Search -->
+                <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Patient Search</h2>
+                    <form id="patient-search-form" class="flex flex-col sm:flex-row gap-4">
+                        <select id="patient-select" class="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-400 outline-none bg-white text-slate-700">
+                            <option value="">-- Select or Type Patient Name/ID --</option>
+                        </select>
+                        <button type="submit" class="px-6 py-3 bg-primary-700 hover:bg-primary-800 text-white rounded-lg font-medium transition-colors shadow-sm whitespace-nowrap">
+                            Load History
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Patient Info Card -->
+                <div id="patient-info-card" class="hidden bg-surface rounded-xl shadow-sm border border-slate-200 p-6 mb-8 flex items-center justify-between flex-wrap gap-4">
+                    <div class="flex items-center">
+                        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-600 mr-4" id="pat-initials"></div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800" id="pat-name">Loading...</h3>
+                            <p class="text-sm text-slate-500">ID: <span id="pat-id" class="font-medium"></span> &bull; Age: <span id="pat-age" class="font-medium"></span> &bull; <span id="pat-gender" class="font-medium"></span></p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-8 text-center bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <div>
+                            <p class="text-2xl font-bold text-primary-700" id="pat-total-scans">0</p>
+                            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Scans</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-slate-800" id="pat-last-scan">N/A</p>
+                            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Last Scan</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Area -->
+                <div id="history-area" class="hidden">
+                    
+                    <!-- Tabs & Controls -->
+                    <div class="flex flex-col xl:flex-row items-center justify-between mb-6 gap-4">
+                        <div class="w-full xl:w-auto overflow-x-auto pb-2 xl:pb-0 hide-scrollbar flex-1">
+                            <div class="flex space-x-2" id="module-tabs">
+                                <!-- Populated via JS -->
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 bg-slate-100 p-1 rounded-lg shrink-0">
+                            <button id="view-list" class="p-2 rounded bg-white shadow-sm text-slate-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+                            <button id="view-grid" class="p-2 rounded text-slate-500 hover:text-slate-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg></button>
+                        </div>
+                    </div>
+
+                    <!-- Scans Container -->
+                    <div id="scans-container" class="space-y-4">
+                        <!-- Populated via JS (List mode default) -->
+                    </div>
+
+                    <div id="empty-state" class="hidden text-center py-16 bg-surface rounded-xl border border-slate-200 border-dashed">
+                        <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        <h3 class="text-lg font-medium text-slate-800">No Scans Found</h3>
+                        <p class="text-sm text-slate-500 mt-1">This patient has no scan history for the selected module.</p>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4 cursor-pointer" onclick="this.classList.add('hidden')">
+        <img id="lightbox-img" src="" class="max-h-full max-w-full rounded shadow-2xl cursor-default" onclick="event.stopPropagation()">
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/history.js"></script>
 </body>
 </html>

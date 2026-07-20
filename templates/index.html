@@ -620,7 +620,7 @@
          ovSection.style.display = (currentModule === 'bone-age') ? 'none' : 'block';
       }
       
-      document.getElementById('download-report-btn').style.display = data.report_path || data.report_url ? 'block' : 'none';
+      document.getElementById('download-report-btn').style.display = 'block';
       if (data.report_url) {
         document.getElementById('download-report-btn').onclick = () => window.open(data.report_url, '_blank');
       } else if (data.report_path) {

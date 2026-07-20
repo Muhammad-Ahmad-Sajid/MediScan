@@ -9,9 +9,10 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request, APIRouter
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from database import engine, Base, get_db
@@ -26,7 +27,7 @@ from inference import run_inference as run_fracture_inference
 from prognosis_engine import get_prognosis as get_fracture_prognosis
 from arthritis_inference import analyze_arthritis as run_arthritis_inference
 from osteoporosis_inference import run_inference as run_osteoporosis_inference
-from report_generator import generate_report, generate_tb_report
+from report_generator import generate_report, generate_tb_report, generate_fracture_report, generate_arthritis_report, generate_osteoporosis_report
 
 models_loaded = ["fracture", "arthritis", "osteoporosis"]
 try:
@@ -85,7 +86,9 @@ app.add_middleware(
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.mount("/heatmaps", StaticFiles(directory="heatmaps"), name="heatmaps")
 app.mount("/reports", StaticFiles(directory="reports"), name="reports")
-app.mount("/static", StaticFiles(directory="templates"), name="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/templates", StaticFiles(directory="templates"), name="templates")
+templates = Jinja2Templates(directory="templates")
 
 # Error handler
 @app.exception_handler(Exception)
@@ -112,20 +115,133 @@ def health_check():
     }
 
 # UI routes
-@app.get("/", tags=["UI"], include_in_schema=False)
-def serve_dashboard():
-    return FileResponse("templates/index.html")
+@app.get("/", response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
+async def root():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/dashboard")
 
-@app.get("/history", tags=["UI"], include_in_schema=False)
-def serve_history():
-    return FileResponse("templates/history.html")
+@app.get("/login", response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
+async def login_page(request: Request):
+    return templates.TemplateResponse(request, "login.html", {"request": request})
+
+@app.get("/dashboard", response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
+async def dashboard_page(request: Request):
+    return templates.TemplateResponse(request, "dashboard.html", {"request": request})
+
+@app.get("/scan/{module}", response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
+async def scan_page(request: Request, module: str):
+    return templates.TemplateResponse(request, "scan.html", {"request": request, "module": module})
+
+@app.get("/results/{module}/{scan_id}", response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
+async def results_page(request: Request, module: str, scan_id: str):
+    return templates.TemplateResponse(request, "results.html", {"request": request, "module": module, "scan_id": scan_id})
+
+@app.get("/history", response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
+async def history_page(request: Request):
+    return templates.TemplateResponse(request, "history.html", {"request": request})
+
+@app.get("/admin", response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
+async def admin_page(request: Request):
+    return templates.TemplateResponse(request, "admin.html", {"request": request})
+
+
+@app.get("/admin/users", tags=["Admin"])
+def get_all_users(db: Session = Depends(get_db), current_user = Depends(get_current_admin)):
+    users = db.query(db_models.User).all()
+    return [{"id": u.id, "email": u.email, "full_name": u.full_name, "role": u.role, "is_active": u.is_active} for u in users]
+
+
+@app.get("/admin/dashboard_stats", tags=["Admin"])
+def get_dashboard_stats(db: Session = Depends(get_db)):
+    # Calculate real stats across all modules
+    models = [
+        (db_models.FractureScan, "fracture"),
+        (db_models.ArthritisScan, "arthritis"),
+        (db_models.OsteoporosisScan, "osteoporosis"),
+        (db_models.TBScan, "tb"),
+        (db_models.LungNoduleScan, "lung_nodule"),
+        (db_models.BrainTumorScan, "brain_tumor"),
+        (db_models.BrainHemorrhageScan, "brain_hemorrhage"),
+        (db_models.BoneAgeScan, "bone_age"),
+        (db_models.RetinopathyScan, "retinopathy"),
+    ]
+    
+    total_scans = 0
+    module_counts = {}
+    critical_alerts = 0
+    reports_generated = 0
+    
+    for model_class, mod_key in models:
+        try:
+            records = db.query(model_class).all()
+            total_scans += len(records)
+            module_counts[mod_key] = len(records)
+            
+            for r in records:
+                if getattr(r, "report_path", None):
+                    reports_generated += 1
+                
+                # Check for critical alerts based on available attributes
+                is_critical = False
+                if getattr(r, "glioma_risk_flag", False): is_critical = True
+                elif getattr(r, "referable_risk_flag", False): is_critical = True
+                elif getattr(r, "surgery_referral", False): is_critical = True
+                elif str(getattr(r, "result_class", "")).lower() in ["grade 4", "grade 3"]: is_critical = True
+                elif "hemorrhage detected" in str(getattr(r, "diagnosis", "")).lower(): is_critical = True
+                
+                if is_critical:
+                    critical_alerts += 1
+        except Exception:
+            module_counts[mod_key] = 0
+            
+    patients_count = db.query(db_models.Patient).count()
+    
+    return {
+        "total_scans": total_scans,
+        "patients": patients_count,
+        "alerts": critical_alerts,
+        "reports": reports_generated,
+        "module_counts": module_counts
+    }
 
 # Overrides
-@app.get("/overrides", tags=["Admin"])
+@app.get("/admin/overrides", tags=["Admin"])
 def get_all_overrides(db: Session = Depends(get_db), current_user = Depends(get_current_admin)):
-    # Simple aggregation of overrides
     overrides = []
-    return overrides # To be expanded later if needed across all modules
+    
+    # Aggregating overrides from all scan tables
+    models_to_check = [
+        (db_models.FractureScan, "Fracture"),
+        (db_models.ArthritisScan, "Arthritis"),
+        (db_models.OsteoporosisScan, "Osteoporosis"),
+        (db_models.TBScan, "TB"),
+        (db_models.LungNoduleScan, "Lung Nodule"),
+        (db_models.BrainTumorScan, "Brain Tumor"),
+        (db_models.BrainHemorrhageScan, "Brain Hemorrhage"),
+        (db_models.BoneAgeScan, "Bone Age"),
+        (db_models.RetinopathyScan, "Retinopathy"),
+    ]
+    
+    for model_class, mod_name in models_to_check:
+        try:
+            if hasattr(model_class, "clinician_override"):
+                records = db.query(model_class, db_models.Patient).join(db_models.Patient, model_class.patient_id == db_models.Patient.id).filter(model_class.clinician_override.isnot(None)).all()
+                for scan, patient in records:
+                    overrides.append({
+                        "date": scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else "Unknown",
+                        "doctor": scan.overridden_by or "Unknown",
+                        "module": mod_name,
+                        "patient": f"{patient.full_name} ({patient.id})",
+                        "original": "N/A",  # Ideally we'd log the original before override, but we don't have it strictly stored.
+                        "override": scan.clinician_override,
+                        "notes": getattr(scan, "override_notes", "")
+                    })
+        except Exception as e:
+            pass # Ignore if table doesn't have it
+
+    # Sort by date descending
+    overrides.sort(key=lambda x: x["date"], reverse=True)
+    return overrides
 
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 
@@ -145,6 +261,40 @@ def create_patient(patient: schemas.PatientCreate, db: Session = Depends(get_db)
 @patient_router.get("/", response_model=List[schemas.PatientResponse])
 def get_all_patients(db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
     return db.query(db_models.Patient).all()
+
+
+@patient_router.get("/{patient_id}/scans", tags=["Patients"])
+def get_patient_scans(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scans = []
+    models_to_check = [
+        (db_models.FractureScan, "fracture"),
+        (db_models.ArthritisScan, "arthritis"),
+        (db_models.OsteoporosisScan, "osteoporosis"),
+        (db_models.TBScan, "tb"),
+        (db_models.LungNoduleScan, "lung-nodule"),
+        (db_models.BrainTumorScan, "brain-tumor"),
+        (db_models.BrainHemorrhageScan, "brain-hemorrhage"),
+        (db_models.BoneAgeScan, "bone-age"),
+        (db_models.RetinopathyScan, "retinopathy"),
+    ]
+    for model_class, mod_name in models_to_check:
+        try:
+            records = db.query(model_class).filter(model_class.patient_id == patient_id).all()
+            for r in records:
+                scans.append({
+                    "id": r.id,
+                    "module": mod_name,
+                    "upload_timestamp": r.upload_timestamp.isoformat() if r.upload_timestamp else None,
+                    "file_path": r.file_path,
+                    "heatmap_path": getattr(r, "heatmap_path", None),
+                    "diagnosis": getattr(r, "diagnosis", getattr(r, "result_class", getattr(r, "predicted_class", getattr(r, "bone_age_months", "Unknown")))),
+                    "confidence": getattr(r, "confidence", getattr(r, "probability", getattr(r, "confidence_score", 1.0))),
+                    "recommendation": getattr(r, "recommendation", "")
+                })
+        except Exception:
+            pass
+    scans.sort(key=lambda x: x["upload_timestamp"] or "", reverse=True)
+    return scans
 
 @patient_router.get("/{patient_id}", response_model=schemas.PatientResponse)
 def get_patient(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
@@ -207,6 +357,23 @@ def get_fracture(scan_id: str, db: Session = Depends(get_db), current_user = Dep
     if not scan: raise HTTPException(404, "Scan not found")
     return scan
 
+@fracture_router.get("/scan/{scan_id}/report")
+def get_fracture_report(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.FractureScan).filter(db_models.FractureScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    if scan.report_path and os.path.exists(scan.report_path):
+        return FileResponse(scan.report_path, media_type="application/pdf", filename=f"Fracture_Report_{scan_id}.pdf")
+        
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    prog = db.query(db_models.FracturePrognosis).filter(db_models.FracturePrognosis.scan_id == scan_id).first()
+    
+    report_path = generate_fracture_report(scan, p.__dict__ if p else {}, prog)
+    if not report_path: raise HTTPException(500, "Failed to generate report")
+    
+    scan.report_path = report_path
+    db.commit()
+    return FileResponse(report_path, media_type="application/pdf", filename=f"Fracture_Report_{scan_id}.pdf")
+
 @fracture_router.patch("/{scan_id}/override", response_model=schemas.FractureResponse)
 def override_fracture(scan_id: str, req: schemas.FractureOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
     scan = db.query(db_models.FractureScan).filter(db_models.FractureScan.id == scan_id).first()
@@ -256,6 +423,22 @@ def get_arthritis(scan_id: str, db: Session = Depends(get_db), current_user = De
     if not scan: raise HTTPException(404, "Scan not found")
     return scan
 
+@arthritis_router.get("/scan/{scan_id}/report")
+def get_arthritis_report(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.ArthritisScan).filter(db_models.ArthritisScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    if scan.report_path and os.path.exists(scan.report_path):
+        return FileResponse(scan.report_path, media_type="application/pdf", filename=f"Arthritis_Report_{scan_id}.pdf")
+        
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    
+    report_path = generate_arthritis_report(scan, p.__dict__ if p else {})
+    if not report_path: raise HTTPException(500, "Failed to generate report")
+    
+    scan.report_path = report_path
+    db.commit()
+    return FileResponse(report_path, media_type="application/pdf", filename=f"Arthritis_Report_{scan_id}.pdf")
+
 @arthritis_router.patch("/{scan_id}/override", response_model=schemas.ArthritisResponse)
 def override_arthritis(scan_id: str, req: schemas.ArthritisOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
     scan = db.query(db_models.ArthritisScan).filter(db_models.ArthritisScan.id == scan_id).first()
@@ -304,6 +487,22 @@ def get_osteo(scan_id: str, db: Session = Depends(get_db), current_user = Depend
     scan = db.query(db_models.OsteoporosisScan).filter(db_models.OsteoporosisScan.id == scan_id).first()
     if not scan: raise HTTPException(404, "Scan not found")
     return scan
+
+@osteo_router.get("/scan/{scan_id}/report")
+def get_osteo_report(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.OsteoporosisScan).filter(db_models.OsteoporosisScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    if scan.report_path and os.path.exists(scan.report_path):
+        return FileResponse(scan.report_path, media_type="application/pdf", filename=f"Osteoporosis_Report_{scan_id}.pdf")
+        
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    
+    report_path = generate_osteoporosis_report(scan, p.__dict__ if p else {})
+    if not report_path: raise HTTPException(500, "Failed to generate report")
+    
+    scan.report_path = report_path
+    db.commit()
+    return FileResponse(report_path, media_type="application/pdf", filename=f"Osteoporosis_Report_{scan_id}.pdf")
 
 @osteo_router.patch("/{scan_id}/override", response_model=schemas.OsteoporosisResponse)
 def override_osteo(scan_id: str, req: schemas.OsteoporosisOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):

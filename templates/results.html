@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediScan AI - Scan Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#CCFBF1', 400: '#14B8A6', 700: '#0F766E', 800: '#0D5E57' },
+                        navy: '#1E3A5F',
+                        surface: '#FFFFFF',
+                        background: '#F8FAFC'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .lightbox-bg { background-color: rgba(0,0,0,0.8); }
+    </style>
+</head>
+<body class="bg-background text-slate-800 font-sans antialiased overflow-hidden">
+
+    <div class="flex h-screen w-full relative">
+        <div id="sidebar-container"></div>
+
+        <div id="main-content-area" class="flex-1 flex flex-col main-content xl:ml-[250px] overflow-hidden">
+            <div id="navbar-container"></div>
+
+            <main class="flex-1 overflow-y-auto p-6 md:p-8">
+                
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-8 border-b border-slate-200 pb-4">
+                    <div class="flex items-center">
+                        <div id="mod-icon-bg" class="w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                            <img id="mod-icon" src="" class="w-7 h-7">
+                        </div>
+                        <div>
+                            <div class="text-sm text-slate-500 font-medium mb-1">
+                                <a href="/dashboard" class="hover:text-primary-700">Dashboard</a> > 
+                                <span id="breadcrumb-mod">Module</span> > Scan Details
+                            </div>
+                            <h2 id="mod-title" class="text-2xl font-bold text-slate-800">Scan Results</h2>
+                        </div>
+                    </div>
+                    <div class="text-right hidden sm:block">
+                        <p class="text-sm text-slate-500">Patient: <span id="header-patient-name" class="font-medium text-slate-700">Loading...</span></p>
+                        <p class="text-xs text-slate-400">ID: <span id="header-patient-id">...</span></p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col lg:flex-row gap-8">
+                    
+                    <!-- Left Column (Images) -->
+                    <div class="lg:w-3/5 space-y-6">
+                        <div class="bg-surface rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                            <!-- Image Tabs -->
+                            <div class="flex border-b border-slate-200 bg-slate-50">
+                                <button id="tab-original" class="flex-1 py-3 text-sm font-medium border-b-2 border-primary-700 text-primary-700 bg-white">Original Image</button>
+                                <button id="tab-heatmap" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors">Grad-CAM Heatmap</button>
+                                <button id="tab-sidebyside" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors hidden sm:block">Side by Side</button>
+                            </div>
+                            
+                            <!-- Image Container -->
+                            <div class="p-6 bg-slate-900 flex justify-center items-center relative min-h-[400px]">
+                                <div id="view-single" class="w-full h-full flex justify-center items-center">
+                                    <img id="img-display" src="" class="max-h-[500px] object-contain rounded cursor-pointer hover:opacity-90 transition-opacity" onclick="openLightbox(this.src)">
+                                </div>
+                                <div id="view-sidebyside" class="hidden w-full h-full flex flex-row gap-4 justify-center items-center">
+                                    <div class="flex-1 flex flex-col items-center">
+                                        <span class="text-white/70 text-xs mb-2">Original</span>
+                                        <img id="img-sbs-orig" src="" class="max-h-[450px] object-contain rounded cursor-pointer" onclick="openLightbox(this.src)">
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center">
+                                        <span class="text-white/70 text-xs mb-2">Heatmap</span>
+                                        <img id="img-sbs-heat" src="" class="max-h-[450px] object-contain rounded cursor-pointer" onclick="openLightbox(this.src)">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex justify-between">
+                                <span id="scan-date">Uploaded: ...</span>
+                                <span class="text-primary-700 cursor-pointer hover:underline" onclick="document.getElementById('img-display').click()">Click image to expand</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap gap-4">
+                            <button id="btn-download-pdf" class="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-primary-700 hover:bg-primary-800 text-white rounded-lg font-medium transition-colors shadow-sm">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                Download PDF Report
+                            </button>
+                            <button id="btn-override" class="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-colors shadow-sm">
+                                Clinician Override
+                            </button>
+                            <button id="btn-new-scan" class="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-white border border-primary-700 hover:bg-primary-50 text-primary-700 rounded-lg font-medium transition-colors shadow-sm">
+                                New Scan
+                            </button>
+                            <button id="btn-view-history" class="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-colors shadow-sm">
+                                Patient History
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Column (Details) -->
+                    <div class="lg:w-2/5 space-y-6">
+                        
+                        <!-- Diagnosis Card -->
+                        <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-6">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">AI Diagnosis</h3>
+                            
+                            <div class="flex justify-center mb-6">
+                                <span id="diag-badge" class="px-6 py-2 rounded-full text-lg font-bold">Loading...</span>
+                            </div>
+                            
+                            <div class="mb-2 flex justify-between items-end">
+                                <span class="text-sm font-medium text-slate-600">Model Confidence</span>
+                                <span id="conf-val" class="text-xl font-bold text-slate-800">0%</span>
+                            </div>
+                            <div class="confidence-bar mb-2">
+                                <div id="conf-fill" class="confidence-fill w-0"></div>
+                            </div>
+                            <p id="conf-label" class="text-xs text-center font-medium text-slate-500">Calculating...</p>
+                        </div>
+
+                        <!-- Recommendations / Safety -->
+                        <div id="safety-card" class="hidden rounded-xl p-4 border-l-4">
+                            <div class="flex items-start">
+                                <svg class="w-6 h-6 mr-3 flex-shrink-0 mt-0.5" id="safety-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                <div>
+                                    <h4 class="text-sm font-bold" id="safety-title">Safety Alert</h4>
+                                    <p class="text-sm mt-1" id="safety-text"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-6">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Clinical Recommendation</h3>
+                            <div class="flex items-start">
+                                <div class="bg-blue-50 text-blue-600 p-2 rounded-lg mr-4">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <p id="recommendation-text" class="text-sm text-slate-700 leading-relaxed pt-1">Loading recommendation...</p>
+                            </div>
+                        </div>
+
+                        <!-- Prognosis Card (Fracture only) -->
+                        <div id="prognosis-card" class="hidden bg-surface rounded-xl shadow-sm border border-slate-200 p-6">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Treatment Prognosis</h3>
+                            <ul class="space-y-3 text-sm" id="prognosis-list"></ul>
+                        </div>
+
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="fixed inset-0 lightbox-bg z-[60] hidden flex items-center justify-center p-4 cursor-pointer" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" class="max-h-full max-w-full rounded shadow-2xl cursor-default" onclick="event.stopPropagation()">
+        <button class="absolute top-6 right-6 text-white hover:text-slate-300" onclick="closeLightbox()">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+
+    <!-- Override Modal -->
+    <div id="override-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Clinician Override</h3>
+            <p class="text-sm text-slate-500 mb-4">If the AI diagnosis is incorrect, provide the correct diagnosis below for auditing and continuous learning.</p>
+            
+            <form id="override-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Override Diagnosis</label>
+                    <select id="override-value" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-400 outline-none">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Clinical Notes</label>
+                    <textarea id="override-notes" rows="3" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-400 outline-none"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="document.getElementById('override-modal').classList.add('hidden')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-primary-700 hover:bg-primary-800 text-white rounded-lg text-sm font-medium transition-colors">Confirm Override</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const currentModule = "{{ module }}";
+        const currentScanId = "{{ scan_id }}";
+    </script>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/results.js"></script>
+</body>
+</html>

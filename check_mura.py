@@ -103,9 +103,7 @@ def main():
             expected_cols = ["file_path", "label", "study_type"]
             missing_cols = [col for col in expected_cols if col not in df.columns]
             if len(missing_cols) == 0:
-                print(
-                    "  [PASS] CSV has all expected columns: file_path, label, study_type."
-                )
+                print("  [PASS] CSV has all expected columns: file_path, label, study_type.")
                 checks["csv_columns"] = True
             else:
                 print(f"  [FAIL] CSV is missing columns: {missing_cols}")

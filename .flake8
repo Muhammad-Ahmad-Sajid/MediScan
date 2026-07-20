@@ -1,0 +1,22 @@
+[flake8]
+max-line-length = 120
+exclude =
+    scratch,
+    venv,
+    .venv,
+    myenv311,
+    myenv,
+    __pycache__,
+    checkpoints,
+    Mediscan,
+    .git,
+    migrations,
+    data,
+    mura_images,
+    archive,
+    fracatlas,
+    mlruns,
+    heatmaps,
+    uploads,
+    reports
+ignore = E501,W503,E402

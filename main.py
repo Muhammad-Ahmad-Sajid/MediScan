@@ -88,9 +88,7 @@ except ImportError:
     logger.warning("Failed to load Retinopathy inference module: ")
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 # FastAPI App
@@ -148,20 +146,14 @@ async def login_page(request: Request):
     return templates.TemplateResponse(request, "login.html", {"request": request})
 
 
-@app.get(
-    "/dashboard", response_class=HTMLResponse, tags=["UI"], include_in_schema=False
-)
+@app.get("/dashboard", response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
 async def dashboard_page(request: Request):
     return templates.TemplateResponse(request, "dashboard.html", {"request": request})
 
 
-@app.get(
-    "/scan/{module}", response_class=HTMLResponse, tags=["UI"], include_in_schema=False
-)
+@app.get("/scan/{module}", response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
 async def scan_page(request: Request, module: str):
-    return templates.TemplateResponse(
-        request, "scan.html", {"request": request, "module": module}
-    )
+    return templates.TemplateResponse(request, "scan.html", {"request": request, "module": module})
 
 
 @app.get(
@@ -189,9 +181,7 @@ async def admin_page(request: Request):
 
 
 @app.get("/admin/users", tags=["Admin"])
-def get_all_users(
-    db: Session = Depends(get_db), current_user=Depends(get_current_admin)
-):
+def get_all_users(db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
     users = db.query(db_models.User).all()
     return [
         {
@@ -269,9 +259,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
 # Overrides
 @app.get("/admin/overrides", tags=["Admin"])
-def get_all_overrides(
-    db: Session = Depends(get_db), current_user=Depends(get_current_admin)
-):
+def get_all_overrides(db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
     overrides = []
 
     # Aggregating overrides from all scan tables
@@ -345,9 +333,7 @@ def create_patient(
 
 
 @patient_router.get("/", response_model=List[schemas.PatientResponse])
-def get_all_patients(
-    db: Session = Depends(get_db), current_user=Depends(get_current_doctor)
-):
+def get_all_patients(db: Session = Depends(get_db), current_user=Depends(get_current_doctor)):
     return db.query(db_models.Patient).all()
 
 
@@ -371,19 +357,13 @@ def get_patient_scans(
     ]
     for model_class, mod_name in models_to_check:
         try:
-            records = (
-                db.query(model_class).filter(model_class.patient_id == patient_id).all()
-            )
+            records = db.query(model_class).filter(model_class.patient_id == patient_id).all()
             for r in records:
                 scans.append(
                     {
                         "id": r.id,
                         "module": mod_name,
-                        "upload_timestamp": (
-                            r.upload_timestamp.isoformat()
-                            if r.upload_timestamp
-                            else None
-                        ),
+                        "upload_timestamp": (r.upload_timestamp.isoformat() if r.upload_timestamp else None),
                         "file_path": r.file_path,
                         "heatmap_path": getattr(r, "heatmap_path", None),
                         "diagnosis": getattr(
@@ -402,9 +382,7 @@ def get_patient_scans(
                         "confidence": getattr(
                             r,
                             "confidence",
-                            getattr(
-                                r, "probability", getattr(r, "confidence_score", 1.0)
-                            ),
+                            getattr(r, "probability", getattr(r, "confidence_score", 1.0)),
                         ),
                         "recommendation": getattr(r, "recommendation", ""),
                     }
@@ -511,11 +489,7 @@ def get_fracture(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.FractureScan)
-        .filter(db_models.FractureScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.FractureScan).filter(db_models.FractureScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     return scan
@@ -527,11 +501,7 @@ def get_fracture_report(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.FractureScan)
-        .filter(db_models.FractureScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.FractureScan).filter(db_models.FractureScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     if scan.report_path and os.path.exists(scan.report_path):
@@ -541,16 +511,8 @@ def get_fracture_report(
             filename=f"Fracture_Report_{scan_id}.pdf",
         )
 
-    p = (
-        db.query(db_models.Patient)
-        .filter(db_models.Patient.id == scan.patient_id)
-        .first()
-    )
-    prog = (
-        db.query(db_models.FracturePrognosis)
-        .filter(db_models.FracturePrognosis.scan_id == scan_id)
-        .first()
-    )
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    prog = db.query(db_models.FracturePrognosis).filter(db_models.FracturePrognosis.scan_id == scan_id).first()
 
     report_path = generate_fracture_report(scan, p.__dict__ if p else {}, prog)
     if not report_path:
@@ -572,11 +534,7 @@ def override_fracture(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.FractureScan)
-        .filter(db_models.FractureScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.FractureScan).filter(db_models.FractureScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     scan.clinician_override = req.clinician_override
@@ -650,11 +608,7 @@ def get_arthritis(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.ArthritisScan)
-        .filter(db_models.ArthritisScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.ArthritisScan).filter(db_models.ArthritisScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     return scan
@@ -666,11 +620,7 @@ def get_arthritis_report(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.ArthritisScan)
-        .filter(db_models.ArthritisScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.ArthritisScan).filter(db_models.ArthritisScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     if scan.report_path and os.path.exists(scan.report_path):
@@ -680,11 +630,7 @@ def get_arthritis_report(
             filename=f"Arthritis_Report_{scan_id}.pdf",
         )
 
-    p = (
-        db.query(db_models.Patient)
-        .filter(db_models.Patient.id == scan.patient_id)
-        .first()
-    )
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
 
     report_path = generate_arthritis_report(scan, p.__dict__ if p else {})
     if not report_path:
@@ -706,11 +652,7 @@ def override_arthritis(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.ArthritisScan)
-        .filter(db_models.ArthritisScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.ArthritisScan).filter(db_models.ArthritisScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     scan.clinician_override = req.clinician_override
@@ -783,11 +725,7 @@ def get_osteo(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.OsteoporosisScan)
-        .filter(db_models.OsteoporosisScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.OsteoporosisScan).filter(db_models.OsteoporosisScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     return scan
@@ -799,11 +737,7 @@ def get_osteo_report(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.OsteoporosisScan)
-        .filter(db_models.OsteoporosisScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.OsteoporosisScan).filter(db_models.OsteoporosisScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     if scan.report_path and os.path.exists(scan.report_path):
@@ -813,11 +747,7 @@ def get_osteo_report(
             filename=f"Osteoporosis_Report_{scan_id}.pdf",
         )
 
-    p = (
-        db.query(db_models.Patient)
-        .filter(db_models.Patient.id == scan.patient_id)
-        .first()
-    )
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
 
     report_path = generate_osteoporosis_report(scan, p.__dict__ if p else {})
     if not report_path:
@@ -839,11 +769,7 @@ def override_osteo(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.OsteoporosisScan)
-        .filter(db_models.OsteoporosisScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.OsteoporosisScan).filter(db_models.OsteoporosisScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     scan.clinician_override = req.clinician_override
@@ -953,11 +879,7 @@ def get_tb_report(
             filename=f"TB_Report_{scan_id}.pdf",
         )
 
-    p = (
-        db.query(db_models.Patient)
-        .filter(db_models.Patient.id == scan.patient_id)
-        .first()
-    )
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
 
     report_path = generate_tb_report(
         patient={
@@ -968,11 +890,7 @@ def get_tb_report(
         },
         scan={
             "scan_id": scan.id,
-            "upload_timestamp": (
-                scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S")
-                if scan.upload_timestamp
-                else ""
-            ),
+            "upload_timestamp": (scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else ""),
             "original_file_path": scan.original_file_path,
         },
         inference_result=scan,
@@ -982,9 +900,7 @@ def get_tb_report(
         raise HTTPException(500, "Failed to generate report")
     scan.report_path = report_path
     db.commit()
-    return FileResponse(
-        report_path, media_type="application/pd", filename=f"TB_Report_{scan_id}.pd"
-    )
+    return FileResponse(report_path, media_type="application/pd", filename=f"TB_Report_{scan_id}.pd")
 
 
 @tb_router.patch("/{scan_id}/override", response_model=schemas.TBResponse)
@@ -1077,11 +993,7 @@ def get_lung_nodule(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.LungNoduleScan)
-        .filter(db_models.LungNoduleScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.LungNoduleScan).filter(db_models.LungNoduleScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     return scan
@@ -1095,11 +1007,7 @@ def get_lung_nodule_report(
 ):
     from report_generator import generate_lung_nodule_report
 
-    scan = (
-        db.query(db_models.LungNoduleScan)
-        .filter(db_models.LungNoduleScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.LungNoduleScan).filter(db_models.LungNoduleScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     if scan.report_path and os.path.exists(scan.report_path):
@@ -1109,11 +1017,7 @@ def get_lung_nodule_report(
             filename=f"LungNodule_Report_{scan_id}.pdf",
         )
 
-    p = (
-        db.query(db_models.Patient)
-        .filter(db_models.Patient.id == scan.patient_id)
-        .first()
-    )
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
 
     report_path = generate_lung_nodule_report(
         patient={
@@ -1124,11 +1028,7 @@ def get_lung_nodule_report(
         },
         scan={
             "scan_id": scan.id,
-            "upload_timestamp": (
-                scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S")
-                if scan.upload_timestamp
-                else ""
-            ),
+            "upload_timestamp": (scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else ""),
             "original_file_path": scan.original_file_path,
         },
         inference_result=scan,
@@ -1145,20 +1045,14 @@ def get_lung_nodule_report(
     )
 
 
-@lung_nodule_router.patch(
-    "/{scan_id}/override", response_model=schemas.LungNoduleResponse
-)
+@lung_nodule_router.patch("/{scan_id}/override", response_model=schemas.LungNoduleResponse)
 def override_lung_nodule(
     scan_id: str,
     req: schemas.LungNoduleOverrideRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.LungNoduleScan)
-        .filter(db_models.LungNoduleScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.LungNoduleScan).filter(db_models.LungNoduleScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     scan.clinician_override = req.clinician_override
@@ -1243,11 +1137,7 @@ def get_brain_tumor(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.BrainTumorScan)
-        .filter(db_models.BrainTumorScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.BrainTumorScan).filter(db_models.BrainTumorScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     return scan
@@ -1261,11 +1151,7 @@ def get_brain_tumor_report(
 ):
     from report_generator import generate_brain_tumor_report
 
-    scan = (
-        db.query(db_models.BrainTumorScan)
-        .filter(db_models.BrainTumorScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.BrainTumorScan).filter(db_models.BrainTumorScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     if scan.report_path and os.path.exists(scan.report_path):
@@ -1275,11 +1161,7 @@ def get_brain_tumor_report(
             filename=f"BrainTumor_Report_{scan_id}.pdf",
         )
 
-    p = (
-        db.query(db_models.Patient)
-        .filter(db_models.Patient.id == scan.patient_id)
-        .first()
-    )
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
 
     report_path = generate_brain_tumor_report(
         patient={
@@ -1290,11 +1172,7 @@ def get_brain_tumor_report(
         },
         scan={
             "scan_id": scan.id,
-            "upload_timestamp": (
-                scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S")
-                if scan.upload_timestamp
-                else ""
-            ),
+            "upload_timestamp": (scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else ""),
             "original_file_path": scan.original_file_path,
         },
         inference_result=scan,
@@ -1311,20 +1189,14 @@ def get_brain_tumor_report(
     )
 
 
-@brain_tumor_router.patch(
-    "/{scan_id}/override", response_model=schemas.BrainTumorResponse
-)
+@brain_tumor_router.patch("/{scan_id}/override", response_model=schemas.BrainTumorResponse)
 def override_brain_tumor(
     scan_id: str,
     req: schemas.BrainTumorOverrideRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.BrainTumorScan)
-        .filter(db_models.BrainTumorScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.BrainTumorScan).filter(db_models.BrainTumorScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     scan.clinician_override = req.clinician_override
@@ -1355,14 +1227,10 @@ def brain_tumor_history(
 
 app.include_router(brain_tumor_router)
 
-brain_hemorrhage_router = APIRouter(
-    prefix="/brain-hemorrhage", tags=["Brain Hemorrhage"]
-)
+brain_hemorrhage_router = APIRouter(prefix="/brain-hemorrhage", tags=["Brain Hemorrhage"])
 
 
-@brain_hemorrhage_router.post(
-    "/scan/upload", response_model=schemas.BrainHemorrhageResponse
-)
+@brain_hemorrhage_router.post("/scan/upload", response_model=schemas.BrainHemorrhageResponse)
 async def upload_brain_hemorrhage(
     patient_id: str = Form(...),
     file: UploadFile = File(...),
@@ -1405,26 +1273,18 @@ async def upload_brain_hemorrhage(
     db.refresh(db_scan)
 
     if res.has_hemorrhage:
-        logger.warning(
-            f"HEMORRHAGE DETECTED for patient {patient_id}, scan {db_scan.id}. Urgency: EMERGENCY."
-        )
+        logger.warning(f"HEMORRHAGE DETECTED for patient {patient_id}, scan {db_scan.id}. Urgency: EMERGENCY.")
 
     return db_scan
 
 
-@brain_hemorrhage_router.get(
-    "/scan/{scan_id}", response_model=schemas.BrainHemorrhageResponse
-)
+@brain_hemorrhage_router.get("/scan/{scan_id}", response_model=schemas.BrainHemorrhageResponse)
 def get_brain_hemorrhage(
     scan_id: str,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.BrainHemorrhageScan)
-        .filter(db_models.BrainHemorrhageScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.BrainHemorrhageScan).filter(db_models.BrainHemorrhageScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     return scan
@@ -1438,11 +1298,7 @@ def get_brain_hemorrhage_report(
 ):
     from report_generator import generate_brain_hemorrhage_report
 
-    scan = (
-        db.query(db_models.BrainHemorrhageScan)
-        .filter(db_models.BrainHemorrhageScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.BrainHemorrhageScan).filter(db_models.BrainHemorrhageScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     if scan.report_path and os.path.exists(scan.report_path):
@@ -1452,11 +1308,7 @@ def get_brain_hemorrhage_report(
             filename=f"BrainHemorrhage_Report_{scan_id}.pdf",
         )
 
-    p = (
-        db.query(db_models.Patient)
-        .filter(db_models.Patient.id == scan.patient_id)
-        .first()
-    )
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
 
     report_path = generate_brain_hemorrhage_report(
         patient={
@@ -1467,11 +1319,7 @@ def get_brain_hemorrhage_report(
         },
         scan={
             "scan_id": scan.id,
-            "upload_timestamp": (
-                scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S")
-                if scan.upload_timestamp
-                else ""
-            ),
+            "upload_timestamp": (scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else ""),
             "original_file_path": scan.original_file_path,
         },
         inference_result=scan,
@@ -1488,20 +1336,14 @@ def get_brain_hemorrhage_report(
     )
 
 
-@brain_hemorrhage_router.patch(
-    "/{scan_id}/override", response_model=schemas.BrainHemorrhageResponse
-)
+@brain_hemorrhage_router.patch("/{scan_id}/override", response_model=schemas.BrainHemorrhageResponse)
 def override_brain_hemorrhage(
     scan_id: str,
     req: schemas.BrainHemorrhageOverrideRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.BrainHemorrhageScan)
-        .filter(db_models.BrainHemorrhageScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.BrainHemorrhageScan).filter(db_models.BrainHemorrhageScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     scan.clinician_override = req.clinician_override
@@ -1555,9 +1397,7 @@ async def upload_bone_age(
         shutil.copyfileobj(file.file, buffer)
 
     try:
-        res = run_bone_age_inference(
-            filepath, chronological_age_months=chronological_age_months
-        )
+        res = run_bone_age_inference(filepath, chronological_age_months=chronological_age_months)
     except Exception:
         logger.error("Inference failed: ")
         logger.error(traceback.format_exc())
@@ -1589,11 +1429,7 @@ def get_bone_age(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.BoneAgeScan)
-        .filter(db_models.BoneAgeScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.BoneAgeScan).filter(db_models.BoneAgeScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     return scan
@@ -1607,11 +1443,7 @@ def get_bone_age_report(
 ):
     from report_generator import generate_bone_age_report
 
-    scan = (
-        db.query(db_models.BoneAgeScan)
-        .filter(db_models.BoneAgeScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.BoneAgeScan).filter(db_models.BoneAgeScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     if scan.report_path and os.path.exists(scan.report_path):
@@ -1621,11 +1453,7 @@ def get_bone_age_report(
             filename=f"BoneAge_Report_{scan_id}.pdf",
         )
 
-    p = (
-        db.query(db_models.Patient)
-        .filter(db_models.Patient.id == scan.patient_id)
-        .first()
-    )
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
 
     report_path = generate_bone_age_report(
         patient={
@@ -1636,11 +1464,7 @@ def get_bone_age_report(
         },
         scan={
             "scan_id": scan.id,
-            "upload_timestamp": (
-                scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S")
-                if scan.upload_timestamp
-                else ""
-            ),
+            "upload_timestamp": (scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else ""),
             "original_file_path": scan.original_file_path,
             "patient_id": p.id,
         },
@@ -1688,9 +1512,7 @@ async def upload_retinopathy(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    patient = (
-        db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
-    )
+    patient = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(404, "Patient not found")
 
@@ -1738,11 +1560,7 @@ def get_retinopathy(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.RetinopathyScan)
-        .filter(db_models.RetinopathyScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.RetinopathyScan).filter(db_models.RetinopathyScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     return scan
@@ -1756,11 +1574,7 @@ def get_retinopathy_report(
 ):
     from report_generator import generate_retinopathy_report
 
-    scan = (
-        db.query(db_models.RetinopathyScan)
-        .filter(db_models.RetinopathyScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.RetinopathyScan).filter(db_models.RetinopathyScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     if scan.report_path and os.path.exists(scan.report_path):
@@ -1770,11 +1584,7 @@ def get_retinopathy_report(
             filename=f"Retinopathy_Report_{scan_id}.pdf",
         )
 
-    p = (
-        db.query(db_models.Patient)
-        .filter(db_models.Patient.id == scan.patient_id)
-        .first()
-    )
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
 
     report_path = generate_retinopathy_report(
         patient={
@@ -1786,11 +1596,7 @@ def get_retinopathy_report(
         },
         scan={
             "scan_id": scan.id,
-            "upload_timestamp": (
-                scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S")
-                if scan.upload_timestamp
-                else ""
-            ),
+            "upload_timestamp": (scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else ""),
             "original_file_path": scan.original_file_path,
             "patient_id": p.id,
         },
@@ -1808,20 +1614,14 @@ def get_retinopathy_report(
     )
 
 
-@retinopathy_router.patch(
-    "/scan/{scan_id}/override", response_model=schemas.RetinopathyResponse
-)
+@retinopathy_router.patch("/scan/{scan_id}/override", response_model=schemas.RetinopathyResponse)
 def override_retinopathy(
     scan_id: str,
     payload: schemas.RetinopathyOverrideRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_doctor),
 ):
-    scan = (
-        db.query(db_models.RetinopathyScan)
-        .filter(db_models.RetinopathyScan.id == scan_id)
-        .first()
-    )
+    scan = db.query(db_models.RetinopathyScan).filter(db_models.RetinopathyScan.id == scan_id).first()
     if not scan:
         raise HTTPException(404, "Scan not found")
     scan.clinician_override = payload.clinician_override

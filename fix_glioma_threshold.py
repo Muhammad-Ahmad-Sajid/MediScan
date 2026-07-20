@@ -52,9 +52,7 @@ class BrainTumorDataset(Dataset):
 def get_model():
     model = models.resnet50(weights=None)
     num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 4)
-    )
+    model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 4))
     return model.to(DEVICE)
 
 
@@ -80,9 +78,7 @@ def main():
     )
 
     test_ds = BrainTumorDataset(X_test, y_test, transform=test_transforms)
-    test_loader = DataLoader(
-        test_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
+    test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
 
     print(f"Loaded {len(test_ds)} test images.")
 
@@ -148,20 +144,12 @@ def main():
         )
 
         # Check constraints
-        if (
-            recalls[1] >= 0.85
-            and all(r >= 0.85 for r in recalls)
-            and overall_acc >= 0.90
-        ):
-            if (
-                best_boost is None
-            ):  # take the first one that satisfies to avoid over-boosting
+        if recalls[1] >= 0.85 and all(r >= 0.85 for r in recalls) and overall_acc >= 0.90:
+            if best_boost is None:  # take the first one that satisfies to avoid over-boosting
                 best_boost = boost
                 best_stats = {
                     "cm": cm,
-                    "report": classification_report(
-                        all_labels, preds, target_names=CLASSES, digits=2
-                    ),
+                    "report": classification_report(all_labels, preds, target_names=CLASSES, digits=2),
                     "glioma_recall": recalls[1] * 100,
                     "overall_acc": overall_acc * 100,
                 }

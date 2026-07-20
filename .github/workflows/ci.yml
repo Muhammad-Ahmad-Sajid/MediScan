@@ -26,10 +26,10 @@ jobs:
         run: pip install flake8 black
 
       - name: Run flake8
-        run: flake8 . --max-line-length=100 --exclude=__pycache__,.git,venv,.venv,data,mura_images,archive,fracatlas,checkpoints,mlruns,heatmaps,uploads,reports,scratch --ignore=E501,W503,E402 || (echo "Please fix flake8 errors" && exit 1)
+        run: flake8 . || (echo "Please fix flake8 errors" && exit 1)
 
       - name: Run black
-        run: black --check --line-length=100 . || (echo "Please run 'black .' locally to format your code" && exit 1)
+        run: black --check . || (echo "Please run 'black .' locally to format your code" && exit 1)
 
   test:
     name: "Run Tests"

@@ -23,9 +23,7 @@ except ImportError:
 # CONFIGURATION & LOGGING
 # ==============================================================================
 # Setup logger
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("mediscan.lung_nodule.inference")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -62,9 +60,7 @@ def load_model():
         return _model
 
     if not os.path.exists(CHECKPOINT_PATH):
-        raise FileNotFoundError(
-            f"Checkpoint not found at {CHECKPOINT_PATH}. Train the model first."
-        )
+        raise FileNotFoundError(f"Checkpoint not found at {CHECKPOINT_PATH}. Train the model first.")
 
     logger.info("Loading Lung Nodule Detection model...")
     # Build architecture matching training
@@ -248,9 +244,7 @@ def run_lung_nodule_inference(image_path: str) -> LungNoduleResult:
     # Confidence calculation
     # Since it's binary, confidence is how far the probability is from 0.5
     # If nodule_prob is 0.9, confidence is 90%. If it's 0.1, confidence is 90% (that it's not a nodule)
-    confidence = (
-        nodule_probability if nodule_probability >= 0.5 else (1.0 - nodule_probability)
-    )
+    confidence = nodule_probability if nodule_probability >= 0.5 else (1.0 - nodule_probability)
 
     if nodule_probability >= 0.85 or nodule_probability <= 0.15:
         confidence_flag = "clear"

@@ -21,9 +21,7 @@ logger = logging.getLogger("mediscan.brain_hemorrhage.inference")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     ch = logging.StreamHandler()
-    ch.setFormatter(
-        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    )
+    ch.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
     logger.addHandler(ch)
 
 
@@ -58,9 +56,7 @@ def get_model():
     model = models.resnet50(weights=None)
     num_ftrs = model.fc.in_features
     # We load with Linear(num_ftrs, 1) because the best checkpoint was trained with BCEWithLogitsLoss
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 1)
-    )
+    model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 1))
 
     checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
     if "state_dict" in checkpoint:
@@ -176,9 +172,7 @@ def run_brain_hemorrhage_inference(img_path: str) -> BrainHemorrhageResult:
     has_hemorrhage = hemorrhage_probability >= 0.40
 
     # Confidence value: raw probability if hemorrhage, else 1-probability
-    confidence = (
-        hemorrhage_probability if has_hemorrhage else (1.0 - hemorrhage_probability)
-    )
+    confidence = hemorrhage_probability if has_hemorrhage else (1.0 - hemorrhage_probability)
 
     # Confidence flags
     if hemorrhage_probability >= 0.85 or hemorrhage_probability <= 0.10:
@@ -214,9 +208,7 @@ def run_brain_hemorrhage_inference(img_path: str) -> BrainHemorrhageResult:
         heatmap_resized = cv2.resize(grayscale_cam, (w, h))
 
         # 0.6 * heatmap + 0.4 * original (original CT image)
-        heatmap_colored = cv2.applyColorMap(
-            np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET
-        )
+        heatmap_colored = cv2.applyColorMap(np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET)
         orig_img_rgb = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2RGB)
         blended = cv2.addWeighted(heatmap_colored, 0.6, orig_img_rgb, 0.4, 0)
 
@@ -257,9 +249,7 @@ if __name__ == "__main__":
     print(f"Probability         : {res.hemorrhage_probability*100:.2f}%")
     print(f"Confidence          : {res.confidence*100:.2f}%")
     print(f"Confidence Flag     : {res.confidence_flag}")
-    print(
-        f"Urgency             : {res.urgency.upper() if res.urgency == 'emergency' else res.urgency}"
-    )
+    print(f"Urgency             : {res.urgency.upper() if res.urgency == 'emergency' else res.urgency}")
     print("Dataset Warning     : Model trained on 200 images")
     print(f"Heatmap Path        : {res.heatmap_path}")
 

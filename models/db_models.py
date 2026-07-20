@@ -36,33 +36,15 @@ class Patient(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships for backref convenience
-    fracture_scans = relationship(
-        "FractureScan", back_populates="patient", cascade="all, delete-orphan"
-    )
-    arthritis_scans = relationship(
-        "ArthritisScan", back_populates="patient", cascade="all, delete-orphan"
-    )
-    osteoporosis_scans = relationship(
-        "OsteoporosisScan", back_populates="patient", cascade="all, delete-orphan"
-    )
-    tb_scans = relationship(
-        "TBScan", back_populates="patient", cascade="all, delete-orphan"
-    )
-    lung_nodule_scans = relationship(
-        "LungNoduleScan", back_populates="patient", cascade="all, delete-orphan"
-    )
-    brain_tumor_scans = relationship(
-        "BrainTumorScan", back_populates="patient", cascade="all, delete-orphan"
-    )
-    brain_hemorrhage_scans = relationship(
-        "BrainHemorrhageScan", back_populates="patient", cascade="all, delete-orphan"
-    )
-    bone_age_scans = relationship(
-        "BoneAgeScan", back_populates="patient", cascade="all, delete-orphan"
-    )
-    retinopathy_scans = relationship(
-        "RetinopathyScan", back_populates="patient", cascade="all, delete-orphan"
-    )
+    fracture_scans = relationship("FractureScan", back_populates="patient", cascade="all, delete-orphan")
+    arthritis_scans = relationship("ArthritisScan", back_populates="patient", cascade="all, delete-orphan")
+    osteoporosis_scans = relationship("OsteoporosisScan", back_populates="patient", cascade="all, delete-orphan")
+    tb_scans = relationship("TBScan", back_populates="patient", cascade="all, delete-orphan")
+    lung_nodule_scans = relationship("LungNoduleScan", back_populates="patient", cascade="all, delete-orphan")
+    brain_tumor_scans = relationship("BrainTumorScan", back_populates="patient", cascade="all, delete-orphan")
+    brain_hemorrhage_scans = relationship("BrainHemorrhageScan", back_populates="patient", cascade="all, delete-orphan")
+    bone_age_scans = relationship("BoneAgeScan", back_populates="patient", cascade="all, delete-orphan")
+    retinopathy_scans = relationship("RetinopathyScan", back_populates="patient", cascade="all, delete-orphan")
 
 
 class FractureScan(Base):

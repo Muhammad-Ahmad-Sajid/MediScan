@@ -180,9 +180,7 @@ def get_tta_transforms():
         A.Compose(
             [
                 A.Resize(224, 224),
-                A.RandomBrightnessContrast(
-                    brightness_limit=(0.1, 0.1), contrast_limit=0, p=1.0
-                ),
+                A.RandomBrightnessContrast(brightness_limit=(0.1, 0.1), contrast_limit=0, p=1.0),
                 A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ToTensorV2(),
             ]
@@ -199,9 +197,7 @@ def format_age_display(months_raw: float) -> str:
     return f"{years} {y_str} {months} {m_str}"
 
 
-def determine_deviation(
-    predicted_months: float, chronological_age_months: Optional[int]
-):
+def determine_deviation(predicted_months: float, chronological_age_months: Optional[int]):
     if chronological_age_months is None:
         return (
             None,
@@ -238,9 +234,7 @@ class RegressionTarget:
         return model_output.squeeze()
 
 
-def generate_heatmap(
-    model, img_rgb: np.ndarray, tensor_img: torch.Tensor
-) -> Optional[str]:
+def generate_heatmap(model, img_rgb: np.ndarray, tensor_img: torch.Tensor) -> Optional[str]:
     try:
         target_layers = [model.backbone.layer4[-1]]
 
@@ -262,9 +256,7 @@ def generate_heatmap(
         img_normalized = img_rgb.astype(np.float32) / 255.0
 
         # Blend
-        visualization = show_cam_on_image(
-            img_normalized, grayscale_cam, use_rgb=True, colormap=cv2.COLORMAP_JET
-        )
+        visualization = show_cam_on_image(img_normalized, grayscale_cam, use_rgb=True, colormap=cv2.COLORMAP_JET)
         visualization = cv2.cvtColor(visualization, cv2.COLOR_RGB2BGR)
 
         filename = f"bone_age_{uuid.uuid4().hex[:8]}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -277,9 +269,7 @@ def generate_heatmap(
         return None
 
 
-def run_bone_age_inference(
-    image_path: str, chronological_age_months: int = None
-) -> BoneAgeResult:
+def run_bone_age_inference(image_path: str, chronological_age_months: int = None) -> BoneAgeResult:
     start_time = time.time()
 
     logger.info(f"Starting inference for: {image_path}")
@@ -304,9 +294,7 @@ def run_bone_age_inference(
     predicted_months = float(np.mean(predictions))
     uncertainty_months = float(np.std(predictions))
 
-    logger.info(
-        f"Final Aggregated Prediction: {predicted_months:.1f} ± {uncertainty_months:.1f} months"
-    )
+    logger.info(f"Final Aggregated Prediction: {predicted_months:.1f} ± {uncertainty_months:.1f} months")
 
     # Determine confidence
     if uncertainty_months <= 4.0:
@@ -317,9 +305,7 @@ def run_bone_age_inference(
         confidence = "low_confidence"
 
     # Deviation and recommendations
-    deviation, flag, rec = determine_deviation(
-        predicted_months, chronological_age_months
-    )
+    deviation, flag, rec = determine_deviation(predicted_months, chronological_age_months)
 
     # Generate Heatmap on original un-augmented image
     base_tensor = get_base_transform()(image=img_rgb)["image"].unsqueeze(0).to(DEVICE)
@@ -346,9 +332,7 @@ def run_bone_age_inference(
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(
-            "Usage: python bone_age_inference.py <image_path> [chronological_age_months]"
-        )
+        print("Usage: python bone_age_inference.py <image_path> [chronological_age_months]")
         sys.exit(1)
 
     img_path = sys.argv[1]
@@ -360,9 +344,7 @@ if __name__ == "__main__":
         print("\n" + "=" * 50)
         print("BONE AGE ESTIMATION RESULT")
         print("=" * 50)
-        print(
-            f"Predicted Bone Age : {res.predicted_display} ({res.predicted_months:.1f} months)"
-        )
+        print(f"Predicted Bone Age : {res.predicted_display} ({res.predicted_months:.1f} months)")
         print(f"Uncertainty        : ±{res.uncertainty_months:.1f} months")
         print(f"Confidence         : {res.confidence_flag}")
 

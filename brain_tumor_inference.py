@@ -23,9 +23,7 @@ logger = logging.getLogger("mediscan.brain_tumor.inference")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     ch = logging.StreamHandler()
-    ch.setFormatter(
-        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    )
+    ch.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
     logger.addHandler(ch)
 
 
@@ -61,9 +59,7 @@ def get_model():
     logger.info("Loading ResNet-50 brain tumor model...")
     model = models.resnet50(weights=None)
     num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 4)
-    )
+    model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 4))
 
     checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
     if "model_state_dict" in checkpoint:
@@ -80,9 +76,7 @@ def get_model():
     return _model
 
 
-def get_clinical_recommendation(
-    tumor_type, confidence_flag, glioma_risk_flag, glioma_prob
-):
+def get_clinical_recommendation(tumor_type, confidence_flag, glioma_risk_flag, glioma_prob):
     rec = ""
     if tumor_type == "notumor":
         if confidence_flag == "clear":
@@ -228,9 +222,7 @@ def run_brain_tumor_inference(img_path: str) -> BrainTumorResult:
     else:
         urgency = "routine"
 
-    rec = get_clinical_recommendation(
-        tumor_type, confidence_flag, glioma_risk_flag, glioma_prob
-    )
+    rec = get_clinical_recommendation(tumor_type, confidence_flag, glioma_risk_flag, glioma_prob)
 
     # Generate Grad-CAM
     heatmap_path = None
@@ -248,9 +240,7 @@ def run_brain_tumor_inference(img_path: str) -> BrainTumorResult:
         heatmap_resized = cv2.resize(grayscale_cam, (w, h))
 
         # Blend manually: 0.6 * heatmap + 0.4 * original
-        heatmap_colored = cv2.applyColorMap(
-            np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET
-        )
+        heatmap_colored = cv2.applyColorMap(np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET)
         orig_img_rgb = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2RGB)
         blended = cv2.addWeighted(heatmap_colored, 0.6, orig_img_rgb, 0.4, 0)
 
@@ -297,9 +287,7 @@ if __name__ == "__main__":
     print(f"Glioma Risk Flag  : {res.glioma_risk_flag}")
     print(f"Urgency           : {res.urgency}")
 
-    probs_str = " ".join(
-        [f"{k}={v*100:.1f}%" for k, v in res.all_probabilities.items()]
-    )
+    probs_str = " ".join([f"{k}={v*100:.1f}%" for k, v in res.all_probabilities.items()])
     print(f"Probabilities     : {probs_str}")
     print(f"Heatmap Path      : {res.heatmap_path}")
 

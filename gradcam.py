@@ -60,15 +60,10 @@ def generate_heatmap(image_path: str, model_path: str = None) -> str:
         state_dict = checkpoint["model_state_dict"]
 
         # Check if this is the old single-head checkpoint
-        is_old_checkpoint = (
-            "backbone.fc.1.weight" in state_dict
-            and "severity_head.0.weight" not in state_dict
-        )
+        is_old_checkpoint = "backbone.fc.1.weight" in state_dict and "severity_head.0.weight" not in state_dict
 
         if is_old_checkpoint:
-            model.severity_head = torch.nn.Sequential(
-                torch.nn.Identity(), torch.nn.Linear(2048, 4)
-            )
+            model.severity_head = torch.nn.Sequential(torch.nn.Identity(), torch.nn.Linear(2048, 4))
             new_state_dict = {}
             for k, v in state_dict.items():
                 if k == "backbone.fc.1.weight":
@@ -101,9 +96,7 @@ def generate_heatmap(image_path: str, model_path: str = None) -> str:
     # Apply standard inference transform (normalization + ToTensorV2)
     transform = get_inference_transform()
     transformed = transform(image=img_resized)
-    input_tensor = (
-        transformed["image"].unsqueeze(0).to(device)
-    )  # Shape: (1, 3, 224, 224)
+    input_tensor = transformed["image"].unsqueeze(0).to(device)  # Shape: (1, 3, 224, 224)
 
     # 5. Determine predicted severity category for CAM targeting
     with torch.no_grad():
@@ -124,9 +117,7 @@ def generate_heatmap(image_path: str, model_path: str = None) -> str:
     # 8. Overlay the heatmap on the float32 RGB original image
     rgb_img_float = np.float32(img_resized) / 255.0
     # show_cam_on_image defaults to cv2.COLORMAP_JET
-    cam_image = show_cam_on_image(
-        rgb_img_float, grayscale_cam, use_rgb=True, colormap=cv2.COLORMAP_JET
-    )
+    cam_image = show_cam_on_image(rgb_img_float, grayscale_cam, use_rgb=True, colormap=cv2.COLORMAP_JET)
 
     # Convert back to BGR for saving with OpenCV
     cam_image_bgr = cv2.cvtColor(cam_image, cv2.COLOR_RGB2BGR)

@@ -25,9 +25,7 @@ def kill_port_owner(port):
             parts = line.strip().split()
             if len(parts) >= 5:
                 pid = parts[-1]
-                print(
-                    f"[*] Port {port} is occupied. Terminating conflicting process ID: {pid}..."
-                )
+                print(f"[*] Port {port} is occupied. Terminating conflicting process ID: {pid}...")
                 subprocess.call(
                     f"taskkill /F /PID {pid}",
                     shell=True,

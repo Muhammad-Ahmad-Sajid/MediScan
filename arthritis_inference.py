@@ -16,9 +16,7 @@ from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Base path for Windows machine
@@ -84,14 +82,10 @@ def load_model():
     try:
         model = models.resnet50(weights=None)
         num_ftrs = model.fc.in_features
-        model.fc = nn.Sequential(
-            nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 5)
-        )
+        model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 5))
 
         # Need to use weights_only=False since saving full dictionary
-        checkpoint = torch.load(
-            CHECKPOINT_PATH, map_location=device, weights_only=False
-        )
+        checkpoint = torch.load(CHECKPOINT_PATH, map_location=device, weights_only=False)
 
         if "model_state_dict" in checkpoint:
             model.load_state_dict(checkpoint["model_state_dict"])
@@ -115,9 +109,7 @@ def preprocess_image(image_path: str):
     """
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
-        raise ValueError(
-            f"Failed to load image or not a valid image file: {image_path}"
-        )
+        raise ValueError(f"Failed to load image or not a valid image file: {image_path}")
 
     # Apply CLAHE
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -152,9 +144,7 @@ def generate_heatmap(model, input_tensor, original_resized, target_grade):
         grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0, :]
 
         rgb_img_float = original_resized.astype(np.float32) / 255.0
-        cam_image = show_cam_on_image(
-            rgb_img_float, grayscale_cam, use_rgb=True, colormap=cv2.COLORMAP_JET
-        )
+        cam_image = show_cam_on_image(rgb_img_float, grayscale_cam, use_rgb=True, colormap=cv2.COLORMAP_JET)
 
         timestamp = int(time.time())
         uid = uuid.uuid4().hex[:8]
@@ -212,9 +202,7 @@ def analyze_arthritis(image_path: str) -> ArthritisResult:
         # Heatmap Generation
         heatmap_path = None
         if confidence_flag != "inconclusive":
-            heatmap_path = generate_heatmap(
-                model, input_tensor, original_resized, grade
-            )
+            heatmap_path = generate_heatmap(model, input_tensor, original_resized, grade)
 
         pred_time_ms = (time.time() - start_time) * 1000.0
 
@@ -223,9 +211,7 @@ def analyze_arthritis(image_path: str) -> ArthritisResult:
             mlflow.set_experiment("arthritis_inference")
             run_name = f"arthritis_inference_{int(time.time())}"
             with mlflow.start_run(run_name=run_name):
-                mlflow.log_metrics(
-                    {"confidence": confidence_pct, "prediction_time_ms": pred_time_ms}
-                )
+                mlflow.log_metrics({"confidence": confidence_pct, "prediction_time_ms": pred_time_ms})
                 mlflow.log_params(
                     {
                         "model_version": MODEL_VERSION,

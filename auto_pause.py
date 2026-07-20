@@ -8,7 +8,9 @@ sleep_time = 7 * 60 * 60
 log_file = "auto_pause.log"
 
 # Log start
-start_msg = f"[{datetime.datetime.now().isoformat()}] Timer started. Will pause training in 7 hours ({sleep_time} seconds).\n"
+start_msg = (
+    f"[{datetime.datetime.now().isoformat()}] Timer started. Will pause training in 7 hours ({sleep_time} seconds).\n"
+)
 print(start_msg)
 with open(log_file, "a") as f:
     f.write(start_msg)

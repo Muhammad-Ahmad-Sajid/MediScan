@@ -1,7 +1,16 @@
 import os
 import uuid
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    UploadFile,
+    File,
+    Form,
+    Request,
+)
 from sqlalchemy.orm import Session
 
 from src.config import UPLOAD_FOLDER
@@ -18,9 +27,12 @@ async def detect_fracture(
     request: Request,
     patient_id: str = Form(..., description="UUID string of the patient"),
     bone_affected: str = Form(
-        ..., description="Clinician-designated bone affected (e.g., Radius, Tibia, Femur)"
+        ...,
+        description="Clinician-designated bone affected (e.g., Radius, Tibia, Femur)",
     ),
-    dataset_source: str = Form("uploaded", description="Source: MURA, FracAtlas, or uploaded"),
+    dataset_source: str = Form(
+        "uploaded", description="Source: MURA, FracAtlas, or uploaded"
+    ),
     file: UploadFile = File(..., description="Grayscale X-ray image (PNG or JPG)"),
     db: Session = Depends(get_db),
 ):
@@ -37,10 +49,13 @@ async def detect_fracture(
             detail="Invalid patient_id format. Must be a UUID.",
         )
 
-    patient = db.query(db_models.Patient).filter(db_models.Patient.id == patient_uuid).first()
+    patient = (
+        db.query(db_models.Patient).filter(db_models.Patient.id == patient_uuid).first()
+    )
     if not patient:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Patient with ID {patient_id} not found."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Patient with ID {patient_id} not found.",
         )
 
     # 2. Save uploaded file to the UPLOAD_FOLDER
@@ -121,7 +136,9 @@ async def detect_fracture(
         # Use severity class for prognosis (default to hairline if normal to estimate base metrics,
         # but in a real system we only calculate prognosis if fracture is detected)
         severity_for_prognosis = (
-            inference_result.severity if inference_result.fracture_detected else "hairline"
+            inference_result.severity
+            if inference_result.fracture_detected
+            else "hairline"
         )
 
         prog_data = calculate_prognosis(

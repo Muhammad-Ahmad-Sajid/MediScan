@@ -13,9 +13,7 @@ dotenv_path = BASE_DIR / ".env"
 load_dotenv(dotenv_path=dotenv_path)
 
 # Retrieve DATABASE_URL from .env
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "sqlite:///./cortexray.db"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cortexray.db")
 
 # Create engine for connecting to the PostgreSQL server
 engine = create_engine(DATABASE_URL)

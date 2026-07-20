@@ -115,7 +115,14 @@ def train_one_epoch(
             gc.collect()
 
         # Clean memory variables
-        del tensors, labels_frac, labels_region, outputs_frac, outputs_region, total_loss
+        del (
+            tensors,
+            labels_frac,
+            labels_region,
+            outputs_frac,
+            outputs_region,
+            total_loss,
+        )
 
     epoch_loss = running_loss / total if total > 0 else 0.0
     epoch_acc_frac = correct_frac / total if total > 0 else 0.0
@@ -161,7 +168,14 @@ def validate(model, loader, criterion_frac, criterion_region, device):
             all_true_region.extend(labels_region.cpu().numpy())
             all_pred_region.extend(predicted_region.cpu().numpy())
 
-            del tensors, labels_frac, labels_region, outputs_frac, outputs_region, total_loss
+            del (
+                tensors,
+                labels_frac,
+                labels_region,
+                outputs_frac,
+                outputs_region,
+                total_loss,
+            )
 
     val_loss = running_loss / total if total > 0 else 0.0
     val_acc_frac = correct_frac / total if total > 0 else 0.0
@@ -180,8 +194,12 @@ def validate(model, loader, criterion_frac, criterion_region, device):
 
 def main():
     parser = argparse.ArgumentParser(description="Stage 2 Fine-Tuning Training Script")
-    parser.add_argument("--epochs", type=int, default=8, help="Number of fine-tuning epochs")
-    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training")
+    parser.add_argument(
+        "--epochs", type=int, default=8, help="Number of fine-tuning epochs"
+    )
+    parser.add_argument(
+        "--batch_size", type=int, default=16, help="Batch size for training"
+    )
     parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate")
     parser.add_argument(
         "--csv_path",
@@ -216,12 +234,16 @@ def main():
     model = Stage2FractureModel(pretrained=not has_pretrained_mura)
 
     if has_pretrained_mura:
-        print(f"[*] Loading pre-trained MURA backbone weights from {pretrained_mura_path}")
+        print(
+            f"[*] Loading pre-trained MURA backbone weights from {pretrained_mura_path}"
+        )
         checkpoint = torch.load(pretrained_mura_path, map_location=device)
         # Load backbone weights with strict=False (ignores classification layer difference)
         model.load_state_dict(checkpoint["model_state_dict"], strict=False)
     else:
-        print(f"[!] Warning: MURA pre-trained checkpoint not found at {pretrained_mura_path}.")
+        print(
+            f"[!] Warning: MURA pre-trained checkpoint not found at {pretrained_mura_path}."
+        )
 
     model.unfreeze_all()
     model.to(device)
@@ -297,7 +319,9 @@ def main():
                     f"[*] Successfully loaded epoch-end checkpoint. Resuming from Epoch {start_epoch}"
                 )
         else:
-            print("[!] Warning: No checkpoint found to resume from. Starting from scratch.")
+            print(
+                "[!] Warning: No checkpoint found to resume from. Starting from scratch."
+            )
 
     start_time = time.time()
 
@@ -384,10 +408,14 @@ def main():
                 },
                 best_checkpoint_path,
             )
-            print(f"  *** Val Loss improved! Saved best model to: {best_checkpoint_path.name} ***")
+            print(
+                f"  *** Val Loss improved! Saved best model to: {best_checkpoint_path.name} ***"
+            )
         else:
             early_stop_counter += 1
-            print(f"  Early stopping counter: {early_stop_counter}/{early_stop_patience}")
+            print(
+                f"  Early stopping counter: {early_stop_counter}/{early_stop_patience}"
+            )
 
         # Save latest checkpoint at epoch end
         torch.save(
@@ -434,7 +462,9 @@ def main():
     hours = int(total_training_time // 3600)
     minutes = int((total_training_time % 3600) // 60)
     seconds = int(total_training_time % 60)
-    training_time_str = f"{hours}h {minutes}m {seconds}s" if hours > 0 else f"{minutes}m {seconds}s"
+    training_time_str = (
+        f"{hours}h {minutes}m {seconds}s" if hours > 0 else f"{minutes}m {seconds}s"
+    )
 
     # 2. Run Final Evaluation using the best model saved
     if best_checkpoint_path.exists():
@@ -484,7 +514,10 @@ def main():
         print("\n--- BODY REGION HEAD ---")
         print(
             classification_report(
-                all_bone_labels, all_bone_preds, target_names=bone_classes, zero_division=0
+                all_bone_labels,
+                all_bone_preds,
+                target_names=bone_classes,
+                zero_division=0,
             )
         )
 

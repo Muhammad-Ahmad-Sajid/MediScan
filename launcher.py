@@ -25,7 +25,9 @@ def kill_port_owner(port):
             parts = line.strip().split()
             if len(parts) >= 5:
                 pid = parts[-1]
-                print(f"[*] Port {port} is occupied. Terminating conflicting process ID: {pid}...")
+                print(
+                    f"[*] Port {port} is occupied. Terminating conflicting process ID: {pid}..."
+                )
                 subprocess.call(
                     f"taskkill /F /PID {pid}",
                     shell=True,
@@ -48,7 +50,16 @@ def launch():
 
     # 2. Run Uvicorn backend in subprocess using current virtual environment python
     print("[*] Launching FastAPI App Server on http://127.0.0.1:8000/ ...")
-    cmd = [sys.executable, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000"]
+    cmd = [
+        sys.executable,
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000",
+    ]
 
     process = subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr)
 

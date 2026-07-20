@@ -4,14 +4,23 @@ import logging
 from datetime import datetime
 
 # Setup structured logger
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 try:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import inch
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+    from reportlab.platypus import (
+        SimpleDocTemplate,
+        Paragraph,
+        Spacer,
+        Image,
+        Table,
+        TableStyle,
+    )
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER
 except ImportError:
@@ -43,9 +52,15 @@ def draw_header(canvas, doc):
 
     # Report info (right side)
     canvas.setFont("Helvetica", 10)
-    canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
-    canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
-    canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
+    canvas.drawRightString(
+        A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
+    )
+    canvas.drawRightString(
+        A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
+    )
+    canvas.drawRightString(
+        A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
+    )
 
     # Line separator under header
     canvas.setStrokeColor(colors.gray)
@@ -105,7 +120,9 @@ def get_image_flowable(img_path, caption, style_normal):
                     [
                         Paragraph(
                             "<b>Image Not Available</b>",
-                            ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
+                            ParagraphStyle(
+                                "Centered", parent=style_normal, alignment=TA_CENTER
+                            ),
                         )
                     ],
                 ],
@@ -132,7 +149,9 @@ def get_image_flowable(img_path, caption, style_normal):
                 Spacer(1, 0.1 * inch),
                 Paragraph(
                     f"<i>{caption}</i>",
-                    ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
+                    ParagraphStyle(
+                        "Centered", parent=style_normal, alignment=TA_CENTER
+                    ),
                 ),
             ]
         except Exception as e:
@@ -140,7 +159,9 @@ def get_image_flowable(img_path, caption, style_normal):
             return [
                 Paragraph(
                     "<b>Error Loading Image</b>",
-                    ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
+                    ParagraphStyle(
+                        "Centered", parent=style_normal, alignment=TA_CENTER
+                    ),
                 )
             ]
 
@@ -190,14 +211,21 @@ def generate_report(
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
+                ),
                 Paragraph(
                     f"<b>Comorbidities:</b> {', '.join(patient.get('comorbidities', [])) or 'None'}",
                     style_normal,
                 ),
             ],
             [Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal), ""],
-            [Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal), ""],
+            [
+                Paragraph(
+                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
+                ),
+                "",
+            ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
         t_patient.setStyle(
@@ -214,9 +242,12 @@ def generate_report(
         elements.append(Paragraph("SCAN DETAILS", style_h2))
         scan_data = [
             [
-                Paragraph(f"<b>Scan ID:</b> {scan.get('scan_id', 'N/A')}", style_normal),
                 Paragraph(
-                    f"<b>Upload Timestamp:</b> {scan.get('upload_timestamp', 'N/A')}", style_normal
+                    f"<b>Scan ID:</b> {scan.get('scan_id', 'N/A')}", style_normal
+                ),
+                Paragraph(
+                    f"<b>Upload Timestamp:</b> {scan.get('upload_timestamp', 'N/A')}",
+                    style_normal,
                 ),
             ],
             [
@@ -245,7 +276,8 @@ def generate_report(
 
         # Only show heatmap if confidence is not inconclusive
         show_heatmap = (
-            getattr(inference_result, "confidence_flag", "inconclusive") != "inconclusive"
+            getattr(inference_result, "confidence_flag", "inconclusive")
+            != "inconclusive"
         )
         img_heatmap = get_image_flowable(
             getattr(inference_result, "heatmap_path", None) if show_heatmap else None,
@@ -281,7 +313,9 @@ def generate_report(
                 [
                     Paragraph(
                         f"<font color='white'><b>{flag.replace('_', ' ').upper()}</b></font>",
-                        ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
+                        ParagraphStyle(
+                            "Centered", parent=style_normal, alignment=TA_CENTER
+                        ),
                     )
                 ]
             ],
@@ -312,10 +346,16 @@ def generate_report(
                         style_normal,
                     ),
                 ],
-                [Paragraph(f"<b>Body Region:</b> {bone_reg.capitalize()}", style_normal), badge],
                 [
                     Paragraph(
-                        f"<b>Message:</b> {getattr(inference_result, 'message', '')}", style_normal
+                        f"<b>Body Region:</b> {bone_reg.capitalize()}", style_normal
+                    ),
+                    badge,
+                ],
+                [
+                    Paragraph(
+                        f"<b>Message:</b> {getattr(inference_result, 'message', '')}",
+                        style_normal,
                     ),
                     "",
                 ],
@@ -327,7 +367,9 @@ def generate_report(
 
             pred_data = [
                 [
-                    Paragraph(f"<b>Arthritis Grade:</b> {grade} ({grade_name})", style_normal),
+                    Paragraph(
+                        f"<b>Arthritis Grade:</b> {grade} ({grade_name})", style_normal
+                    ),
                     Paragraph(
                         f"<b>Confidence:</b> {getattr(inference_result, 'confidence', 0.0):.1f}%",
                         style_normal,
@@ -336,7 +378,8 @@ def generate_report(
                 [Paragraph("", style_normal), badge],
                 [
                     Paragraph(
-                        f"<b>Message:</b> {getattr(inference_result, 'message', '')}", style_normal
+                        f"<b>Message:</b> {getattr(inference_result, 'message', '')}",
+                        style_normal,
                     ),
                     "",
                 ],
@@ -379,7 +422,10 @@ def generate_report(
                     ],
                     [
                         Paragraph("<b>Weight Bearing:</b>", style_normal),
-                        Paragraph(str(prognosis.get("weight_bearing_status", "N/A")), style_normal),
+                        Paragraph(
+                            str(prognosis.get("weight_bearing_status", "N/A")),
+                            style_normal,
+                        ),
                     ],
                     [
                         Paragraph("<b>Referral Required:</b>", style_normal),
@@ -390,7 +436,10 @@ def generate_report(
                 prog_data = [
                     [
                         Paragraph("<b>Clinical Recommendation:</b>", style_normal),
-                        Paragraph(getattr(inference_result, "clinical_recommendation", "N/A"), style_normal)
+                        Paragraph(
+                            getattr(inference_result, "clinical_recommendation", "N/A"),
+                            style_normal,
+                        ),
                     ]
                 ]
 
@@ -451,7 +500,12 @@ def generate_tb_report(
 
         styles = getSampleStyleSheet()
         style_h2 = ParagraphStyle(
-            "H2", fontName="Helvetica-Bold", fontSize=12, spaceAfter=8, textTransform="uppercase", textColor=colors.HexColor("#333333"),
+            "H2",
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            spaceAfter=8,
+            textTransform="uppercase",
+            textColor=colors.HexColor("#333333"),
         )
         style_normal = styles["Normal"]
         style_normal.fontName = "Helvetica"
@@ -460,11 +514,26 @@ def generate_tb_report(
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
-                Paragraph(f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
+                ),
+                Paragraph(
+                    f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal
+                ),
             ],
-            [Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal), Paragraph(f"<b>Scan Date:</b> {scan.get('upload_timestamp', 'N/A')}", style_normal)],
-            [Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal), ""],
+            [
+                Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Scan Date:</b> {scan.get('upload_timestamp', 'N/A')}",
+                    style_normal,
+                ),
+            ],
+            [
+                Paragraph(
+                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
+                ),
+                "",
+            ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
         t_patient.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
@@ -473,18 +542,28 @@ def generate_tb_report(
 
         # DIAGNOSIS SECTION
         elements.append(Paragraph("DIAGNOSIS SECTION", style_h2))
-        
+
         has_tb = getattr(inference_result, "has_tb", False)
         if has_tb:
             badge_text = "<font color='white'><b>TB DETECTED</b></font>"
-            badge_bg = "#D32F2F" # red
+            badge_bg = "#D32F2F"  # red
         else:
             badge_text = "<font color='white'><b>NO TB DETECTED</b></font>"
-            badge_bg = "#388E3C" # green
-            
+            badge_bg = "#388E3C"  # green
+
         badge = Table(
-            [[Paragraph(badge_text, ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER))]],
-            colWidths=[2.0 * inch], rowHeights=[0.3 * inch],
+            [
+                [
+                    Paragraph(
+                        badge_text,
+                        ParagraphStyle(
+                            "Centered", parent=style_normal, alignment=TA_CENTER
+                        ),
+                    )
+                ]
+            ],
+            colWidths=[2.0 * inch],
+            rowHeights=[0.3 * inch],
             style=[
                 ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
@@ -492,62 +571,114 @@ def generate_tb_report(
                 ("BOX", (0, 0), (-1, -1), 1, colors.HexColor(badge_bg)),
             ],
         )
-        
-        prob = getattr(inference_result, 'tb_probability', 0.0)
-        conf = getattr(inference_result, 'confidence', 0.0)
-        urgency = getattr(inference_result, 'urgency', 'routine').upper()
-        
-        urg_color = "red" if urgency == "EMERGENCY" else ("orange" if urgency == "URGENT" else "green")
-        
+
+        prob = getattr(inference_result, "tb_probability", 0.0)
+        conf = getattr(inference_result, "confidence", 0.0)
+        urgency = getattr(inference_result, "urgency", "routine").upper()
+
+        urg_color = (
+            "red"
+            if urgency == "EMERGENCY"
+            else ("orange" if urgency == "URGENT" else "green")
+        )
+
         pred_data = [
             [badge, Paragraph(f"<b>TB Probability:</b> {prob:.2f}%", style_normal)],
-            ["", Paragraph(f"<b>Confidence:</b> {conf:.2f}% ({getattr(inference_result, 'confidence_flag', 'N/A')})", style_normal)],
-            ["", Paragraph(f"<b>Urgency Level:</b> <font color='{urg_color}'>{urgency}</font>", style_normal)]
+            [
+                "",
+                Paragraph(
+                    f"<b>Confidence:</b> {conf:.2f}% ({getattr(inference_result, 'confidence_flag', 'N/A')})",
+                    style_normal,
+                ),
+            ],
+            [
+                "",
+                Paragraph(
+                    f"<b>Urgency Level:</b> <font color='{urg_color}'>{urgency}</font>",
+                    style_normal,
+                ),
+            ],
         ]
-        
+
         t_pred = Table(pred_data, colWidths=[2.2 * inch, 5.0 * inch])
         t_pred.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
         elements.append(t_pred)
         elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
-        img_orig = get_image_flowable(scan.get("original_file_path"), "Original Chest X-ray", style_normal)
-        img_heatmap = get_image_flowable(getattr(inference_result, "heatmap_path", None), "AI-highlighted regions of interest", style_normal)
+        img_orig = get_image_flowable(
+            scan.get("original_file_path"), "Original Chest X-ray", style_normal
+        )
+        img_heatmap = get_image_flowable(
+            getattr(inference_result, "heatmap_path", None),
+            "AI-highlighted regions of interest",
+            style_normal,
+        )
 
         t_images = Table([[img_orig, img_heatmap]], colWidths=[3.6 * inch, 3.6 * inch])
-        t_images.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+        t_images.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
         elements.append(t_images)
         elements.append(Spacer(1, 0.3 * inch))
 
         # CLINICAL RECOMMENDATION
         elements.append(Paragraph("CLINICAL RECOMMENDATION", style_h2))
         rec_data = [
-            [Paragraph(getattr(inference_result, "clinical_recommendation", "N/A"), style_normal)]
+            [
+                Paragraph(
+                    getattr(inference_result, "clinical_recommendation", "N/A"),
+                    style_normal,
+                )
+            ]
         ]
         t_rec = Table(rec_data, colWidths=[7.2 * inch])
-        t_rec.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
-            ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-        ]))
+        t_rec.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                ]
+            )
+        )
         elements.append(t_rec)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # CLINICIAN OVERRIDE
         override = getattr(inference_result, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
             ovr_data = [
                 [Paragraph(f"<b>Clinician Correction:</b> {override}", style_normal)],
-                [Paragraph(f"<b>Notes:</b> {getattr(inference_result, 'override_notes', '')}", style_normal)],
-                [Paragraph(f"<b>Override Date:</b> {getattr(inference_result, 'override_timestamp', '')}", style_normal)]
+                [
+                    Paragraph(
+                        f"<b>Notes:</b> {getattr(inference_result, 'override_notes', '')}",
+                        style_normal,
+                    )
+                ],
+                [
+                    Paragraph(
+                        f"<b>Override Date:</b> {getattr(inference_result, 'override_timestamp', '')}",
+                        style_normal,
+                    )
+                ],
             ]
             t_ovr = Table(ovr_data, colWidths=[7.2 * inch])
-            t_ovr.setStyle(TableStyle([
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.orange),
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF8E1")),
-            ]))
+            t_ovr.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.orange),
+                        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF8E1")),
+                    ]
+                )
+            )
             elements.append(t_ovr)
 
         # Build it
@@ -558,19 +689,33 @@ def generate_tb_report(
             canvas.rect(0, A4[1] - 1.5 * inch, A4[0], 1.5 * inch, stroke=0, fill=1)
             canvas.setFillColor(colors.black)
             canvas.setFont("Helvetica-Bold", 16)
-            canvas.drawString(0.5 * inch, A4[1] - 0.75 * inch, "MediScan AI \u2014 Tuberculosis Screening Report")
+            canvas.drawString(
+                0.5 * inch,
+                A4[1] - 0.75 * inch,
+                "MediScan AI \u2014 Tuberculosis Screening Report",
+            )
             canvas.setFont("Helvetica-Bold", 10)
             canvas.setFillColor(colors.red)
-            canvas.drawString(0.5 * inch, A4[1] - 0.95 * inch, "CONFIDENTIAL \u2014 FOR CLINICAL USE ONLY")
+            canvas.drawString(
+                0.5 * inch,
+                A4[1] - 0.95 * inch,
+                "CONFIDENTIAL \u2014 FOR CLINICAL USE ONLY",
+            )
             canvas.setFillColor(colors.black)
             canvas.setFont("Helvetica", 10)
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
+            )
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
+            )
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
+            )
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(1)
             canvas.line(0, A4[1] - 1.5 * inch, A4[0], A4[1] - 1.5 * inch)
-            
+
             # Footer
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(0.5)
@@ -580,7 +725,9 @@ def generate_tb_report(
             canvas.drawCentredString(A4[0] / 2.0, 0.6 * inch, disclaimer)
             canvas.setFont("Helvetica", 9)
             canvas.drawString(0.5 * inch, 0.4 * inch, "Generated by MediScan AI v1.0")
-            canvas.drawRightString(A4[0] - 0.5 * inch, 0.4 * inch, "Model: tb_v1 | Sensitivity: 97.14%")
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, 0.4 * inch, "Model: tb_v1 | Sensitivity: 97.14%"
+            )
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=on_page, onLaterPages=on_page)
@@ -589,6 +736,7 @@ def generate_tb_report(
     except Exception as e:
         logger.error(f"Failed to generate TB report: {e}", exc_info=True)
         return ""
+
 
 def generate_lung_nodule_report(
     patient: dict,
@@ -619,7 +767,12 @@ def generate_lung_nodule_report(
 
         styles = getSampleStyleSheet()
         style_h2 = ParagraphStyle(
-            "H2", fontName="Helvetica-Bold", fontSize=12, spaceAfter=8, textTransform="uppercase", textColor=colors.HexColor("#333333"),
+            "H2",
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            spaceAfter=8,
+            textTransform="uppercase",
+            textColor=colors.HexColor("#333333"),
         )
         style_normal = styles["Normal"]
         style_normal.fontName = "Helvetica"
@@ -628,11 +781,26 @@ def generate_lung_nodule_report(
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
-                Paragraph(f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
+                ),
+                Paragraph(
+                    f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal
+                ),
             ],
-            [Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal), Paragraph(f"<b>Scan Date:</b> {scan.get('upload_timestamp', 'N/A')}", style_normal)],
-            [Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal), ""],
+            [
+                Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Scan Date:</b> {scan.get('upload_timestamp', 'N/A')}",
+                    style_normal,
+                ),
+            ],
+            [
+                Paragraph(
+                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
+                ),
+                "",
+            ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
         t_patient.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
@@ -641,18 +809,28 @@ def generate_lung_nodule_report(
 
         # DIAGNOSIS SECTION
         elements.append(Paragraph("DIAGNOSIS SECTION", style_h2))
-        
+
         has_nodule = getattr(inference_result, "has_nodule", False)
         if has_nodule:
             badge_text = "<font color='white'><b>NODULE DETECTED</b></font>"
-            badge_bg = "#D32F2F" # red
+            badge_bg = "#D32F2F"  # red
         else:
             badge_text = "<font color='white'><b>NO NODULE</b></font>"
-            badge_bg = "#388E3C" # green
-            
+            badge_bg = "#388E3C"  # green
+
         badge = Table(
-            [[Paragraph(badge_text, ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER))]],
-            colWidths=[2.0 * inch], rowHeights=[0.3 * inch],
+            [
+                [
+                    Paragraph(
+                        badge_text,
+                        ParagraphStyle(
+                            "Centered", parent=style_normal, alignment=TA_CENTER
+                        ),
+                    )
+                ]
+            ],
+            colWidths=[2.0 * inch],
+            rowHeights=[0.3 * inch],
             style=[
                 ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
@@ -660,45 +838,79 @@ def generate_lung_nodule_report(
                 ("BOX", (0, 0), (-1, -1), 1, colors.HexColor(badge_bg)),
             ],
         )
-        
-        prob = getattr(inference_result, 'nodule_probability', 0.0)
-        conf = getattr(inference_result, 'confidence', 0.0)
-        urgency = getattr(inference_result, 'urgency', 'routine').upper()
-        
+
+        prob = getattr(inference_result, "nodule_probability", 0.0)
+        conf = getattr(inference_result, "confidence", 0.0)
+        urgency = getattr(inference_result, "urgency", "routine").upper()
+
         urg_color = "orange" if urgency == "URGENT" else "green"
-        
+
         pred_data = [
             [badge, Paragraph(f"<b>Nodule Probability:</b> {prob:.2f}%", style_normal)],
-            ["", Paragraph(f"<b>Confidence:</b> {conf:.2f}% ({getattr(inference_result, 'confidence_flag', 'N/A')})", style_normal)],
-            ["", Paragraph(f"<b>Urgency Level:</b> <font color='{urg_color}'>{urgency}</font><br/><font size='8' color='gray'>Lung nodules require follow-up imaging, not emergency intervention.</font>", style_normal)]
+            [
+                "",
+                Paragraph(
+                    f"<b>Confidence:</b> {conf:.2f}% ({getattr(inference_result, 'confidence_flag', 'N/A')})",
+                    style_normal,
+                ),
+            ],
+            [
+                "",
+                Paragraph(
+                    f"<b>Urgency Level:</b> <font color='{urg_color}'>{urgency}</font><br/><font size='8' color='gray'>Lung nodules require follow-up imaging, not emergency intervention.</font>",
+                    style_normal,
+                ),
+            ],
         ]
-        
+
         t_pred = Table(pred_data, colWidths=[2.2 * inch, 5.0 * inch])
         t_pred.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
         elements.append(t_pred)
         elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
-        img_orig = get_image_flowable(scan.get("original_file_path"), "Original CT Scan", style_normal)
-        img_heatmap = get_image_flowable(getattr(inference_result, "heatmap_path", None), "AI-highlighted regions of interest", style_normal)
+        img_orig = get_image_flowable(
+            scan.get("original_file_path"), "Original CT Scan", style_normal
+        )
+        img_heatmap = get_image_flowable(
+            getattr(inference_result, "heatmap_path", None),
+            "AI-highlighted regions of interest",
+            style_normal,
+        )
 
         t_images = Table([[img_orig, img_heatmap]], colWidths=[3.6 * inch, 3.6 * inch])
-        t_images.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+        t_images.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
         elements.append(t_images)
         elements.append(Spacer(1, 0.3 * inch))
 
         # CLINICAL RECOMMENDATION
         elements.append(Paragraph("CLINICAL RECOMMENDATION", style_h2))
         rec_data = [
-            [Paragraph(getattr(inference_result, "clinical_recommendation", "N/A"), style_normal)]
+            [
+                Paragraph(
+                    getattr(inference_result, "clinical_recommendation", "N/A"),
+                    style_normal,
+                )
+            ]
         ]
         t_rec = Table(rec_data, colWidths=[7.2 * inch])
-        t_rec.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
-            ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-        ]))
+        t_rec.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                ]
+            )
+        )
         elements.append(t_rec)
         elements.append(Spacer(1, 0.2 * inch))
 
@@ -714,31 +926,49 @@ def generate_lung_nodule_report(
             """
         else:
             follow_up_text = "Continue routine screening per LDCT guidelines for high-risk patients (age 50-80, &ge;20 pack-year history)."
-            
+
         fu_data = [[Paragraph(follow_up_text, style_normal)]]
         t_fu = Table(fu_data, colWidths=[7.2 * inch])
-        t_fu.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
-        ]))
+        t_fu.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+                ]
+            )
+        )
         elements.append(t_fu)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # CLINICIAN OVERRIDE
         override = getattr(inference_result, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
             ovr_data = [
                 [Paragraph(f"<b>Clinician Correction:</b> {override}", style_normal)],
-                [Paragraph(f"<b>Notes:</b> {getattr(inference_result, 'override_notes', '')}", style_normal)],
-                [Paragraph(f"<b>Override Date:</b> {getattr(inference_result, 'override_timestamp', '')}", style_normal)]
+                [
+                    Paragraph(
+                        f"<b>Notes:</b> {getattr(inference_result, 'override_notes', '')}",
+                        style_normal,
+                    )
+                ],
+                [
+                    Paragraph(
+                        f"<b>Override Date:</b> {getattr(inference_result, 'override_timestamp', '')}",
+                        style_normal,
+                    )
+                ],
             ]
             t_ovr = Table(ovr_data, colWidths=[7.2 * inch])
-            t_ovr.setStyle(TableStyle([
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.orange),
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF8E1")),
-            ]))
+            t_ovr.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.orange),
+                        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF8E1")),
+                    ]
+                )
+            )
             elements.append(t_ovr)
 
         # Build it
@@ -749,19 +979,33 @@ def generate_lung_nodule_report(
             canvas.rect(0, A4[1] - 1.5 * inch, A4[0], 1.5 * inch, stroke=0, fill=1)
             canvas.setFillColor(colors.black)
             canvas.setFont("Helvetica-Bold", 16)
-            canvas.drawString(0.5 * inch, A4[1] - 0.75 * inch, "MediScan AI \u2014 Lung Nodule Screening Report")
+            canvas.drawString(
+                0.5 * inch,
+                A4[1] - 0.75 * inch,
+                "MediScan AI \u2014 Lung Nodule Screening Report",
+            )
             canvas.setFont("Helvetica-Bold", 10)
             canvas.setFillColor(colors.red)
-            canvas.drawString(0.5 * inch, A4[1] - 0.95 * inch, "CONFIDENTIAL \u2014 FOR CLINICAL USE ONLY")
+            canvas.drawString(
+                0.5 * inch,
+                A4[1] - 0.95 * inch,
+                "CONFIDENTIAL \u2014 FOR CLINICAL USE ONLY",
+            )
             canvas.setFillColor(colors.black)
             canvas.setFont("Helvetica", 10)
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
+            )
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
+            )
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
+            )
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(1)
             canvas.line(0, A4[1] - 1.5 * inch, A4[0], A4[1] - 1.5 * inch)
-            
+
             # Footer
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(0.5)
@@ -771,7 +1015,11 @@ def generate_lung_nodule_report(
             canvas.drawCentredString(A4[0] / 2.0, 0.6 * inch, disclaimer)
             canvas.setFont("Helvetica", 9)
             canvas.drawString(0.5 * inch, 0.4 * inch, "Generated by MediScan AI v1.0")
-            canvas.drawRightString(A4[0] - 0.5 * inch, 0.4 * inch, "Model: lung_nodule_v1 | Sensitivity: 100%")
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch,
+                0.4 * inch,
+                "Model: lung_nodule_v1 | Sensitivity: 100%",
+            )
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=on_page, onLaterPages=on_page)
@@ -780,6 +1028,7 @@ def generate_lung_nodule_report(
     except Exception as e:
         logger.error(f"Failed to generate Lung Nodule report: {e}", exc_info=True)
         return ""
+
 
 def generate_brain_tumor_report(
     patient: dict,
@@ -791,11 +1040,14 @@ def generate_brain_tumor_report(
     Generates a clinical PDF report for Brain Tumor screening, including 4-class probabilities and glioma risk flag.
     """
     from reportlab.graphics.shapes import Drawing, Rect, String as RLString
+
     try:
         os.makedirs(output_dir, exist_ok=True)
 
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
+        patient_name_safe = "".join(
+            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
+        )
         scan_id = scan.get("scan_id", "unknown")
         filename = f"brain_tumor_{scan_id}_{patient_name_safe}_{date_str}.pdf"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
@@ -808,21 +1060,43 @@ def generate_brain_tumor_report(
         elements = []
 
         styles = getSampleStyleSheet()
-        style_h2 = ParagraphStyle("H2", fontName="Helvetica-Bold", fontSize=12, spaceAfter=8, textTransform="uppercase", textColor=colors.HexColor("#333333"))
+        style_h2 = ParagraphStyle(
+            "H2",
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            spaceAfter=8,
+            textTransform="uppercase",
+            textColor=colors.HexColor("#333333"),
+        )
         style_normal = styles["Normal"]
         style_normal.fontName = "Helvetica"
 
-        urgency = getattr(inference_result, 'urgency', 'routine').lower()
+        urgency = getattr(inference_result, "urgency", "routine").lower()
 
         # PATIENT INFORMATION
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
-                Paragraph(f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
+                ),
+                Paragraph(
+                    f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal
+                ),
             ],
-            [Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal), Paragraph(f"<b>Scan Date:</b> {scan.get('upload_timestamp', 'N/A')}", style_normal)],
-            [Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal), ""],
+            [
+                Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Scan Date:</b> {scan.get('upload_timestamp', 'N/A')}",
+                    style_normal,
+                ),
+            ],
+            [
+                Paragraph(
+                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
+                ),
+                "",
+            ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
         t_patient.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
@@ -831,24 +1105,34 @@ def generate_brain_tumor_report(
 
         # DIAGNOSIS SECTION
         elements.append(Paragraph("DIAGNOSIS SECTION", style_h2))
-        
+
         tumor_type = getattr(inference_result, "tumor_type", "no_tumor").lower()
         if tumor_type == "glioma":
             badge_text = "<font color='white'><b>GLIOMA</b></font>"
-            badge_bg = "#8B0000" # dark red
+            badge_bg = "#8B0000"  # dark red
         elif tumor_type == "meningioma":
             badge_text = "<font color='white'><b>MENINGIOMA</b></font>"
-            badge_bg = "#F57C00" # amber
+            badge_bg = "#F57C00"  # amber
         elif tumor_type == "pituitary":
             badge_text = "<font color='white'><b>PITUITARY TUMOR</b></font>"
-            badge_bg = "#F57C00" # amber
+            badge_bg = "#F57C00"  # amber
         else:
             badge_text = "<font color='white'><b>NO TUMOR</b></font>"
-            badge_bg = "#388E3C" # green
-            
+            badge_bg = "#388E3C"  # green
+
         badge = Table(
-            [[Paragraph(badge_text, ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER))]],
-            colWidths=[2.5 * inch], rowHeights=[0.3 * inch],
+            [
+                [
+                    Paragraph(
+                        badge_text,
+                        ParagraphStyle(
+                            "Centered", parent=style_normal, alignment=TA_CENTER
+                        ),
+                    )
+                ]
+            ],
+            colWidths=[2.5 * inch],
+            rowHeights=[0.3 * inch],
             style=[
                 ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
@@ -856,16 +1140,36 @@ def generate_brain_tumor_report(
                 ("BOX", (0, 0), (-1, -1), 1, colors.HexColor(badge_bg)),
             ],
         )
-        
-        conf = getattr(inference_result, 'confidence', 0.0) * 100 if getattr(inference_result, 'confidence', 0.0) <= 1.0 else getattr(inference_result, 'confidence', 0.0)
-        
-        urg_color = "red" if urgency == "emergency" else ("orange" if urgency == "urgent" else "green")
-        
+
+        conf = (
+            getattr(inference_result, "confidence", 0.0) * 100
+            if getattr(inference_result, "confidence", 0.0) <= 1.0
+            else getattr(inference_result, "confidence", 0.0)
+        )
+
+        urg_color = (
+            "red"
+            if urgency == "emergency"
+            else ("orange" if urgency == "urgent" else "green")
+        )
+
         pred_data = [
-            [badge, Paragraph(f"<b>Urgency Level:</b> <font color='{urg_color}'>{urgency.upper()}</font>", style_normal)],
-            ["", Paragraph(f"<b>Confidence:</b> {conf:.2f}% ({getattr(inference_result, 'confidence_flag', 'N/A')})", style_normal)]
+            [
+                badge,
+                Paragraph(
+                    f"<b>Urgency Level:</b> <font color='{urg_color}'>{urgency.upper()}</font>",
+                    style_normal,
+                ),
+            ],
+            [
+                "",
+                Paragraph(
+                    f"<b>Confidence:</b> {conf:.2f}% ({getattr(inference_result, 'confidence_flag', 'N/A')})",
+                    style_normal,
+                ),
+            ],
         ]
-        
+
         t_pred = Table(pred_data, colWidths=[2.7 * inch, 4.5 * inch])
         t_pred.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
         elements.append(t_pred)
@@ -876,68 +1180,147 @@ def generate_brain_tumor_report(
         probs = getattr(inference_result, "all_probabilities", {})
         if not isinstance(probs, dict):
             import json
-            try: probs = json.loads(probs)
-            except: probs = {}
-            
+
+            try:
+                probs = json.loads(probs)
+            except Exception:
+                probs = {}
+
         # Draw horizontal bars
         drawing = Drawing(7.2 * inch, 1.2 * inch)
-        classes = [("glioma", "Glioma", "#8B0000"), ("meningioma", "Meningioma", "#F57C00"), ("pituitary", "Pituitary", "#F57C00"), ("no_tumor", "No Tumor", "#388E3C")]
-        
+        classes = [
+            ("glioma", "Glioma", "#8B0000"),
+            ("meningioma", "Meningioma", "#F57C00"),
+            ("pituitary", "Pituitary", "#F57C00"),
+            ("no_tumor", "No Tumor", "#388E3C"),
+        ]
+
         y_pos = 1.0 * inch
         for key, label, color_hex in classes:
             p_val = probs.get(key, 0.0)
-            if p_val <= 1.0 and sum(probs.values()) <= 1.5: p_val *= 100 # convert to percentage if needed
-            
+            if p_val <= 1.0 and sum(probs.values()) <= 1.5:
+                p_val *= 100  # convert to percentage if needed
+
             # Label
-            drawing.add(RLString(0, y_pos, f"{label}:", fontName="Helvetica-Bold" if tumor_type == key else "Helvetica", fontSize=10))
+            drawing.add(
+                RLString(
+                    0,
+                    y_pos,
+                    f"{label}:",
+                    fontName="Helvetica-Bold" if tumor_type == key else "Helvetica",
+                    fontSize=10,
+                )
+            )
             # Background Bar
-            drawing.add(Rect(1.2 * inch, y_pos - 2, 4.0 * inch, 10, fillColor=colors.HexColor("#EEEEEE"), strokeColor=colors.white))
+            drawing.add(
+                Rect(
+                    1.2 * inch,
+                    y_pos - 2,
+                    4.0 * inch,
+                    10,
+                    fillColor=colors.HexColor("#EEEEEE"),
+                    strokeColor=colors.white,
+                )
+            )
             # Foreground Bar
             bar_width = max((p_val / 100.0) * 4.0 * inch, 1)
-            drawing.add(Rect(1.2 * inch, y_pos - 2, bar_width, 10, fillColor=colors.HexColor(color_hex), strokeColor=colors.white))
+            drawing.add(
+                Rect(
+                    1.2 * inch,
+                    y_pos - 2,
+                    bar_width,
+                    10,
+                    fillColor=colors.HexColor(color_hex),
+                    strokeColor=colors.white,
+                )
+            )
             # Text Value
-            drawing.add(RLString(5.3 * inch, y_pos, f"{p_val:.2f}%", fontName="Helvetica", fontSize=10))
-            
+            drawing.add(
+                RLString(
+                    5.3 * inch,
+                    y_pos,
+                    f"{p_val:.2f}%",
+                    fontName="Helvetica",
+                    fontSize=10,
+                )
+            )
+
             y_pos -= 0.3 * inch
-            
+
         elements.append(drawing)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # GLIOMA SAFETY FLAG
         glioma_flag = getattr(inference_result, "glioma_risk_flag", False)
         if glioma_flag and tumor_type != "glioma":
             glioma_prob = probs.get("glioma", 0.0)
-            if glioma_prob <= 1.0 and sum(probs.values()) <= 1.5: glioma_prob *= 100
-            
-            flag_text = f"<b>\u26A0 Glioma Risk Alert:</b> Glioma probability is elevated ({glioma_prob:.2f}%) even though the primary prediction is {tumor_type.capitalize()}. Given the clinical significance of glioma, MRI with contrast and neurosurgical consultation is recommended to rule out glioma."
-            flag_table = Table([[Paragraph(flag_text, style_normal)]], colWidths=[7.2 * inch])
-            flag_table.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF9C4")), # Yellow warning box
-                ("GRID", (0, 0), (-1, -1), 1, colors.HexColor("#FBC02D")),
-                ("PADDING", (0, 0), (-1, -1), 8)
-            ]))
+            if glioma_prob <= 1.0 and sum(probs.values()) <= 1.5:
+                glioma_prob *= 100
+
+            flag_text = f"<b>\u26a0 Glioma Risk Alert:</b> Glioma probability is elevated ({glioma_prob:.2f}%) even though the primary prediction is {tumor_type.capitalize()}. Given the clinical significance of glioma, MRI with contrast and neurosurgical consultation is recommended to rule out glioma."
+            flag_table = Table(
+                [[Paragraph(flag_text, style_normal)]], colWidths=[7.2 * inch]
+            )
+            flag_table.setStyle(
+                TableStyle(
+                    [
+                        (
+                            "BACKGROUND",
+                            (0, 0),
+                            (-1, -1),
+                            colors.HexColor("#FFF9C4"),
+                        ),  # Yellow warning box
+                        ("GRID", (0, 0), (-1, -1), 1, colors.HexColor("#FBC02D")),
+                        ("PADDING", (0, 0), (-1, -1), 8),
+                    ]
+                )
+            )
             elements.append(flag_table)
             elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
-        img_orig = get_image_flowable(scan.get("original_file_path"), "Original MRI Scan", style_normal)
-        img_heatmap = get_image_flowable(getattr(inference_result, "heatmap_path", None), "AI-highlighted regions of interest", style_normal)
+        img_orig = get_image_flowable(
+            scan.get("original_file_path"), "Original MRI Scan", style_normal
+        )
+        img_heatmap = get_image_flowable(
+            getattr(inference_result, "heatmap_path", None),
+            "AI-highlighted regions of interest",
+            style_normal,
+        )
 
         t_images = Table([[img_orig, img_heatmap]], colWidths=[3.6 * inch, 3.6 * inch])
-        t_images.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+        t_images.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
         elements.append(t_images)
         elements.append(Spacer(1, 0.3 * inch))
 
         # CLINICAL RECOMMENDATION
         elements.append(Paragraph("CLINICAL RECOMMENDATION", style_h2))
-        rec_data = [[Paragraph(getattr(inference_result, "clinical_recommendation", "N/A"), style_normal)]]
+        rec_data = [
+            [
+                Paragraph(
+                    getattr(inference_result, "clinical_recommendation", "N/A"),
+                    style_normal,
+                )
+            ]
+        ]
         t_rec = Table(rec_data, colWidths=[7.2 * inch])
-        t_rec.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
-            ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-        ]))
+        t_rec.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                ]
+            )
+        )
         elements.append(t_rec)
         elements.append(Spacer(1, 0.2 * inch))
 
@@ -951,31 +1334,49 @@ def generate_brain_tumor_report(
             exp_text = "<b>Pituitary:</b> Tumor of the pituitary gland. Can cause hormonal imbalances. Requires endocrine workup."
         else:
             exp_text = "<b>No Tumor:</b> No structural abnormalities indicative of a tumor were detected in this scan."
-            
+
         exp_data = [[Paragraph(exp_text, style_normal)]]
         t_exp = Table(exp_data, colWidths=[7.2 * inch])
-        t_exp.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
-        ]))
+        t_exp.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+                ]
+            )
+        )
         elements.append(t_exp)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # CLINICIAN OVERRIDE
         override = getattr(inference_result, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
             ovr_data = [
                 [Paragraph(f"<b>Clinician Correction:</b> {override}", style_normal)],
-                [Paragraph(f"<b>Notes:</b> {getattr(inference_result, 'override_notes', '')}", style_normal)],
-                [Paragraph(f"<b>Override Date:</b> {getattr(inference_result, 'override_timestamp', '')}", style_normal)]
+                [
+                    Paragraph(
+                        f"<b>Notes:</b> {getattr(inference_result, 'override_notes', '')}",
+                        style_normal,
+                    )
+                ],
+                [
+                    Paragraph(
+                        f"<b>Override Date:</b> {getattr(inference_result, 'override_timestamp', '')}",
+                        style_normal,
+                    )
+                ],
             ]
             t_ovr = Table(ovr_data, colWidths=[7.2 * inch])
-            t_ovr.setStyle(TableStyle([
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.orange),
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF8E1")),
-            ]))
+            t_ovr.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.orange),
+                        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF8E1")),
+                    ]
+                )
+            )
             elements.append(t_ovr)
 
         # Build it
@@ -986,27 +1387,50 @@ def generate_brain_tumor_report(
             canvas.rect(0, A4[1] - 1.5 * inch, A4[0], 1.5 * inch, stroke=0, fill=1)
             canvas.setFillColor(colors.black)
             canvas.setFont("Helvetica-Bold", 16)
-            canvas.drawString(0.5 * inch, A4[1] - 0.75 * inch, "MediScan AI \u2014 Brain Tumor Screening Report")
+            canvas.drawString(
+                0.5 * inch,
+                A4[1] - 0.75 * inch,
+                "MediScan AI \u2014 Brain Tumor Screening Report",
+            )
             canvas.setFont("Helvetica-Bold", 10)
             canvas.setFillColor(colors.red)
-            canvas.drawString(0.5 * inch, A4[1] - 0.95 * inch, "CONFIDENTIAL \u2014 FOR CLINICAL USE ONLY")
-            
+            canvas.drawString(
+                0.5 * inch,
+                A4[1] - 0.95 * inch,
+                "CONFIDENTIAL \u2014 FOR CLINICAL USE ONLY",
+            )
+
             if urgency == "emergency":
                 canvas.setFillColor(colors.HexColor("#D32F2F"))
-                canvas.rect(0.5 * inch, A4[1] - 1.3 * inch, 3.5 * inch, 0.25 * inch, stroke=0, fill=1)
+                canvas.rect(
+                    0.5 * inch,
+                    A4[1] - 1.3 * inch,
+                    3.5 * inch,
+                    0.25 * inch,
+                    stroke=0,
+                    fill=1,
+                )
                 canvas.setFillColor(colors.white)
                 canvas.setFont("Helvetica-Bold", 10)
-                canvas.drawString(0.6 * inch, A4[1] - 1.2 * inch, "EMERGENCY \u2014 GLIOMA SUSPECTED")
-            
+                canvas.drawString(
+                    0.6 * inch, A4[1] - 1.2 * inch, "EMERGENCY \u2014 GLIOMA SUSPECTED"
+                )
+
             canvas.setFillColor(colors.black)
             canvas.setFont("Helvetica", 10)
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
+            )
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
+            )
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
+            )
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(1)
             canvas.line(0, A4[1] - 1.5 * inch, A4[0], A4[1] - 1.5 * inch)
-            
+
             # Footer
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(0.5)
@@ -1015,8 +1439,14 @@ def generate_brain_tumor_report(
             disclaimer = "This report is AI-assisted and requires clinical validation."
             canvas.drawCentredString(A4[0] / 2.0, 0.7 * inch, disclaimer)
             canvas.setFont("Helvetica", 9)
-            canvas.drawString(0.5 * inch, 0.5 * inch, "Model: brain_tumor_v1 | Overall accuracy: 95%")
-            canvas.drawString(0.5 * inch, 0.35 * inch, "Note: Glioma recall is 84.25%. Borderline cases are flagged via the glioma risk alert system.")
+            canvas.drawString(
+                0.5 * inch, 0.5 * inch, "Model: brain_tumor_v1 | Overall accuracy: 95%"
+            )
+            canvas.drawString(
+                0.5 * inch,
+                0.35 * inch,
+                "Note: Glioma recall is 84.25%. Borderline cases are flagged via the glioma risk alert system.",
+            )
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=on_page, onLaterPages=on_page)
@@ -1025,6 +1455,7 @@ def generate_brain_tumor_report(
     except Exception as e:
         logger.error(f"Failed to generate Brain Tumor report: {e}", exc_info=True)
         return ""
+
 
 def generate_brain_hemorrhage_report(
     patient: dict,
@@ -1039,7 +1470,9 @@ def generate_brain_hemorrhage_report(
         os.makedirs(output_dir, exist_ok=True)
 
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
+        patient_name_safe = "".join(
+            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
+        )
         scan_id = scan.get("scan_id", "unknown")
         filename = f"brain_hemorrhage_{scan_id}_{patient_name_safe}_{date_str}.pdf"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
@@ -1052,22 +1485,44 @@ def generate_brain_hemorrhage_report(
         elements = []
 
         styles = getSampleStyleSheet()
-        style_h2 = ParagraphStyle("H2", fontName="Helvetica-Bold", fontSize=12, spaceAfter=8, textTransform="uppercase", textColor=colors.HexColor("#333333"))
+        style_h2 = ParagraphStyle(
+            "H2",
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            spaceAfter=8,
+            textTransform="uppercase",
+            textColor=colors.HexColor("#333333"),
+        )
         style_normal = styles["Normal"]
         style_normal.fontName = "Helvetica"
 
-        has_hemorrhage = getattr(inference_result, 'has_hemorrhage', False)
-        urgency = getattr(inference_result, 'urgency', 'routine').lower()
+        has_hemorrhage = getattr(inference_result, "has_hemorrhage", False)
+        urgency = getattr(inference_result, "urgency", "routine").lower()
 
         # PATIENT INFORMATION
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
-                Paragraph(f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
+                ),
+                Paragraph(
+                    f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal
+                ),
             ],
-            [Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal), Paragraph(f"<b>Scan Date:</b> {scan.get('upload_timestamp', 'N/A')}", style_normal)],
-            [Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal), ""],
+            [
+                Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Scan Date:</b> {scan.get('upload_timestamp', 'N/A')}",
+                    style_normal,
+                ),
+            ],
+            [
+                Paragraph(
+                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
+                ),
+                "",
+            ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
         t_patient.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
@@ -1076,19 +1531,29 @@ def generate_brain_hemorrhage_report(
 
         # DIAGNOSIS SECTION
         elements.append(Paragraph("DIAGNOSIS SECTION", style_h2))
-        
+
         if has_hemorrhage:
             badge_text = "<font color='white'><b>HEMORRHAGE DETECTED</b></font>"
-            badge_bg = "#C53030" # dark red
+            badge_bg = "#C53030"  # dark red
             urg_color = "red"
         else:
             badge_text = "<font color='white'><b>NO HEMORRHAGE</b></font>"
-            badge_bg = "#388E3C" # green
+            badge_bg = "#388E3C"  # green
             urg_color = "green"
-            
+
         badge = Table(
-            [[Paragraph(badge_text, ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER))]],
-            colWidths=[2.5 * inch], rowHeights=[0.3 * inch],
+            [
+                [
+                    Paragraph(
+                        badge_text,
+                        ParagraphStyle(
+                            "Centered", parent=style_normal, alignment=TA_CENTER
+                        ),
+                    )
+                ]
+            ],
+            colWidths=[2.5 * inch],
+            rowHeights=[0.3 * inch],
             style=[
                 ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
@@ -1096,141 +1561,252 @@ def generate_brain_hemorrhage_report(
                 ("BOX", (0, 0), (-1, -1), 1, colors.HexColor(badge_bg)),
             ],
         )
-        
-        conf = getattr(inference_result, 'confidence', 0.0) * 100 if getattr(inference_result, 'confidence', 0.0) <= 1.0 else getattr(inference_result, 'confidence', 0.0)
-        prob = getattr(inference_result, 'hemorrhage_probability', 0.0) * 100 if getattr(inference_result, 'hemorrhage_probability', 0.0) <= 1.0 else getattr(inference_result, 'hemorrhage_probability', 0.0)
-        
+
+        conf = (
+            getattr(inference_result, "confidence", 0.0) * 100
+            if getattr(inference_result, "confidence", 0.0) <= 1.0
+            else getattr(inference_result, "confidence", 0.0)
+        )
+        prob = (
+            getattr(inference_result, "hemorrhage_probability", 0.0) * 100
+            if getattr(inference_result, "hemorrhage_probability", 0.0) <= 1.0
+            else getattr(inference_result, "hemorrhage_probability", 0.0)
+        )
+
         pred_data = [
-            [badge, Paragraph(f"<b>Urgency Level:</b> <font color='{urg_color}'>{urgency.upper()}</font>", style_normal)],
-            ["", Paragraph(f"<b>Hemorrhage Probability:</b> {prob:.2f}%", style_normal)],
-            ["", Paragraph(f"<b>Confidence:</b> {conf:.2f}% ({getattr(inference_result, 'confidence_flag', 'N/A')})", style_normal)]
+            [
+                badge,
+                Paragraph(
+                    f"<b>Urgency Level:</b> <font color='{urg_color}'>{urgency.upper()}</font>",
+                    style_normal,
+                ),
+            ],
+            [
+                "",
+                Paragraph(f"<b>Hemorrhage Probability:</b> {prob:.2f}%", style_normal),
+            ],
+            [
+                "",
+                Paragraph(
+                    f"<b>Confidence:</b> {conf:.2f}% ({getattr(inference_result, 'confidence_flag', 'N/A')})",
+                    style_normal,
+                ),
+            ],
         ]
-        
+
         t_pred = Table(pred_data, colWidths=[2.7 * inch, 4.5 * inch])
         t_pred.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
         elements.append(t_pred)
         elements.append(Spacer(1, 0.2 * inch))
 
         # DATASET LIMITATION WARNING (ALWAYS PRESENT)
-        warning_text = ("<b>\u26A0 Clinical Validation Required</b><br/><br/>"
-                        "This module was trained on a limited dataset of 200 CT images. "
-                        "While the model achieved 100% sensitivity during validation, "
-                        "performance on diverse clinical populations may vary. "
-                        "All results MUST be confirmed by a qualified radiologist "
-                        "or neurosurgeon. Do not use this result as the sole basis "
-                        "for clinical decisions.")
-        warn_table = Table([[Paragraph(warning_text, style_normal)]], colWidths=[7.2 * inch])
-        warn_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF9C4")), # Yellow warning box
-            ("GRID", (0, 0), (-1, -1), 1, colors.HexColor("#FBC02D")),
-            ("PADDING", (0, 0), (-1, -1), 8)
-        ]))
+        warning_text = (
+            "<b>\u26a0 Clinical Validation Required</b><br/><br/>"
+            "This module was trained on a limited dataset of 200 CT images. "
+            "While the model achieved 100% sensitivity during validation, "
+            "performance on diverse clinical populations may vary. "
+            "All results MUST be confirmed by a qualified radiologist "
+            "or neurosurgeon. Do not use this result as the sole basis "
+            "for clinical decisions."
+        )
+        warn_table = Table(
+            [[Paragraph(warning_text, style_normal)]], colWidths=[7.2 * inch]
+        )
+        warn_table.setStyle(
+            TableStyle(
+                [
+                    (
+                        "BACKGROUND",
+                        (0, 0),
+                        (-1, -1),
+                        colors.HexColor("#FFF9C4"),
+                    ),  # Yellow warning box
+                    ("GRID", (0, 0), (-1, -1), 1, colors.HexColor("#FBC02D")),
+                    ("PADDING", (0, 0), (-1, -1), 8),
+                ]
+            )
+        )
         elements.append(warn_table)
         elements.append(Spacer(1, 0.2 * inch))
 
         # IF HEMORRHAGE DETECTED - EMERGENCY CHECKLIST
         if has_hemorrhage:
-            chk_style = ParagraphStyle("Checklist", fontName="Helvetica-Bold", fontSize=10, textColor=colors.HexColor("#C53030"))
-            chk_text = ("<b>Recommended Immediate Actions:</b><br/>"
-                        "\u25A1 Activate stroke/trauma protocol<br/>"
-                        "\u25A1 STAT CT angiography (CTA)<br/>"
-                        "\u25A1 Neurosurgical consultation<br/>"
-                        "\u25A1 Continuous neurological monitoring (GCS q15min)<br/>"
-                        "\u25A1 Blood pressure management per protocol<br/>"
-                        "\u25A1 Type and screen, coagulation panel STAT<br/>"
-                        "\u25A1 Secure airway if GCS < 8<br/>"
-                        "\u25A1 Notify attending physician")
-            chk_table = Table([[Paragraph(chk_text, chk_style)]], colWidths=[7.2 * inch])
-            chk_table.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FED7D7")),
-                ("GRID", (0, 0), (-1, -1), 2, colors.HexColor("#C53030")),
-                ("PADDING", (0, 0), (-1, -1), 10)
-            ]))
+            chk_style = ParagraphStyle(
+                "Checklist",
+                fontName="Helvetica-Bold",
+                fontSize=10,
+                textColor=colors.HexColor("#C53030"),
+            )
+            chk_text = (
+                "<b>Recommended Immediate Actions:</b><br/>"
+                "\u25a1 Activate stroke/trauma protocol<br/>"
+                "\u25a1 STAT CT angiography (CTA)<br/>"
+                "\u25a1 Neurosurgical consultation<br/>"
+                "\u25a1 Continuous neurological monitoring (GCS q15min)<br/>"
+                "\u25a1 Blood pressure management per protocol<br/>"
+                "\u25a1 Type and screen, coagulation panel STAT<br/>"
+                "\u25a1 Secure airway if GCS < 8<br/>"
+                "\u25a1 Notify attending physician"
+            )
+            chk_table = Table(
+                [[Paragraph(chk_text, chk_style)]], colWidths=[7.2 * inch]
+            )
+            chk_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FED7D7")),
+                        ("GRID", (0, 0), (-1, -1), 2, colors.HexColor("#C53030")),
+                        ("PADDING", (0, 0), (-1, -1), 10),
+                    ]
+                )
+            )
             elements.append(chk_table)
             elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
-        img_orig = get_image_flowable(scan.get("original_file_path"), "Original CT Scan", style_normal)
-        img_heatmap = get_image_flowable(getattr(inference_result, "heatmap_path", None), "AI-highlighted regions of interest", style_normal)
+        img_orig = get_image_flowable(
+            scan.get("original_file_path"), "Original CT Scan", style_normal
+        )
+        img_heatmap = get_image_flowable(
+            getattr(inference_result, "heatmap_path", None),
+            "AI-highlighted regions of interest",
+            style_normal,
+        )
 
         t_images = Table([[img_orig, img_heatmap]], colWidths=[3.6 * inch, 3.6 * inch])
-        t_images.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+        t_images.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
         elements.append(t_images)
         elements.append(Spacer(1, 0.3 * inch))
 
         # CLINICAL RECOMMENDATION
         elements.append(Paragraph("CLINICAL RECOMMENDATION", style_h2))
-        rec_data = [[Paragraph(getattr(inference_result, "clinical_recommendation", "N/A"), style_normal)]]
+        rec_data = [
+            [
+                Paragraph(
+                    getattr(inference_result, "clinical_recommendation", "N/A"),
+                    style_normal,
+                )
+            ]
+        ]
         t_rec = Table(rec_data, colWidths=[7.2 * inch])
-        t_rec.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
-            ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-        ]))
+        t_rec.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                ]
+            )
+        )
         elements.append(t_rec)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # CLINICIAN OVERRIDE
         override = getattr(inference_result, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
             ovr_data = [
                 [Paragraph(f"<b>Clinician Correction:</b> {override}", style_normal)],
-                [Paragraph(f"<b>Notes:</b> {getattr(inference_result, 'override_notes', '')}", style_normal)],
-                [Paragraph(f"<b>Override Date:</b> {getattr(inference_result, 'override_timestamp', '')}", style_normal)]
+                [
+                    Paragraph(
+                        f"<b>Notes:</b> {getattr(inference_result, 'override_notes', '')}",
+                        style_normal,
+                    )
+                ],
+                [
+                    Paragraph(
+                        f"<b>Override Date:</b> {getattr(inference_result, 'override_timestamp', '')}",
+                        style_normal,
+                    )
+                ],
             ]
             t_ovr = Table(ovr_data, colWidths=[7.2 * inch])
-            t_ovr.setStyle(TableStyle([
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.orange),
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF8E1")),
-            ]))
+            t_ovr.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.orange),
+                        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF8E1")),
+                    ]
+                )
+            )
             elements.append(t_ovr)
 
         # Build it
         def on_page(canvas, doc):
             # Header
             canvas.saveState()
-            
+
             if has_hemorrhage:
                 # FULL-WIDTH RED BANNER
                 canvas.setFillColor(colors.HexColor("#C53030"))
                 canvas.rect(0, A4[1] - 1.5 * inch, A4[0], 1.5 * inch, stroke=0, fill=1)
                 canvas.setFillColor(colors.white)
                 canvas.setFont("Helvetica-Bold", 16)
-                canvas.drawCentredString(A4[0] / 2.0, A4[1] - 0.75 * inch, "\U0001F6A8 EMERGENCY \u2014 INTRACRANIAL HEMORRHAGE DETECTED \U0001F6A8")
+                canvas.drawCentredString(
+                    A4[0] / 2.0,
+                    A4[1] - 0.75 * inch,
+                    "\U0001f6a8 EMERGENCY \u2014 INTRACRANIAL HEMORRHAGE DETECTED \U0001f6a8",
+                )
             else:
                 # Standard green header
                 canvas.setFillColor(colors.HexColor("#E8F4FD"))
                 canvas.rect(0, A4[1] - 1.5 * inch, A4[0], 1.5 * inch, stroke=0, fill=1)
                 canvas.setFillColor(colors.black)
                 canvas.setFont("Helvetica-Bold", 16)
-                canvas.drawString(0.5 * inch, A4[1] - 0.75 * inch, "MediScan AI \u2014 Brain Hemorrhage Screening")
+                canvas.drawString(
+                    0.5 * inch,
+                    A4[1] - 0.75 * inch,
+                    "MediScan AI \u2014 Brain Hemorrhage Screening",
+                )
                 canvas.setFont("Helvetica-Bold", 10)
                 canvas.setFillColor(colors.red)
-                canvas.drawString(0.5 * inch, A4[1] - 0.95 * inch, "CONFIDENTIAL \u2014 FOR CLINICAL USE ONLY")
-            
+                canvas.drawString(
+                    0.5 * inch,
+                    A4[1] - 0.95 * inch,
+                    "CONFIDENTIAL \u2014 FOR CLINICAL USE ONLY",
+                )
+
             # Common header text (adjust color based on bg)
             canvas.setFillColor(colors.white if has_hemorrhage else colors.black)
             canvas.setFont("Helvetica", 10)
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
-            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
-            
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
+            )
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
+            )
+            canvas.drawRightString(
+                A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
+            )
+
             if not has_hemorrhage:
                 canvas.setStrokeColor(colors.gray)
                 canvas.setLineWidth(1)
                 canvas.line(0, A4[1] - 1.5 * inch, A4[0], A4[1] - 1.5 * inch)
-            
+
             # Footer
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(0.5)
             canvas.line(0.5 * inch, 0.85 * inch, A4[0] - 0.5 * inch, 0.85 * inch)
             canvas.setFont("Helvetica-Oblique", 8)
-            disclaimer = "CRITICAL: This is an AI screening tool, not a diagnostic device."
+            disclaimer = (
+                "CRITICAL: This is an AI screening tool, not a diagnostic device."
+            )
             canvas.drawCentredString(A4[0] / 2.0, 0.7 * inch, disclaimer)
             canvas.setFont("Helvetica", 9)
-            canvas.drawString(0.5 * inch, 0.5 * inch, "Model: brain_hemorrhage_v1 | Training data: 200 images")
+            canvas.drawString(
+                0.5 * inch,
+                0.5 * inch,
+                "Model: brain_hemorrhage_v1 | Training data: 200 images",
+            )
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=on_page, onLaterPages=on_page)
@@ -1240,8 +1816,10 @@ def generate_brain_hemorrhage_report(
         logger.error(f"Failed to generate Brain Hemorrhage report: {e}", exc_info=True)
         return ""
 
+
 def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str:
     from reportlab.graphics.shapes import Drawing, Rect, String, Line, Group
+
     logger.info("Generating Bone Age report...")
     try:
         os.makedirs("reports", exist_ok=True)
@@ -1256,13 +1834,15 @@ def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str
             topMargin=inch,
             bottomMargin=inch,
         )
-        
+
         styles = getSampleStyleSheet()
         normal_style = styles["Normal"]
         normal_style.fontSize = 11
         normal_style.leading = 14
 
-        h1_style = ParagraphStyle("H1_Center", parent=styles["Heading1"], alignment=TA_CENTER)
+        h1_style = ParagraphStyle(
+            "H1_Center", parent=styles["Heading1"], alignment=TA_CENTER
+        )
         h2_style = styles["Heading2"]
         h3_style = styles["Heading3"]
 
@@ -1270,92 +1850,212 @@ def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str
 
         # Header
         elements.append(Paragraph("MediScan AI — Bone Age Assessment Report", h1_style))
-        elements.append(Paragraph("CONFIDENTIAL — FOR CLINICAL USE ONLY", ParagraphStyle("Confidential", parent=normal_style, alignment=TA_CENTER, textColor=colors.red)))
+        elements.append(
+            Paragraph(
+                "CONFIDENTIAL — FOR CLINICAL USE ONLY",
+                ParagraphStyle(
+                    "Confidential",
+                    parent=normal_style,
+                    alignment=TA_CENTER,
+                    textColor=colors.red,
+                ),
+            )
+        )
         elements.append(Spacer(1, 0.25 * inch))
 
         # Patient Info
         patient_info_data = [
-            ["Patient Name:", patient.get("full_name", "N/A"), "Patient ID:", patient.get("patient_id", "N/A")],
-            ["Gender:", patient.get("gender", "N/A"), "Report Date:", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")],
-            ["Chronological Age:", f"{inference_result.chronological_age_months // 12} years {inference_result.chronological_age_months % 12} months" if inference_result.chronological_age_months is not None else "Not provided", "Scan Date:", scan.get("upload_timestamp", "N/A")],
+            [
+                "Patient Name:",
+                patient.get("full_name", "N/A"),
+                "Patient ID:",
+                patient.get("patient_id", "N/A"),
+            ],
+            [
+                "Gender:",
+                patient.get("gender", "N/A"),
+                "Report Date:",
+                datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            ],
+            [
+                "Chronological Age:",
+                (
+                    f"{inference_result.chronological_age_months // 12} years {inference_result.chronological_age_months % 12} months"
+                    if inference_result.chronological_age_months is not None
+                    else "Not provided"
+                ),
+                "Scan Date:",
+                scan.get("upload_timestamp", "N/A"),
+            ],
         ]
 
-        t_patient = Table(patient_info_data, colWidths=[1.5 * inch, 2 * inch, 1.2 * inch, 2 * inch])
-        t_patient.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-            ("TEXTCOLOR", (0, 0), (-1, -1), colors.black),
-            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-            ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 1, colors.lightgrey),
-        ]))
+        t_patient = Table(
+            patient_info_data, colWidths=[1.5 * inch, 2 * inch, 1.2 * inch, 2 * inch]
+        )
+        t_patient.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                    ("TEXTCOLOR", (0, 0), (-1, -1), colors.black),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                    ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.lightgrey),
+                ]
+            )
+        )
         elements.append(t_patient)
         elements.append(Spacer(1, 0.5 * inch))
 
         # Bone Age Result (Large Display)
-        elements.append(Paragraph("Estimated Skeletal Age", ParagraphStyle("H2_Center", parent=h2_style, alignment=TA_CENTER)))
-        
-        age_display_style = ParagraphStyle("AgeDisplay", parent=normal_style, alignment=TA_CENTER, fontSize=24, leading=28, fontName="Helvetica-Bold", textColor=colors.HexColor("#2B6CB0"))
-        elements.append(Paragraph(inference_result.predicted_display, age_display_style))
+        elements.append(
+            Paragraph(
+                "Estimated Skeletal Age",
+                ParagraphStyle("H2_Center", parent=h2_style, alignment=TA_CENTER),
+            )
+        )
+
+        age_display_style = ParagraphStyle(
+            "AgeDisplay",
+            parent=normal_style,
+            alignment=TA_CENTER,
+            fontSize=24,
+            leading=28,
+            fontName="Helvetica-Bold",
+            textColor=colors.HexColor("#2B6CB0"),
+        )
+        elements.append(
+            Paragraph(inference_result.predicted_display, age_display_style)
+        )
         elements.append(Spacer(1, 0.2 * inch))
 
-        raw_pred_style = ParagraphStyle("RawPred", parent=normal_style, alignment=TA_CENTER, fontSize=11, textColor=colors.dimgrey)
-        elements.append(Paragraph(f"Raw prediction: {inference_result.predicted_months:.1f} months ± {inference_result.uncertainty_months:.1f} months (uncertainty)", raw_pred_style))
-        elements.append(Paragraph(f"Confidence: {inference_result.confidence_flag}", raw_pred_style))
+        raw_pred_style = ParagraphStyle(
+            "RawPred",
+            parent=normal_style,
+            alignment=TA_CENTER,
+            fontSize=11,
+            textColor=colors.dimgrey,
+        )
+        elements.append(
+            Paragraph(
+                f"Raw prediction: {inference_result.predicted_months:.1f} months ± {inference_result.uncertainty_months:.1f} months (uncertainty)",
+                raw_pred_style,
+            )
+        )
+        elements.append(
+            Paragraph(f"Confidence: {inference_result.confidence_flag}", raw_pred_style)
+        )
         elements.append(Spacer(1, 0.5 * inch))
 
         # Age Comparison Visual
         if inference_result.chronological_age_months is not None:
             c_age = inference_result.chronological_age_months
             b_age = inference_result.predicted_months
-            
+
             d = Drawing(400, 60)
             # Draw line
             d.add(Line(50, 30, 350, 30, strokeColor=colors.black, strokeWidth=2))
-            
+
             # Draw chronological age marker (blue)
-            d.add(Rect(195, 20, 10, 20, fillColor=colors.blue, strokeColor=colors.black))
-            d.add(String(200, 45, f"Chronological ({c_age}m)", textAnchor="middle", fontSize=9))
-            
+            d.add(
+                Rect(195, 20, 10, 20, fillColor=colors.blue, strokeColor=colors.black)
+            )
+            d.add(
+                String(
+                    200,
+                    45,
+                    f"Chronological ({c_age}m)",
+                    textAnchor="middle",
+                    fontSize=9,
+                )
+            )
+
             # Draw bone age marker
             dev = b_age - c_age
             scale = 2.0  # pixels per month deviation
             offset = max(min(dev * scale, 140), -140)  # cap at +/- 140 pixels
-            
-            if inference_result.skeletal_age_flag == 'age_appropriate':
+
+            if inference_result.skeletal_age_flag == "age_appropriate":
                 m_color = colors.green
-            elif 'significantly' in inference_result.skeletal_age_flag:
+            elif "significantly" in inference_result.skeletal_age_flag:
                 m_color = colors.red
             else:
                 m_color = colors.orange
-                
-            d.add(Rect(195 + offset, 20, 10, 20, fillColor=m_color, strokeColor=colors.black))
-            d.add(String(200 + offset, 10, f"Bone Age ({b_age:.1f}m)", textAnchor="middle", fontSize=9, fillColor=m_color))
-            
+
+            d.add(
+                Rect(
+                    195 + offset,
+                    20,
+                    10,
+                    20,
+                    fillColor=m_color,
+                    strokeColor=colors.black,
+                )
+            )
+            d.add(
+                String(
+                    200 + offset,
+                    10,
+                    f"Bone Age ({b_age:.1f}m)",
+                    textAnchor="middle",
+                    fontSize=9,
+                    fillColor=m_color,
+                )
+            )
+
             elements.append(d)
-            
+
             dev_text = f"Deviation: {dev:+.1f} months"
             flag_text_map = {
-                'age_appropriate': "Bone age is consistent with chronological age",
-                'advanced': "Bone age is advanced",
-                'significantly_advanced': "Bone age is significantly advanced",
-                'delayed': "Bone age is delayed",
-                'significantly_delayed': "Bone age is significantly delayed",
+                "age_appropriate": "Bone age is consistent with chronological age",
+                "advanced": "Bone age is advanced",
+                "significantly_advanced": "Bone age is significantly advanced",
+                "delayed": "Bone age is delayed",
+                "significantly_delayed": "Bone age is significantly delayed",
             }
             ass_text = f"Assessment: {flag_text_map.get(inference_result.skeletal_age_flag, inference_result.skeletal_age_flag)}"
-            
-            elements.append(Paragraph(dev_text, ParagraphStyle("Dev", parent=normal_style, alignment=TA_CENTER)))
-            elements.append(Paragraph(ass_text, ParagraphStyle("Ass", parent=normal_style, alignment=TA_CENTER, fontName="Helvetica-Bold", textColor=m_color)))
-            
+
+            elements.append(
+                Paragraph(
+                    dev_text,
+                    ParagraphStyle("Dev", parent=normal_style, alignment=TA_CENTER),
+                )
+            )
+            elements.append(
+                Paragraph(
+                    ass_text,
+                    ParagraphStyle(
+                        "Ass",
+                        parent=normal_style,
+                        alignment=TA_CENTER,
+                        fontName="Helvetica-Bold",
+                        textColor=m_color,
+                    ),
+                )
+            )
+
         else:
             # Gray Box
             msg = """Chronological age was not provided.<br/>
 Unable to assess skeletal maturity deviation.<br/>
 Provide patient date of birth for complete assessment."""
-            elements.append(Paragraph(msg, ParagraphStyle("NoC", parent=normal_style, alignment=TA_CENTER, backColor=colors.whitesmoke, borderPadding=10, borderColor=colors.gray, borderWidth=1)))
-            
+            elements.append(
+                Paragraph(
+                    msg,
+                    ParagraphStyle(
+                        "NoC",
+                        parent=normal_style,
+                        alignment=TA_CENTER,
+                        backColor=colors.whitesmoke,
+                        borderPadding=10,
+                        borderColor=colors.gray,
+                        borderWidth=1,
+                    ),
+                )
+            )
+
         elements.append(Spacer(1, 0.5 * inch))
 
         # Images
@@ -1364,8 +2064,10 @@ Provide patient date of birth for complete assessment."""
         original_path = scan.get("original_file_path", "")
         if os.path.exists(original_path):
             try:
-                img_row.append(Image(original_path, width=2.5 * inch, height=2.5 * inch))
-            except:
+                img_row.append(
+                    Image(original_path, width=2.5 * inch, height=2.5 * inch)
+                )
+            except Exception:
                 img_row.append(Paragraph("Error loading original image", normal_style))
         else:
             img_row.append(Paragraph("Original image not found", normal_style))
@@ -1374,39 +2076,54 @@ Provide patient date of birth for complete assessment."""
         if heatmap_path and os.path.exists(heatmap_path):
             try:
                 img_row.append(Image(heatmap_path, width=2.5 * inch, height=2.5 * inch))
-            except:
+            except Exception:
                 img_row.append(Paragraph("Error loading heatmap", normal_style))
         else:
             img_row.append(Paragraph("Heatmap not generated", normal_style))
-            
+
         img_table_data.append(img_row)
         img_table_data.append(["Original X-Ray", "Grad-CAM Heatmap"])
 
         t_img = Table(img_table_data, colWidths=[3 * inch, 3 * inch])
-        t_img.setStyle(TableStyle([
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
-            ("BOTTOMPADDING", (0, 1), (-1, 1), 12),
-        ]))
+        t_img.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
+                    ("BOTTOMPADDING", (0, 1), (-1, 1), 12),
+                ]
+            )
+        )
         elements.append(t_img)
         elements.append(Spacer(1, 0.5 * inch))
 
         # Clinical Recommendation
         elements.append(Paragraph("Clinical Recommendation", h2_style))
-        elements.append(Paragraph(inference_result.clinical_recommendation, normal_style))
+        elements.append(
+            Paragraph(inference_result.clinical_recommendation, normal_style)
+        )
         elements.append(Spacer(1, 0.3 * inch))
 
         # Model Performance Note
         perf_note = """<b>Model Performance:</b> Mean Absolute Error of 7.34 months on RSNA Bone Age test set (1,262 images). 94.3% of predictions within ±1 year of actual bone age."""
-        elements.append(Paragraph(perf_note, ParagraphStyle("Perf", parent=normal_style, fontSize=9, textColor=colors.dimgrey)))
+        elements.append(
+            Paragraph(
+                perf_note,
+                ParagraphStyle(
+                    "Perf", parent=normal_style, fontSize=9, textColor=colors.dimgrey
+                ),
+            )
+        )
 
         def on_page(canvas, doc):
             canvas.saveState()
             canvas.setFont("Helvetica", 9)
             canvas.drawString(inch, 0.75 * inch, f"Report ID: {scan.get('scan_id')}")
             canvas.drawRightString(A4[0] - inch, 0.75 * inch, f"Page {doc.page}")
-            canvas.drawCentredString(A4[0] / 2.0, 0.75 * inch, "Model: bone_age_v1 | MAE: 7.34 months")
+            canvas.drawCentredString(
+                A4[0] / 2.0, 0.75 * inch, "Model: bone_age_v1 | MAE: 7.34 months"
+            )
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=on_page, onLaterPages=on_page)
@@ -1416,9 +2133,11 @@ Provide patient date of birth for complete assessment."""
         logger.error(f"Failed to generate Bone Age report: {e}", exc_info=True)
         return ""
 
+
 def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> str:
     from reportlab.graphics.shapes import Drawing, Rect, String, Line, Group
     import json
+
     logger.info("Generating Retinopathy report...")
     try:
         os.makedirs("reports", exist_ok=True)
@@ -1433,87 +2152,193 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
             topMargin=inch,
             bottomMargin=inch,
         )
-        
+
         styles = getSampleStyleSheet()
         normal_style = styles["Normal"]
         normal_style.fontSize = 11
         normal_style.leading = 14
 
-        h1_style = ParagraphStyle("H1_Center", parent=styles["Heading1"], alignment=TA_CENTER)
+        h1_style = ParagraphStyle(
+            "H1_Center", parent=styles["Heading1"], alignment=TA_CENTER
+        )
         h2_style = styles["Heading2"]
         h3_style = styles["Heading3"]
 
         elements = []
 
         # Header
-        elements.append(Paragraph("MediScan AI — Diabetic Retinopathy Screening Report", h1_style))
-        elements.append(Paragraph("CONFIDENTIAL — FOR CLINICAL USE ONLY", ParagraphStyle("Confidential", parent=normal_style, alignment=TA_CENTER, textColor=colors.red)))
+        elements.append(
+            Paragraph("MediScan AI — Diabetic Retinopathy Screening Report", h1_style)
+        )
+        elements.append(
+            Paragraph(
+                "CONFIDENTIAL — FOR CLINICAL USE ONLY",
+                ParagraphStyle(
+                    "Confidential",
+                    parent=normal_style,
+                    alignment=TA_CENTER,
+                    textColor=colors.red,
+                ),
+            )
+        )
         elements.append(Spacer(1, 0.25 * inch))
 
         # Red Banner for Grade 4
         if inference_result.grade == 4:
-            warn_style = ParagraphStyle("Warn", parent=normal_style, alignment=TA_CENTER, backColor=colors.HexColor("#C53030"), textColor=colors.white, fontName="Helvetica-Bold", borderPadding=10, fontSize=12)
-            elements.append(Paragraph("⚠️ URGENT — PROLIFERATIVE DIABETIC RETINOPATHY<br/>Risk of vision loss without immediate treatment", warn_style))
+            warn_style = ParagraphStyle(
+                "Warn",
+                parent=normal_style,
+                alignment=TA_CENTER,
+                backColor=colors.HexColor("#C53030"),
+                textColor=colors.white,
+                fontName="Helvetica-Bold",
+                borderPadding=10,
+                fontSize=12,
+            )
+            elements.append(
+                Paragraph(
+                    "⚠️ URGENT — PROLIFERATIVE DIABETIC RETINOPATHY<br/>Risk of vision loss without immediate treatment",
+                    warn_style,
+                )
+            )
             elements.append(Spacer(1, 0.25 * inch))
 
         # Patient Info
         patient_info_data = [
-            ["Patient Name:", patient.get("full_name", "N/A"), "Patient ID:", patient.get("patient_id", "N/A")],
-            ["Gender:", patient.get("gender", "N/A"), "Report Date:", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")],
-            ["Age:", str(patient.get("age", "N/A")), "Scan Date:", scan.get("upload_timestamp", "N/A")],
+            [
+                "Patient Name:",
+                patient.get("full_name", "N/A"),
+                "Patient ID:",
+                patient.get("patient_id", "N/A"),
+            ],
+            [
+                "Gender:",
+                patient.get("gender", "N/A"),
+                "Report Date:",
+                datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            ],
+            [
+                "Age:",
+                str(patient.get("age", "N/A")),
+                "Scan Date:",
+                scan.get("upload_timestamp", "N/A"),
+            ],
         ]
 
-        t_patient = Table(patient_info_data, colWidths=[1.5 * inch, 2 * inch, 1.2 * inch, 2 * inch])
-        t_patient.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-            ("TEXTCOLOR", (0, 0), (-1, -1), colors.black),
-            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-            ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 1, colors.lightgrey),
-        ]))
+        t_patient = Table(
+            patient_info_data, colWidths=[1.5 * inch, 2 * inch, 1.2 * inch, 2 * inch]
+        )
+        t_patient.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                    ("TEXTCOLOR", (0, 0), (-1, -1), colors.black),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                    ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.lightgrey),
+                ]
+            )
+        )
         elements.append(t_patient)
         elements.append(Spacer(1, 0.3 * inch))
 
         # Diagnosis
         elements.append(Paragraph("Diagnostic Classification", h2_style))
-        
+
         grade_colors = {
-            0: colors.HexColor("#38A169"), # Green
-            1: colors.HexColor("#D69E2E"), # Light amber
-            2: colors.HexColor("#DD6B20"), # Amber
-            3: colors.HexColor("#E53E3E"), # Orange-red
-            4: colors.HexColor("#9B2C2C"), # Dark red
+            0: colors.HexColor("#38A169"),  # Green
+            1: colors.HexColor("#D69E2E"),  # Light amber
+            2: colors.HexColor("#DD6B20"),  # Amber
+            3: colors.HexColor("#E53E3E"),  # Orange-red
+            4: colors.HexColor("#9B2C2C"),  # Dark red
         }
         g_color = grade_colors.get(inference_result.grade, colors.grey)
-        
-        g_style = ParagraphStyle("GradeBadge", parent=normal_style, alignment=TA_CENTER, fontName="Helvetica-Bold", fontSize=16, textColor=colors.white, backColor=g_color, borderPadding=8)
-        elements.append(Paragraph(f"Grade {inference_result.grade}: {inference_result.grade_name}", g_style))
+
+        g_style = ParagraphStyle(
+            "GradeBadge",
+            parent=normal_style,
+            alignment=TA_CENTER,
+            fontName="Helvetica-Bold",
+            fontSize=16,
+            textColor=colors.white,
+            backColor=g_color,
+            borderPadding=8,
+        )
+        elements.append(
+            Paragraph(
+                f"Grade {inference_result.grade}: {inference_result.grade_name}",
+                g_style,
+            )
+        )
         elements.append(Spacer(1, 0.1 * inch))
-        
-        elements.append(Paragraph(f"<b>Confidence:</b> {inference_result.confidence * 100:.1f}% ({inference_result.confidence_flag})", normal_style))
-        elements.append(Paragraph(f"<b>Urgency:</b> {inference_result.urgency.upper()}", normal_style))
+
+        elements.append(
+            Paragraph(
+                f"<b>Confidence:</b> {inference_result.confidence * 100:.1f}% ({inference_result.confidence_flag})",
+                normal_style,
+            )
+        )
+        elements.append(
+            Paragraph(
+                f"<b>Urgency:</b> {inference_result.urgency.upper()}", normal_style
+            )
+        )
         elements.append(Spacer(1, 0.3 * inch))
 
         # Referable DR Box
         if inference_result.referable_dr:
             ref_msg = "⚠️ REFERABLE DIABETIC RETINOPATHY<br/>This patient requires ophthalmology referral.<br/>Grade 2+ DR needs specialist management."
-            ref_style = ParagraphStyle("Ref", parent=normal_style, alignment=TA_CENTER, backColor=colors.HexColor("#FEEBC8"), textColor=colors.HexColor("#C05621"), borderPadding=8, fontName="Helvetica-Bold", borderColor=colors.HexColor("#DD6B20"), borderWidth=1)
+            ref_style = ParagraphStyle(
+                "Ref",
+                parent=normal_style,
+                alignment=TA_CENTER,
+                backColor=colors.HexColor("#FEEBC8"),
+                textColor=colors.HexColor("#C05621"),
+                borderPadding=8,
+                fontName="Helvetica-Bold",
+                borderColor=colors.HexColor("#DD6B20"),
+                borderWidth=1,
+            )
         else:
             ref_msg = "Non-referable. Routine monitoring advised."
-            ref_style = ParagraphStyle("Ref", parent=normal_style, alignment=TA_CENTER, backColor=colors.HexColor("#F0FFF4"), textColor=colors.HexColor("#2F855A"), borderPadding=8, fontName="Helvetica-Bold", borderColor=colors.HexColor("#38A169"), borderWidth=1)
+            ref_style = ParagraphStyle(
+                "Ref",
+                parent=normal_style,
+                alignment=TA_CENTER,
+                backColor=colors.HexColor("#F0FFF4"),
+                textColor=colors.HexColor("#2F855A"),
+                borderPadding=8,
+                fontName="Helvetica-Bold",
+                borderColor=colors.HexColor("#38A169"),
+                borderWidth=1,
+            )
         elements.append(Paragraph(ref_msg, ref_style))
         elements.append(Spacer(1, 0.1 * inch))
-        
+
         if inference_result.referable_risk_flag:
             try:
                 probs = json.loads(inference_result.all_probabilities)
                 risk_prob = (probs.get("3", 0) + probs.get("4", 0)) * 100
-            except: risk_prob = 0
+            except Exception:
+                risk_prob = 0
             risk_msg = f"Elevated probability of severe/proliferative DR detected ({risk_prob:.1f}%). Ophthalmology referral recommended regardless of current grade classification."
-            elements.append(Paragraph(risk_msg, ParagraphStyle("Risk", parent=normal_style, alignment=TA_CENTER, backColor=colors.HexColor("#FEFCBF"), textColor=colors.HexColor("#B7791F"), borderPadding=6, fontName="Helvetica-Bold")))
+            elements.append(
+                Paragraph(
+                    risk_msg,
+                    ParagraphStyle(
+                        "Risk",
+                        parent=normal_style,
+                        alignment=TA_CENTER,
+                        backColor=colors.HexColor("#FEFCBF"),
+                        textColor=colors.HexColor("#B7791F"),
+                        borderPadding=6,
+                        fontName="Helvetica-Bold",
+                    ),
+                )
+            )
             elements.append(Spacer(1, 0.1 * inch))
 
         elements.append(Spacer(1, 0.2 * inch))
@@ -1525,13 +2350,59 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
             c = grade_colors.get(i)
             # Make unselected faded
             if inference_result.grade == i:
-                d_scale.add(Rect(i * box_width, 10, box_width - 2, 20, fillColor=c, strokeColor=colors.black))
-                d_scale.add(String(i * box_width + box_width/2, 16, str(i), textAnchor="middle", fontSize=12, fillColor=colors.white, fontName="Helvetica-Bold"))
+                d_scale.add(
+                    Rect(
+                        i * box_width,
+                        10,
+                        box_width - 2,
+                        20,
+                        fillColor=c,
+                        strokeColor=colors.black,
+                    )
+                )
+                d_scale.add(
+                    String(
+                        i * box_width + box_width / 2,
+                        16,
+                        str(i),
+                        textAnchor="middle",
+                        fontSize=12,
+                        fillColor=colors.white,
+                        fontName="Helvetica-Bold",
+                    )
+                )
                 # Arrow
-                d_scale.add(String(i * box_width + box_width/2, 35, "▼", textAnchor="middle", fontSize=14, fillColor=colors.black))
+                d_scale.add(
+                    String(
+                        i * box_width + box_width / 2,
+                        35,
+                        "▼",
+                        textAnchor="middle",
+                        fontSize=14,
+                        fillColor=colors.black,
+                    )
+                )
             else:
-                d_scale.add(Rect(i * box_width, 10, box_width - 2, 20, fillColor=colors.whitesmoke, strokeColor=c))
-                d_scale.add(String(i * box_width + box_width/2, 16, str(i), textAnchor="middle", fontSize=12, fillColor=colors.darkgrey))
+                d_scale.add(
+                    Rect(
+                        i * box_width,
+                        10,
+                        box_width - 2,
+                        20,
+                        fillColor=colors.whitesmoke,
+                        strokeColor=c,
+                    )
+                )
+                d_scale.add(
+                    String(
+                        i * box_width + box_width / 2,
+                        16,
+                        str(i),
+                        textAnchor="middle",
+                        fontSize=12,
+                        fillColor=colors.darkgrey,
+                    )
+                )
         elements.append(d_scale)
         elements.append(Spacer(1, 0.3 * inch))
 
@@ -1539,26 +2410,51 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
         elements.append(Paragraph("Probability Breakdown", h3_style))
         try:
             probs = json.loads(inference_result.all_probabilities)
-            names = {0: "No DR", 1: "Mild", 2: "Moderate", 3: "Severe", 4: "Proliferative"}
+            names = {
+                0: "No DR",
+                1: "Mild",
+                2: "Moderate",
+                3: "Severe",
+                4: "Proliferative",
+            }
             prob_data = []
             for i in range(5):
                 p_val = probs.get(str(i), 0)
                 pct = p_val * 100
-                
+
                 bar_d = Drawing(150, 15)
-                bar_d.add(Rect(0, 0, 150, 12, fillColor=colors.whitesmoke, strokeColor=colors.lightgrey))
-                bar_d.add(Rect(0, 0, 1.5 * pct, 12, fillColor=grade_colors[i], strokeColor=None))
-                
-                prob_data.append([
-                    Paragraph(f"<b>{names[i]}</b>", normal_style),
-                    bar_d,
-                    Paragraph(f"{pct:.1f}%", normal_style)
-                ])
-                
+                bar_d.add(
+                    Rect(
+                        0,
+                        0,
+                        150,
+                        12,
+                        fillColor=colors.whitesmoke,
+                        strokeColor=colors.lightgrey,
+                    )
+                )
+                bar_d.add(
+                    Rect(
+                        0, 0, 1.5 * pct, 12, fillColor=grade_colors[i], strokeColor=None
+                    )
+                )
+
+                prob_data.append(
+                    [
+                        Paragraph(f"<b>{names[i]}</b>", normal_style),
+                        bar_d,
+                        Paragraph(f"{pct:.1f}%", normal_style),
+                    ]
+                )
+
             t_prob = Table(prob_data, colWidths=[1.5 * inch, 2.5 * inch, 1 * inch])
-            t_prob.setStyle(TableStyle([
-                ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-            ]))
+            t_prob.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ]
+                )
+            )
             elements.append(t_prob)
         except Exception as e:
             logger.error(f"Error drawing prob breakdown: {e}")
@@ -1570,8 +2466,10 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
         original_path = scan.get("original_file_path", "")
         if os.path.exists(original_path):
             try:
-                img_row.append(Image(original_path, width=2.5 * inch, height=2.5 * inch))
-            except:
+                img_row.append(
+                    Image(original_path, width=2.5 * inch, height=2.5 * inch)
+                )
+            except Exception:
                 img_row.append(Paragraph("Error loading original image", normal_style))
         else:
             img_row.append(Paragraph("Original image not found", normal_style))
@@ -1580,43 +2478,68 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
         if heatmap_path and os.path.exists(heatmap_path):
             try:
                 img_row.append(Image(heatmap_path, width=2.5 * inch, height=2.5 * inch))
-            except:
+            except Exception:
                 img_row.append(Paragraph("Error loading heatmap", normal_style))
         else:
             img_row.append(Paragraph("Heatmap not generated", normal_style))
-            
+
         img_table_data.append(img_row)
-        img_table_data.append(["Left: Original retinal fundus image", "Right: AI-highlighted regions of pathology"])
+        img_table_data.append(
+            [
+                "Left: Original retinal fundus image",
+                "Right: AI-highlighted regions of pathology",
+            ]
+        )
 
         t_img = Table(img_table_data, colWidths=[3 * inch, 3 * inch])
-        t_img.setStyle(TableStyle([
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Oblique"),
-            ("FONTSIZE", (0, 1), (-1, 1), 9),
-            ("BOTTOMPADDING", (0, 1), (-1, 1), 12),
-        ]))
+        t_img.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Oblique"),
+                    ("FONTSIZE", (0, 1), (-1, 1), 9),
+                    ("BOTTOMPADDING", (0, 1), (-1, 1), 12),
+                ]
+            )
+        )
         elements.append(t_img)
         elements.append(Spacer(1, 0.4 * inch))
 
         # Recommendations & Follow up
         elements.append(Paragraph("Clinical Recommendations", h2_style))
-        elements.append(Paragraph(inference_result.clinical_recommendation, normal_style))
+        elements.append(
+            Paragraph(inference_result.clinical_recommendation, normal_style)
+        )
         elements.append(Spacer(1, 0.2 * inch))
-        
-        fu_msg = f"<b>Recommended Follow-up: {inference_result.follow_up_months} months</b>"
+
+        fu_msg = (
+            f"<b>Recommended Follow-up: {inference_result.follow_up_months} months</b>"
+        )
         fu_guide = {
             0: "Annual dilated eye exam. Maintain HbA1c < 7%.",
             1: "Repeat fundus imaging in 12 months.",
             2: "Ophthalmology referral within 6 months.",
             3: "Urgent ophthalmology within 3 months. Consider fluorescein angiography.",
-            4: "IMMEDIATE ophthalmology. Consider PRP laser or anti-VEGF injection within 1 month."
+            4: "IMMEDIATE ophthalmology. Consider PRP laser or anti-VEGF injection within 1 month.",
         }
         fu_msg += f"<br/>{fu_guide.get(inference_result.grade, '')}"
-        
-        elements.append(Paragraph(fu_msg, ParagraphStyle("FU", parent=normal_style, backColor=colors.whitesmoke, borderPadding=8, borderColor=colors.lightgrey, borderWidth=1)))
+
+        elements.append(
+            Paragraph(
+                fu_msg,
+                ParagraphStyle(
+                    "FU",
+                    parent=normal_style,
+                    backColor=colors.whitesmoke,
+                    borderPadding=8,
+                    borderColor=colors.lightgrey,
+                    borderWidth=1,
+                ),
+            )
+        )
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # Diabetes Reminder
         dm_msg = """<b>Diabetes Management Recommendations:</b><br/>
 • Target HbA1c < 7% (individualized)<br/>
@@ -1624,28 +2547,66 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
 • Lipid management (statin therapy if indicated)<br/>
 • Annual comprehensive dilated eye examination<br/>
 • Smoking cessation if applicable"""
-        elements.append(Paragraph(dm_msg, ParagraphStyle("DM", parent=normal_style, backColor=colors.HexColor("#EBF8FF"), textColor=colors.HexColor("#2C5282"), borderPadding=8, borderColor=colors.HexColor("#BEE3F8"), borderWidth=1)))
+        elements.append(
+            Paragraph(
+                dm_msg,
+                ParagraphStyle(
+                    "DM",
+                    parent=normal_style,
+                    backColor=colors.HexColor("#EBF8FF"),
+                    textColor=colors.HexColor("#2C5282"),
+                    borderPadding=8,
+                    borderColor=colors.HexColor("#BEE3F8"),
+                    borderWidth=1,
+                ),
+            )
+        )
         elements.append(Spacer(1, 0.4 * inch))
 
         # Clinician Override
         if inference_result.clinician_override:
             elements.append(Paragraph("Clinician Override", h2_style))
-            elements.append(Paragraph(f"<b>Corrected Diagnosis:</b> {inference_result.clinician_override}", normal_style))
+            elements.append(
+                Paragraph(
+                    f"<b>Corrected Diagnosis:</b> {inference_result.clinician_override}",
+                    normal_style,
+                )
+            )
             if inference_result.override_notes:
-                elements.append(Paragraph(f"<b>Notes:</b> {inference_result.override_notes}", normal_style))
-            elements.append(Paragraph(f"<i>Override logged on {inference_result.override_timestamp.strftime('%Y-%m-%d %H:%M:%S')}</i>", ParagraphStyle("Italic", parent=normal_style, textColor=colors.gray)))
+                elements.append(
+                    Paragraph(
+                        f"<b>Notes:</b> {inference_result.override_notes}", normal_style
+                    )
+                )
+            elements.append(
+                Paragraph(
+                    f"<i>Override logged on {inference_result.override_timestamp.strftime('%Y-%m-%d %H:%M:%S')}</i>",
+                    ParagraphStyle(
+                        "Italic", parent=normal_style, textColor=colors.gray
+                    ),
+                )
+            )
             elements.append(Spacer(1, 0.3 * inch))
 
         # Model Performance Note
         perf_note = """<b>Model Performance:</b> Model: retinopathy_v1 | QWK: 0.8708 | 94.3% of predictions within ±1 grade of actual"""
-        elements.append(Paragraph(perf_note, ParagraphStyle("Perf", parent=normal_style, fontSize=9, textColor=colors.dimgrey)))
+        elements.append(
+            Paragraph(
+                perf_note,
+                ParagraphStyle(
+                    "Perf", parent=normal_style, fontSize=9, textColor=colors.dimgrey
+                ),
+            )
+        )
 
         def on_page(canvas, doc):
             canvas.saveState()
             canvas.setFont("Helvetica", 9)
             canvas.drawString(inch, 0.75 * inch, f"Report ID: {scan.get('scan_id')}")
             canvas.drawRightString(A4[0] - inch, 0.75 * inch, f"Page {doc.page}")
-            canvas.drawCentredString(A4[0] / 2.0, 0.75 * inch, "Model: retinopathy_v1 | QWK: 0.8708")
+            canvas.drawCentredString(
+                A4[0] / 2.0, 0.75 * inch, "Model: retinopathy_v1 | QWK: 0.8708"
+            )
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=on_page, onLaterPages=on_page)
@@ -1654,6 +2615,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
     except Exception as e:
         logger.error(f"Failed to generate Retinopathy report: {e}", exc_info=True)
         return ""
+
 
 if __name__ == "__main__":
     from inference import InferenceResult
@@ -1715,7 +2677,10 @@ if __name__ == "__main__":
 
     logger.info("Generating test report with 'inconclusive' confidence...")
     report_path2 = generate_report(
-        dummy_patient, dummy_scan_inconclusive, dummy_inference_result_inconclusive, dummy_prognosis
+        dummy_patient,
+        dummy_scan_inconclusive,
+        dummy_inference_result_inconclusive,
+        dummy_prognosis,
     )
 
 
@@ -1723,11 +2688,17 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
     try:
         os.makedirs(output_dir, exist_ok=True)
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
-        scan_id = scan.get("id", "unknown") if isinstance(scan, dict) else getattr(scan, "id", "unknown")
+        patient_name_safe = "".join(
+            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
+        )
+        scan_id = (
+            scan.get("id", "unknown")
+            if isinstance(scan, dict)
+            else getattr(scan, "id", "unknown")
+        )
         filename = f"fracture_{scan_id}_{patient_name_safe}_{date_str}.pdf"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
-        
+
         report_id = str(uuid.uuid4())[:8].upper()
         report_date = datetime.now().strftime("%Y-%m-%d")
         report_time = datetime.now().strftime("%H:%M:%S")
@@ -1736,25 +2707,48 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
         elements = []
 
         styles = getSampleStyleSheet()
-        style_h2 = ParagraphStyle("H2", fontName="Helvetica-Bold", fontSize=12, spaceAfter=8, textTransform="uppercase", textColor=colors.HexColor("#333333"))
+        style_h2 = ParagraphStyle(
+            "H2",
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            spaceAfter=8,
+            textTransform="uppercase",
+            textColor=colors.HexColor("#333333"),
+        )
         style_normal = styles["Normal"]
         style_normal.fontName = "Helvetica"
 
         # TITLE
-        elements.append(Paragraph("<b>MediScan AI &mdash; Fracture Detection Report</b>", styles["Title"]))
+        elements.append(
+            Paragraph(
+                "<b>MediScan AI &mdash; Fracture Detection Report</b>", styles["Title"]
+            )
+        )
         elements.append(Spacer(1, 0.2 * inch))
 
         # PATIENT INFO
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
-            [Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal), Paragraph(f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal)],
-            [Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal), Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal)],
+            [
+                Paragraph(
+                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
+                ),
+                Paragraph(
+                    f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal
+                ),
+            ],
+            [
+                Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
+                ),
+            ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
         t_patient.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
         elements.append(t_patient)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # SCAN DETAILS
         elements.append(Paragraph("SCAN DETAILS", style_h2))
         scan_dt = getattr(scan, "upload_timestamp", None)
@@ -1764,7 +2758,7 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
             scan_region = getattr(scan, "body_region", "N/A")
         else:
             scan_region = scan.get("body_region", "N/A")
-            
+
         elements.append(Paragraph(f"<b>Scan Date:</b> {scan_dt_str}", style_normal))
         elements.append(Paragraph(f"<b>Body Region:</b> {scan_region}", style_normal))
         elements.append(Spacer(1, 0.2 * inch))
@@ -1772,25 +2766,59 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
         # DIAGNOSIS
         elements.append(Paragraph("DIAGNOSIS SECTION", style_h2))
         frac_detected = getattr(scan, "fracture_detected", False)
-        badge_text = "<font color='white'><b>FRACTURE DETECTED</b></font>" if frac_detected else "<font color='white'><b>NO FRACTURE DETECTED</b></font>"
+        badge_text = (
+            "<font color='white'><b>FRACTURE DETECTED</b></font>"
+            if frac_detected
+            else "<font color='white'><b>NO FRACTURE DETECTED</b></font>"
+        )
         badge_bg = "#D32F2F" if frac_detected else "#388E3C"
-        
-        badge = Table([[Paragraph(badge_text, ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER))]],
-                      colWidths=[2.5 * inch], rowHeights=[0.3 * inch],
-                      style=[("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)), ("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")])
+
+        badge = Table(
+            [
+                [
+                    Paragraph(
+                        badge_text,
+                        ParagraphStyle(
+                            "Centered", parent=style_normal, alignment=TA_CENTER
+                        ),
+                    )
+                ]
+            ],
+            colWidths=[2.5 * inch],
+            rowHeights=[0.3 * inch],
+            style=[
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ],
+        )
         elements.append(badge)
         elements.append(Spacer(1, 0.1 * inch))
-        
+
         conf = getattr(scan, "confidence", 0.0)
         conf_flag = getattr(scan, "confidence_flag", "low")
-        elements.append(Paragraph(f"<b>Prediction:</b> {'Fractured' if frac_detected else 'Not Fractured'}", style_normal))
-        elements.append(Paragraph(f"<b>Confidence:</b> {conf:.1f}% ({conf_flag})", style_normal))
+        elements.append(
+            Paragraph(
+                f"<b>Prediction:</b> {'Fractured' if frac_detected else 'Not Fractured'}",
+                style_normal,
+            )
+        )
+        elements.append(
+            Paragraph(f"<b>Confidence:</b> {conf:.1f}% ({conf_flag})", style_normal)
+        )
         elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
         img_path = getattr(scan, "original_file_path", "")
         heatmap_path = getattr(scan, "heatmap_path", "")
-        img_table = Table([[get_image_flowable(img_path, "Original X-Ray", style_normal), get_image_flowable(heatmap_path, "Grad-CAM Heatmap", style_normal)]])
+        img_table = Table(
+            [
+                [
+                    get_image_flowable(img_path, "Original X-Ray", style_normal),
+                    get_image_flowable(heatmap_path, "Grad-CAM Heatmap", style_normal),
+                ]
+            ]
+        )
         elements.append(img_table)
         elements.append(Spacer(1, 0.2 * inch))
 
@@ -1798,34 +2826,72 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
         if prognosis:
             elements.append(Paragraph("PROGNOSIS & RECOMMENDATIONS", style_h2))
             prog_data = [
-                [Paragraph("<b>Estimated Healing Time:</b>", style_normal), Paragraph(f"{prognosis.rest_weeks_min} - {prognosis.rest_weeks_max} weeks", style_normal)],
-                [Paragraph("<b>Cast Type:</b>", style_normal), Paragraph(str(prognosis.cast_type), style_normal)],
-                [Paragraph("<b>Weight Bearing:</b>", style_normal), Paragraph(str(prognosis.weight_bearing_status), style_normal)],
+                [
+                    Paragraph("<b>Estimated Healing Time:</b>", style_normal),
+                    Paragraph(
+                        f"{prognosis.rest_weeks_min} - {prognosis.rest_weeks_max} weeks",
+                        style_normal,
+                    ),
+                ],
+                [
+                    Paragraph("<b>Cast Type:</b>", style_normal),
+                    Paragraph(str(prognosis.cast_type), style_normal),
+                ],
+                [
+                    Paragraph("<b>Weight Bearing:</b>", style_normal),
+                    Paragraph(str(prognosis.weight_bearing_status), style_normal),
+                ],
             ]
             t_prog = Table(prog_data, colWidths=[2 * inch, 5 * inch])
             elements.append(t_prog)
-            
+
             if prognosis.referral_flag:
                 elements.append(Spacer(1, 0.1 * inch))
-                elements.append(Paragraph("<font color='red'><b>SURGERY REFERRAL RECOMMENDED</b></font>", style_normal))
+                elements.append(
+                    Paragraph(
+                        "<font color='red'><b>SURGERY REFERRAL RECOMMENDED</b></font>",
+                        style_normal,
+                    )
+                )
             elements.append(Spacer(1, 0.2 * inch))
 
         # OVERRIDE
         override = getattr(scan, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
-            elements.append(Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal))
-            elements.append(Paragraph(f"<b>Notes:</b> {getattr(scan, 'override_notes', 'N/A')}", style_normal))
+            elements.append(
+                Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal)
+            )
+            elements.append(
+                Paragraph(
+                    f"<b>Notes:</b> {getattr(scan, 'override_notes', 'N/A')}",
+                    style_normal,
+                )
+            )
             elements.append(Spacer(1, 0.2 * inch))
 
         # RECOMMENDATION
         elements.append(Paragraph("CLINICAL RECOMMENDATION", style_h2))
         if conf_flag == "clear":
-            elements.append(Paragraph("Clear finding, clinical correlation recommended.", style_normal))
+            elements.append(
+                Paragraph(
+                    "Clear finding, clinical correlation recommended.", style_normal
+                )
+            )
         elif conf_flag == "inconclusive":
-            elements.append(Paragraph("Inconclusive &mdash; manual radiologist review required.", style_normal))
+            elements.append(
+                Paragraph(
+                    "Inconclusive &mdash; manual radiologist review required.",
+                    style_normal,
+                )
+            )
         else:
-            elements.append(Paragraph("Low confidence &mdash; recommend repeat imaging or specialist review.", style_normal))
+            elements.append(
+                Paragraph(
+                    "Low confidence &mdash; recommend repeat imaging or specialist review.",
+                    style_normal,
+                )
+            )
 
         # BUILD
         build_pdf(doc, elements)
@@ -1834,15 +2900,22 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
         logger.error(f"Error generating fracture report: {e}")
         return None
 
+
 def generate_arthritis_report(scan, patient, output_dir="reports/"):
     try:
         os.makedirs(output_dir, exist_ok=True)
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
-        scan_id = scan.get("id", "unknown") if isinstance(scan, dict) else getattr(scan, "id", "unknown")
+        patient_name_safe = "".join(
+            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
+        )
+        scan_id = (
+            scan.get("id", "unknown")
+            if isinstance(scan, dict)
+            else getattr(scan, "id", "unknown")
+        )
         filename = f"arthritis_{scan_id}_{patient_name_safe}_{date_str}.pdf"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
-        
+
         report_id = str(uuid.uuid4())[:8].upper()
         report_date = datetime.now().strftime("%Y-%m-%d")
         report_time = datetime.now().strftime("%H:%M:%S")
@@ -1851,40 +2924,85 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
         elements = []
 
         styles = getSampleStyleSheet()
-        style_h2 = ParagraphStyle("H2", fontName="Helvetica-Bold", fontSize=12, spaceAfter=8, textTransform="uppercase", textColor=colors.HexColor("#333333"))
+        style_h2 = ParagraphStyle(
+            "H2",
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            spaceAfter=8,
+            textTransform="uppercase",
+            textColor=colors.HexColor("#333333"),
+        )
         style_normal = styles["Normal"]
         style_normal.fontName = "Helvetica"
 
         # TITLE
-        elements.append(Paragraph("<b>MediScan AI &mdash; Arthritis Grading Report</b>", styles["Title"]))
+        elements.append(
+            Paragraph(
+                "<b>MediScan AI &mdash; Arthritis Grading Report</b>", styles["Title"]
+            )
+        )
         elements.append(Spacer(1, 0.2 * inch))
 
         # PATIENT INFO
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
-            [Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal), Paragraph(f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal)],
-            [Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal), Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal)],
+            [
+                Paragraph(
+                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
+                ),
+                Paragraph(
+                    f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal
+                ),
+            ],
+            [
+                Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
+                ),
+            ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
         t_patient.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
         elements.append(t_patient)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # DIAGNOSIS
         elements.append(Paragraph("DIAGNOSIS SECTION", style_h2))
         grade = getattr(scan, "grade", 0)
         grade_name = getattr(scan, "grade_name", "Normal")
-        
-        colors_map = {0: "#388E3C", 1: "#81C784", 2: "#FBC02D", 3: "#F57C00", 4: "#D32F2F"}
+
+        colors_map = {
+            0: "#388E3C",
+            1: "#81C784",
+            2: "#FBC02D",
+            3: "#F57C00",
+            4: "#D32F2F",
+        }
         badge_bg = colors_map.get(grade, "#333333")
         badge_text = f"<font color='white'><b>Grade {grade} - {grade_name}</b></font>"
-        
-        badge = Table([[Paragraph(badge_text, ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER))]],
-                      colWidths=[2.5 * inch], rowHeights=[0.3 * inch],
-                      style=[("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)), ("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")])
+
+        badge = Table(
+            [
+                [
+                    Paragraph(
+                        badge_text,
+                        ParagraphStyle(
+                            "Centered", parent=style_normal, alignment=TA_CENTER
+                        ),
+                    )
+                ]
+            ],
+            colWidths=[2.5 * inch],
+            rowHeights=[0.3 * inch],
+            style=[
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ],
+        )
         elements.append(badge)
         elements.append(Spacer(1, 0.1 * inch))
-        
+
         conf = getattr(scan, "confidence", 0.0)
         elements.append(Paragraph(f"<b>Confidence:</b> {conf:.1f}%", style_normal))
         elements.append(Spacer(1, 0.2 * inch))
@@ -1892,27 +3010,56 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
         # IMAGES
         img_path = getattr(scan, "original_file_path", "")
         heatmap_path = getattr(scan, "heatmap_path", "")
-        img_table = Table([[get_image_flowable(img_path, "Original X-Ray", style_normal), get_image_flowable(heatmap_path, "Grad-CAM Heatmap", style_normal)]])
+        img_table = Table(
+            [
+                [
+                    get_image_flowable(img_path, "Original X-Ray", style_normal),
+                    get_image_flowable(heatmap_path, "Grad-CAM Heatmap", style_normal),
+                ]
+            ]
+        )
         elements.append(img_table)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # GRADE TABLE
         elements.append(Paragraph("GRADE EXPLANATION", style_h2))
         grade_desc = [
             ("Grade 0", "Normal", "No joint space narrowing or reactive changes."),
-            ("Grade 1", "Doubtful", "Doubtful joint space narrowing and possible osteophytic lipping."),
-            ("Grade 2", "Mild", "Definite osteophytes and possible joint space narrowing."),
-            ("Grade 3", "Moderate", "Moderate multiple osteophytes, definite narrowing, sclerosis."),
-            ("Grade 4", "Severe", "Large osteophytes, marked narrowing, severe sclerosis, deformity.")
+            (
+                "Grade 1",
+                "Doubtful",
+                "Doubtful joint space narrowing and possible osteophytic lipping.",
+            ),
+            (
+                "Grade 2",
+                "Mild",
+                "Definite osteophytes and possible joint space narrowing.",
+            ),
+            (
+                "Grade 3",
+                "Moderate",
+                "Moderate multiple osteophytes, definite narrowing, sclerosis.",
+            ),
+            (
+                "Grade 4",
+                "Severe",
+                "Large osteophytes, marked narrowing, severe sclerosis, deformity.",
+            ),
         ]
         t_data = []
         for g_num, g_name, g_txt in grade_desc:
             prefix = "<b>" if f"Grade {grade}" == g_num else ""
             suffix = "</b>" if f"Grade {grade}" == g_num else ""
-            t_data.append([Paragraph(f"{prefix}{g_num}{suffix}", style_normal), Paragraph(f"{prefix}{g_name}{suffix}", style_normal), Paragraph(f"{prefix}{g_txt}{suffix}", style_normal)])
-            
-        t_grades = Table(t_data, colWidths=[1.5*inch, 1.5*inch, 4*inch])
-        t_grades.setStyle(TableStyle([("GRID", (0,0), (-1,-1), 0.5, colors.grey)]))
+            t_data.append(
+                [
+                    Paragraph(f"{prefix}{g_num}{suffix}", style_normal),
+                    Paragraph(f"{prefix}{g_name}{suffix}", style_normal),
+                    Paragraph(f"{prefix}{g_txt}{suffix}", style_normal),
+                ]
+            )
+
+        t_grades = Table(t_data, colWidths=[1.5 * inch, 1.5 * inch, 4 * inch])
+        t_grades.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.grey)]))
         elements.append(t_grades)
         elements.append(Spacer(1, 0.2 * inch))
 
@@ -1920,8 +3067,15 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
         override = getattr(scan, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
-            elements.append(Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal))
-            elements.append(Paragraph(f"<b>Notes:</b> {getattr(scan, 'override_notes', 'N/A')}", style_normal))
+            elements.append(
+                Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal)
+            )
+            elements.append(
+                Paragraph(
+                    f"<b>Notes:</b> {getattr(scan, 'override_notes', 'N/A')}",
+                    style_normal,
+                )
+            )
             elements.append(Spacer(1, 0.2 * inch))
 
         # RECOMMENDATION
@@ -1943,15 +3097,22 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
         logger.error(f"Error generating arthritis report: {e}")
         return None
 
+
 def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
     try:
         os.makedirs(output_dir, exist_ok=True)
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
-        scan_id = scan.get("id", "unknown") if isinstance(scan, dict) else getattr(scan, "id", "unknown")
+        patient_name_safe = "".join(
+            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
+        )
+        scan_id = (
+            scan.get("id", "unknown")
+            if isinstance(scan, dict)
+            else getattr(scan, "id", "unknown")
+        )
         filename = f"osteoporosis_{scan_id}_{patient_name_safe}_{date_str}.pdf"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
-        
+
         report_id = str(uuid.uuid4())[:8].upper()
         report_date = datetime.now().strftime("%Y-%m-%d")
         report_time = datetime.now().strftime("%H:%M:%S")
@@ -1960,59 +3121,124 @@ def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
         elements = []
 
         styles = getSampleStyleSheet()
-        style_h2 = ParagraphStyle("H2", fontName="Helvetica-Bold", fontSize=12, spaceAfter=8, textTransform="uppercase", textColor=colors.HexColor("#333333"))
+        style_h2 = ParagraphStyle(
+            "H2",
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            spaceAfter=8,
+            textTransform="uppercase",
+            textColor=colors.HexColor("#333333"),
+        )
         style_normal = styles["Normal"]
         style_normal.fontName = "Helvetica"
 
         # TITLE
-        elements.append(Paragraph("<b>MediScan AI &mdash; Osteoporosis Screening Report</b>", styles["Title"]))
+        elements.append(
+            Paragraph(
+                "<b>MediScan AI &mdash; Osteoporosis Screening Report</b>",
+                styles["Title"],
+            )
+        )
         elements.append(Spacer(1, 0.2 * inch))
 
         # PATIENT INFO
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
-            [Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal), Paragraph(f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal)],
-            [Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal), Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal)],
+            [
+                Paragraph(
+                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
+                ),
+                Paragraph(
+                    f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal
+                ),
+            ],
+            [
+                Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
+                Paragraph(
+                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
+                ),
+            ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
         t_patient.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
         elements.append(t_patient)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # DIAGNOSIS
         elements.append(Paragraph("DIAGNOSIS SECTION", style_h2))
         has_osteo = getattr(scan, "has_osteoporosis", False)
-        badge_text = "<font color='white'><b>OSTEOPOROSIS DETECTED</b></font>" if has_osteo else "<font color='white'><b>NORMAL</b></font>"
+        badge_text = (
+            "<font color='white'><b>OSTEOPOROSIS DETECTED</b></font>"
+            if has_osteo
+            else "<font color='white'><b>NORMAL</b></font>"
+        )
         badge_bg = "#D32F2F" if has_osteo else "#388E3C"
-        
-        badge = Table([[Paragraph(badge_text, ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER))]],
-                      colWidths=[3.0 * inch], rowHeights=[0.3 * inch],
-                      style=[("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)), ("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")])
+
+        badge = Table(
+            [
+                [
+                    Paragraph(
+                        badge_text,
+                        ParagraphStyle(
+                            "Centered", parent=style_normal, alignment=TA_CENTER
+                        ),
+                    )
+                ]
+            ],
+            colWidths=[3.0 * inch],
+            rowHeights=[0.3 * inch],
+            style=[
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(badge_bg)),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ],
+        )
         elements.append(badge)
         elements.append(Spacer(1, 0.1 * inch))
-        
+
         conf = getattr(scan, "confidence", 0.0)
         conf_flag = getattr(scan, "confidence_flag", "low")
-        elements.append(Paragraph(f"<b>Confidence:</b> {conf:.1f}% ({conf_flag})", style_normal))
+        elements.append(
+            Paragraph(f"<b>Confidence:</b> {conf:.1f}% ({conf_flag})", style_normal)
+        )
         elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
         img_path = getattr(scan, "original_file_path", "")
         heatmap_path = getattr(scan, "heatmap_path", "")
-        img_table = Table([[get_image_flowable(img_path, "Original X-Ray", style_normal), get_image_flowable(heatmap_path, "Grad-CAM Heatmap", style_normal)]])
+        img_table = Table(
+            [
+                [
+                    get_image_flowable(img_path, "Original X-Ray", style_normal),
+                    get_image_flowable(heatmap_path, "Grad-CAM Heatmap", style_normal),
+                ]
+            ]
+        )
         elements.append(img_table)
         elements.append(Spacer(1, 0.2 * inch))
-        
+
         # NOTE
-        elements.append(Paragraph("<i>Note: Osteoporosis screening via X-ray is a preliminary assessment. DEXA scan is the gold standard for bone mineral density measurement.</i>", style_normal))
+        elements.append(
+            Paragraph(
+                "<i>Note: Osteoporosis screening via X-ray is a preliminary assessment. DEXA scan is the gold standard for bone mineral density measurement.</i>",
+                style_normal,
+            )
+        )
         elements.append(Spacer(1, 0.2 * inch))
 
         # OVERRIDE
         override = getattr(scan, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
-            elements.append(Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal))
-            elements.append(Paragraph(f"<b>Notes:</b> {getattr(scan, 'override_notes', 'N/A')}", style_normal))
+            elements.append(
+                Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal)
+            )
+            elements.append(
+                Paragraph(
+                    f"<b>Notes:</b> {getattr(scan, 'override_notes', 'N/A')}",
+                    style_normal,
+                )
+            )
             elements.append(Spacer(1, 0.2 * inch))
 
         # RECOMMENDATION
@@ -2031,4 +3257,3 @@ def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
     except Exception as e:
         logger.error(f"Error generating osteoporosis report: {e}")
         return None
-

@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field
 
+
 # ====================
 # SHARED SCHEMAS
 # ====================
@@ -12,20 +13,24 @@ class UserCreate(BaseModel):
     password: str
     role: str = "doctor"
 
+
 class LoginRequest(BaseModel):
     email: str
     password: str
+
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     role: str
 
+
 class PatientCreate(BaseModel):
     full_name: str
     age: int = Field(..., ge=1, le=120)
     gender: str
     comorbidities: List[str] = []
+
 
 class PatientResponse(BaseModel):
     id: uuid.UUID
@@ -36,6 +41,7 @@ class PatientResponse(BaseModel):
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
+
 # ====================
 # OVERRIDE SCHEMAS
 # ====================
@@ -43,14 +49,38 @@ class BaseOverrideRequest(BaseModel):
     clinician_override: str
     override_notes: Optional[str] = None
 
-class FractureOverrideRequest(BaseOverrideRequest): pass
-class ArthritisOverrideRequest(BaseOverrideRequest): pass
-class OsteoporosisOverrideRequest(BaseOverrideRequest): pass
-class TBOverrideRequest(BaseOverrideRequest): pass
-class LungNoduleOverrideRequest(BaseOverrideRequest): pass
-class BrainTumorOverrideRequest(BaseOverrideRequest): pass
-class BrainHemorrhageOverrideRequest(BaseOverrideRequest): pass
-class RetinopathyOverrideRequest(BaseOverrideRequest): pass
+
+class FractureOverrideRequest(BaseOverrideRequest):
+    pass
+
+
+class ArthritisOverrideRequest(BaseOverrideRequest):
+    pass
+
+
+class OsteoporosisOverrideRequest(BaseOverrideRequest):
+    pass
+
+
+class TBOverrideRequest(BaseOverrideRequest):
+    pass
+
+
+class LungNoduleOverrideRequest(BaseOverrideRequest):
+    pass
+
+
+class BrainTumorOverrideRequest(BaseOverrideRequest):
+    pass
+
+
+class BrainHemorrhageOverrideRequest(BaseOverrideRequest):
+    pass
+
+
+class RetinopathyOverrideRequest(BaseOverrideRequest):
+    pass
+
 
 # ====================
 # MODULE 1: FRACTURE
@@ -63,6 +93,7 @@ class FracturePrognosisResponse(BaseModel):
     weight_bearing_status: str
     referral_flag: str
     model_config = ConfigDict(from_attributes=True)
+
 
 class FractureResponse(BaseModel):
     id: uuid.UUID
@@ -81,6 +112,7 @@ class FractureResponse(BaseModel):
     override_timestamp: Optional[datetime]
     prognosis: Optional[FracturePrognosisResponse] = None
     model_config = ConfigDict(from_attributes=True)
+
 
 # ====================
 # MODULE 2: ARTHRITIS
@@ -103,6 +135,7 @@ class ArthritisResponse(BaseModel):
     override_timestamp: Optional[datetime]
     model_config = ConfigDict(from_attributes=True)
 
+
 # ====================
 # MODULE 3: OSTEOPOROSIS
 # ====================
@@ -122,6 +155,7 @@ class OsteoporosisResponse(BaseModel):
     override_notes: Optional[str]
     override_timestamp: Optional[datetime]
     model_config = ConfigDict(from_attributes=True)
+
 
 # ====================
 # MODULE 4: TB
@@ -145,6 +179,7 @@ class TBResponse(BaseModel):
     override_timestamp: Optional[datetime]
     model_config = ConfigDict(from_attributes=True)
 
+
 # ====================
 # MODULE 5: LUNG NODULE
 # ====================
@@ -166,6 +201,7 @@ class LungNoduleResponse(BaseModel):
     override_notes: Optional[str]
     override_timestamp: Optional[datetime]
     model_config = ConfigDict(from_attributes=True)
+
 
 # ====================
 # MODULE 6: BRAIN TUMOR
@@ -191,6 +227,7 @@ class BrainTumorResponse(BaseModel):
     override_timestamp: Optional[datetime]
     model_config = ConfigDict(from_attributes=True)
 
+
 # ====================
 # MODULE 7: BRAIN HEMORRHAGE
 # ====================
@@ -214,6 +251,7 @@ class BrainHemorrhageResponse(BaseModel):
     override_timestamp: Optional[datetime]
     model_config = ConfigDict(from_attributes=True)
 
+
 # ====================
 # MODULE 8: BONE AGE
 # ====================
@@ -234,6 +272,7 @@ class BoneAgeResponse(BaseModel):
     model_version: str
     report_path: Optional[str]
     model_config = ConfigDict(from_attributes=True)
+
 
 # ====================
 # MODULE 9: RETINOPATHY

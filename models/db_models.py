@@ -1,9 +1,19 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, Boolean, Text, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    Float,
+    Boolean,
+    Text,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.dialects.postgresql import UUID, ARRAY, JSON
 from sqlalchemy.orm import relationship
 from database import Base, engine
+
 
 class User(Base):
     __tablename__ = "users"
@@ -15,6 +25,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class Patient(Base):
     __tablename__ = "patients"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -23,17 +34,36 @@ class Patient(Base):
     gender = Column(String(10), nullable=False)
     comorbidities = Column(ARRAY(String), default=list)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships for backref convenience
-    fracture_scans = relationship("FractureScan", back_populates="patient", cascade="all, delete-orphan")
-    arthritis_scans = relationship("ArthritisScan", back_populates="patient", cascade="all, delete-orphan")
-    osteoporosis_scans = relationship("OsteoporosisScan", back_populates="patient", cascade="all, delete-orphan")
-    tb_scans = relationship("TBScan", back_populates="patient", cascade="all, delete-orphan")
-    lung_nodule_scans = relationship("LungNoduleScan", back_populates="patient", cascade="all, delete-orphan")
-    brain_tumor_scans = relationship("BrainTumorScan", back_populates="patient", cascade="all, delete-orphan")
-    brain_hemorrhage_scans = relationship("BrainHemorrhageScan", back_populates="patient", cascade="all, delete-orphan")
-    bone_age_scans = relationship("BoneAgeScan", back_populates="patient", cascade="all, delete-orphan")
-    retinopathy_scans = relationship("RetinopathyScan", back_populates="patient", cascade="all, delete-orphan")
+    fracture_scans = relationship(
+        "FractureScan", back_populates="patient", cascade="all, delete-orphan"
+    )
+    arthritis_scans = relationship(
+        "ArthritisScan", back_populates="patient", cascade="all, delete-orphan"
+    )
+    osteoporosis_scans = relationship(
+        "OsteoporosisScan", back_populates="patient", cascade="all, delete-orphan"
+    )
+    tb_scans = relationship(
+        "TBScan", back_populates="patient", cascade="all, delete-orphan"
+    )
+    lung_nodule_scans = relationship(
+        "LungNoduleScan", back_populates="patient", cascade="all, delete-orphan"
+    )
+    brain_tumor_scans = relationship(
+        "BrainTumorScan", back_populates="patient", cascade="all, delete-orphan"
+    )
+    brain_hemorrhage_scans = relationship(
+        "BrainHemorrhageScan", back_populates="patient", cascade="all, delete-orphan"
+    )
+    bone_age_scans = relationship(
+        "BoneAgeScan", back_populates="patient", cascade="all, delete-orphan"
+    )
+    retinopathy_scans = relationship(
+        "RetinopathyScan", back_populates="patient", cascade="all, delete-orphan"
+    )
+
 
 class FractureScan(Base):
     __tablename__ = "fracture_scans"
@@ -51,9 +81,15 @@ class FractureScan(Base):
     clinician_override = Column(String(50), nullable=True)
     override_notes = Column(Text, nullable=True)
     override_timestamp = Column(DateTime, nullable=True)
-    
+
     patient = relationship("Patient", back_populates="fracture_scans")
-    prognosis = relationship("FracturePrognosis", back_populates="scan", uselist=False, cascade="all, delete-orphan")
+    prognosis = relationship(
+        "FracturePrognosis",
+        back_populates="scan",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
 
 class FracturePrognosis(Base):
     __tablename__ = "fracture_prognosis"
@@ -65,8 +101,9 @@ class FracturePrognosis(Base):
     plaster_required = Column(Boolean)
     weight_bearing_status = Column(String(50))
     referral_flag = Column(String(20))
-    
+
     scan = relationship("FractureScan", back_populates="prognosis")
+
 
 class ArthritisScan(Base):
     __tablename__ = "arthritis_scans"
@@ -85,8 +122,9 @@ class ArthritisScan(Base):
     clinician_override = Column(String(50), nullable=True)
     override_notes = Column(Text, nullable=True)
     override_timestamp = Column(DateTime, nullable=True)
-    
+
     patient = relationship("Patient", back_populates="arthritis_scans")
+
 
 class OsteoporosisScan(Base):
     __tablename__ = "osteoporosis_scans"
@@ -104,8 +142,9 @@ class OsteoporosisScan(Base):
     clinician_override = Column(String(50), nullable=True)
     override_notes = Column(Text, nullable=True)
     override_timestamp = Column(DateTime, nullable=True)
-    
+
     patient = relationship("Patient", back_populates="osteoporosis_scans")
+
 
 class TBScan(Base):
     __tablename__ = "tb_scans"
@@ -125,8 +164,9 @@ class TBScan(Base):
     clinician_override = Column(String(50), nullable=True)
     override_notes = Column(Text, nullable=True)
     override_timestamp = Column(DateTime, nullable=True)
-    
+
     patient = relationship("Patient", back_populates="tb_scans")
+
 
 class LungNoduleScan(Base):
     __tablename__ = "lung_nodule_scans"
@@ -146,8 +186,9 @@ class LungNoduleScan(Base):
     clinician_override = Column(String(50), nullable=True)
     override_notes = Column(Text, nullable=True)
     override_timestamp = Column(DateTime, nullable=True)
-    
+
     patient = relationship("Patient", back_populates="lung_nodule_scans")
+
 
 class BrainTumorScan(Base):
     __tablename__ = "brain_tumor_scans"
@@ -169,8 +210,9 @@ class BrainTumorScan(Base):
     clinician_override = Column(String(50), nullable=True)
     override_notes = Column(Text, nullable=True)
     override_timestamp = Column(DateTime, nullable=True)
-    
+
     patient = relationship("Patient", back_populates="brain_tumor_scans")
+
 
 class BrainHemorrhageScan(Base):
     __tablename__ = "brain_hemorrhage_scans"
@@ -191,8 +233,9 @@ class BrainHemorrhageScan(Base):
     clinician_override = Column(String(50), nullable=True)
     override_notes = Column(Text, nullable=True)
     override_timestamp = Column(DateTime, nullable=True)
-    
+
     patient = relationship("Patient", back_populates="brain_hemorrhage_scans")
+
 
 class BoneAgeScan(Base):
     __tablename__ = "bone_age_scans"
@@ -211,8 +254,9 @@ class BoneAgeScan(Base):
     clinical_recommendation = Column(Text)
     model_version = Column(String(50))
     report_path = Column(String(500), nullable=True)
-    
+
     patient = relationship("Patient", back_populates="bone_age_scans")
+
 
 class RetinopathyScan(Base):
     __tablename__ = "retinopathy_scans"
@@ -236,8 +280,9 @@ class RetinopathyScan(Base):
     clinician_override = Column(String(50), nullable=True)
     override_notes = Column(Text, nullable=True)
     override_timestamp = Column(DateTime, nullable=True)
-    
+
     patient = relationship("Patient", back_populates="retinopathy_scans")
+
 
 # Create all tables in the database
 Base.metadata.create_all(bind=engine)

@@ -2,7 +2,11 @@ import os
 
 
 def search_for_git():
-    search_roots = [r"C:\Program Files", r"C:\Program Files (x86)", r"C:\Users\HP\AppData"]
+    search_roots = [
+        r"C:\Program Files",
+        r"C:\Program Files (x86)",
+        r"C:\Users\HP\AppData",
+    ]
 
     print("Searching for git.exe on disk...")
     found_paths = []

@@ -31,7 +31,10 @@ def register_clinician(clinician: ClinicianRegister):
 def login_clinician(credentials: ClinicianLogin):
     """Authenticates a clinician and issues an access token."""
     # Simplified authentication mock checking default credentials
-    if credentials.username == "doctor_sajid" and credentials.password == "securepass123":
+    if (
+        credentials.username == "doctor_sajid"
+        and credentials.password == "securepass123"
+    ):
         return {
             "status": "success",
             "access_token": "mock_jwt_session_token_xyz123",

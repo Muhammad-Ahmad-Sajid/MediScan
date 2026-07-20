@@ -9,7 +9,12 @@ from fastapi.responses import FileResponse
 # Add project root to python path to resolve src imports
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
-from src.config import UPLOAD_FOLDER, HEATMAP_OUTPUT_FOLDER, MODEL_CHECKPOINT_PATH, DEBUG
+from src.config import (
+    UPLOAD_FOLDER,
+    HEATMAP_OUTPUT_FOLDER,
+    MODEL_CHECKPOINT_PATH,
+    DEBUG,
+)
 from src.model_training.model import FractureModel
 from src.api.routes import auth, records, detection, prognosis
 
@@ -46,9 +51,13 @@ def load_ml_model():
         if MODEL_CHECKPOINT_PATH.exists():
             checkpoint = torch.load(MODEL_CHECKPOINT_PATH, map_location=device)
             model.load_state_dict(checkpoint["model_state_dict"])
-            print(f"[*] PyTorch Model loaded successfully from: {MODEL_CHECKPOINT_PATH}")
+            print(
+                f"[*] PyTorch Model loaded successfully from: {MODEL_CHECKPOINT_PATH}"
+            )
         else:
-            print(f"[!] Warning: Pretrained checkpoint not found at: {MODEL_CHECKPOINT_PATH}")
+            print(
+                f"[!] Warning: Pretrained checkpoint not found at: {MODEL_CHECKPOINT_PATH}"
+            )
             print("[*] Running API with randomly initialized weights for debugging.")
 
         model.to(device)
@@ -71,7 +80,9 @@ HEATMAP_OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 
 # Mount asset directories so files can be accessed via URL (e.g. http://localhost:8000/uploads/scan.png)
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_FOLDER)), name="uploads")
-app.mount("/heatmaps", StaticFiles(directory=str(HEATMAP_OUTPUT_FOLDER)), name="heatmaps")
+app.mount(
+    "/heatmaps", StaticFiles(directory=str(HEATMAP_OUTPUT_FOLDER)), name="heatmaps"
+)
 
 # Mount frontend static folder (css/js) if it exists
 static_dir = Path("src/frontend/static")

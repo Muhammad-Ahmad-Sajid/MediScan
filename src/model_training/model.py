@@ -64,13 +64,17 @@ class FractureModel(nn.Module):
         for param in self.bone_head.parameters():
             param.requires_grad = True
 
-        print("[*] Stage 1 Freezing Complete: ResNet backbone layers below layer3 are frozen.")
+        print(
+            "[*] Stage 1 Freezing Complete: ResNet backbone layers below layer3 are frozen."
+        )
 
     def unfreeze_all(self):
         """Unfreezes all parameters of the model (backbone + heads) for Stage 2 fine-tuning."""
         for param in self.parameters():
             param.requires_grad = True
-        print("[*] Stage 2 Unfreezing Complete: All layers unfrozen for end-to-end fine-tuning.")
+        print(
+            "[*] Stage 2 Unfreezing Complete: All layers unfrozen for end-to-end fine-tuning."
+        )
 
     def forward(self, x: torch.Tensor):
         """
@@ -124,7 +128,9 @@ class Stage2FractureModel(nn.Module):
         """Unfreezes all parameters of the model for end-to-end Stage 2 fine-tuning."""
         for param in self.parameters():
             param.requires_grad = True
-        print("[*] Stage 2 Unfreezing Complete: All layers unfrozen for end-to-end fine-tuning.")
+        print(
+            "[*] Stage 2 Unfreezing Complete: All layers unfrozen for end-to-end fine-tuning."
+        )
 
     def forward(self, x: torch.Tensor):
         """

@@ -1,7 +1,17 @@
 import uuid
 import enum
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Enum, Text
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    Float,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Enum,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship, declarative_base
 
@@ -44,10 +54,14 @@ class Patient(Base):
         default=uuid.uuid4,
         comment="UUID primary key identifying the patient",
     )
-    full_name = Column(String(255), nullable=False, comment="Full legal name of the patient")
+    full_name = Column(
+        String(255), nullable=False, comment="Full legal name of the patient"
+    )
     age = Column(Integer, nullable=False, comment="Age of the patient in years")
     gender = Column(
-        String(50), nullable=False, comment="Gender of the patient (e.g. Male, Female, Other)"
+        String(50),
+        nullable=False,
+        comment="Gender of the patient (e.g. Male, Female, Other)",
     )
     comorbidities = Column(
         ARRAY(String),
@@ -63,7 +77,9 @@ class Patient(Base):
     )
 
     # Bidirectional One-to-Many Relationship: Patient -> XrayScans
-    scans = relationship("XrayScan", back_populates="patient", cascade="all, delete-orphan")
+    scans = relationship(
+        "XrayScan", back_populates="patient", cascade="all, delete-orphan"
+    )
 
 
 class XrayScan(Base):
@@ -114,7 +130,10 @@ class XrayScan(Base):
 
     # Bidirectional One-to-One: XrayScan -> FracturePrediction
     prediction = relationship(
-        "FracturePrediction", back_populates="scan", uselist=False, cascade="all, delete-orphan"
+        "FracturePrediction",
+        back_populates="scan",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
 
@@ -135,7 +154,9 @@ class FracturePrediction(Base):
         comment="Unique foreign key referencing xray_scans(id) (one-to-one)",
     )
     fracture_detected = Column(
-        Boolean, nullable=False, comment="True if a bone fracture is detected, False otherwise"
+        Boolean,
+        nullable=False,
+        comment="True if a bone fracture is detected, False otherwise",
     )
     severity = Column(
         Enum(Severity, name="severity_enum"),
@@ -161,7 +182,10 @@ class FracturePrediction(Base):
 
     # Bidirectional One-to-One: FracturePrediction -> PrognosisResult
     prognosis = relationship(
-        "PrognosisResult", back_populates="prediction", uselist=False, cascade="all, delete-orphan"
+        "PrognosisResult",
+        back_populates="prediction",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
 
@@ -182,10 +206,14 @@ class PrognosisResult(Base):
         comment="Unique foreign key referencing fracture_predictions(id) (one-to-one)",
     )
     rest_weeks_min = Column(
-        Integer, nullable=False, comment="Minimum recommended recovery/rest duration in weeks"
+        Integer,
+        nullable=False,
+        comment="Minimum recommended recovery/rest duration in weeks",
     )
     rest_weeks_max = Column(
-        Integer, nullable=False, comment="Maximum recommended recovery/rest duration in weeks"
+        Integer,
+        nullable=False,
+        comment="Maximum recommended recovery/rest duration in weeks",
     )
     cast_type = Column(
         String(100),
@@ -193,7 +221,9 @@ class PrognosisResult(Base):
         comment="Type of cast or support suggested for the injury (e.g., Short Arm Cast, Boot)",
     )
     plaster_required = Column(
-        Boolean, nullable=False, comment="Boolean flag indicating if a plaster cast is required"
+        Boolean,
+        nullable=False,
+        comment="Boolean flag indicating if a plaster cast is required",
     )
     weight_bearing_status = Column(
         String(100),

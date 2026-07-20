@@ -58,11 +58,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     }
 """
 
-if "@app.get(\"/admin/dashboard_stats" not in content:
-    content = content.replace(
-        '# Overrides',
-        endpoint_code + '\n# Overrides'
-    )
+if '@app.get("/admin/dashboard_stats' not in content:
+    content = content.replace("# Overrides", endpoint_code + "\n# Overrides")
     with open("d:/X-ray ML Model/main.py", "w", encoding="utf-8") as f:
         f.write(content)
     print("Success: Added GET /admin/dashboard_stats to main.py")

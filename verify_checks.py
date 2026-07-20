@@ -15,7 +15,7 @@ else:
 
 # Check it loads correctly
 checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-if 'epoch' in checkpoint:
+if "epoch" in checkpoint:
     print(f"[OK] Epoch saved: {checkpoint['epoch']}")
     print(f"[OK] Val accuracy: {checkpoint['val_acc']:.2f}%")
     print(f"[OK] Val loss: {checkpoint['val_loss']:.4f}")
@@ -34,18 +34,18 @@ else:
 
 result = run_osteoporosis_inference(test_image)
 
-print("="*50)
+print("=" * 50)
 print("OSTEOPOROSIS INFERENCE CHECK")
-print("="*50)
+print("=" * 50)
 print(f"Has Osteoporosis  : {result.has_osteoporosis}")
 # Note: confidence is already returned as a percentage from our module
-print(f"Confidence        : {result.confidence:.2f}%") 
+print(f"Confidence        : {result.confidence:.2f}%")
 print(f"Confidence Flag   : {result.confidence_flag}")
 print(f"Heatmap Path      : {result.heatmap_path}")
 print(f"Recommendation    : {result.clinical_recommendation[:60]}...")
 print(f"Prediction Time   : {result.prediction_time_ms:.1f}ms")
 print(f"Model Version     : {result.model_version}")
-print("="*50)
+print("=" * 50)
 
 # Verify heatmap was actually saved
 if result.heatmap_path:

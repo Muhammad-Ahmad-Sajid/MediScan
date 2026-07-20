@@ -7,13 +7,13 @@ with open("d:/X-ray ML Model/main.py", "r", encoding="utf-8") as f:
 # 1. Add Jinja2Templates import
 content = content.replace(
     "from fastapi.staticfiles import StaticFiles",
-    "from fastapi.staticfiles import StaticFiles\nfrom fastapi.templating import Jinja2Templates"
+    "from fastapi.staticfiles import StaticFiles\nfrom fastapi.templating import Jinja2Templates",
 )
 
 # 2. Update app.mount
 content = content.replace(
     'app.mount("/static", StaticFiles(directory="templates"), name="templates")',
-    'app.mount("/static", StaticFiles(directory="static"), name="static")\ntemplates = Jinja2Templates(directory="templates")'
+    'app.mount("/static", StaticFiles(directory="static"), name="static")\ntemplates = Jinja2Templates(directory="templates")',
 )
 
 # 3. Replace the UI routes and /overrides endpoint
@@ -104,11 +104,14 @@ def get_all_overrides(db: Session = Depends(get_db), current_user = Depends(get_
 
 if old_ui_routes in content:
     content = content.replace(old_ui_routes, new_ui_routes)
-    
+
     # Add HTMLResponse to fastapi imports
     if "HTMLResponse" not in content:
-        content = content.replace("from fastapi.responses import JSONResponse, FileResponse", "from fastapi.responses import JSONResponse, FileResponse, HTMLResponse")
-        
+        content = content.replace(
+            "from fastapi.responses import JSONResponse, FileResponse",
+            "from fastapi.responses import JSONResponse, FileResponse, HTMLResponse",
+        )
+
     with open("d:/X-ray ML Model/main.py", "w", encoding="utf-8") as f:
         f.write(content)
     print("Success: Updated UI routes and /admin/overrides in main.py")

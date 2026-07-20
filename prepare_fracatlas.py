@@ -56,11 +56,15 @@ def main():
 
     # 2. Check JSON structure for expected fracture_type and body_part fields
     # Standard COCO annotations do not have these keys. We check for their presence.
-    first_annotation = coco_data.get("annotations", [{}])[0] if coco_data.get("annotations") else {}
+    first_annotation = (
+        coco_data.get("annotations", [{}])[0] if coco_data.get("annotations") else {}
+    )
     first_image = coco_data.get("images", [{}])[0] if coco_data.get("images") else {}
 
     # We inspect keys in the first annotation or image to see if there is any custom metadata
-    has_fracture_type = "fracture_type" in first_annotation or "fracture_type" in first_image
+    has_fracture_type = (
+        "fracture_type" in first_annotation or "fracture_type" in first_image
+    )
     has_body_part = (
         "body_part" in first_annotation
         or "body_part" in first_image

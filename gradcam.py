@@ -61,11 +61,14 @@ def generate_heatmap(image_path: str, model_path: str = None) -> str:
 
         # Check if this is the old single-head checkpoint
         is_old_checkpoint = (
-            "backbone.fc.1.weight" in state_dict and "severity_head.0.weight" not in state_dict
+            "backbone.fc.1.weight" in state_dict
+            and "severity_head.0.weight" not in state_dict
         )
 
         if is_old_checkpoint:
-            model.severity_head = torch.nn.Sequential(torch.nn.Identity(), torch.nn.Linear(2048, 4))
+            model.severity_head = torch.nn.Sequential(
+                torch.nn.Identity(), torch.nn.Linear(2048, 4)
+            )
             new_state_dict = {}
             for k, v in state_dict.items():
                 if k == "backbone.fc.1.weight":
@@ -98,7 +101,9 @@ def generate_heatmap(image_path: str, model_path: str = None) -> str:
     # Apply standard inference transform (normalization + ToTensorV2)
     transform = get_inference_transform()
     transformed = transform(image=img_resized)
-    input_tensor = transformed["image"].unsqueeze(0).to(device)  # Shape: (1, 3, 224, 224)
+    input_tensor = (
+        transformed["image"].unsqueeze(0).to(device)
+    )  # Shape: (1, 3, 224, 224)
 
     # 5. Determine predicted severity category for CAM targeting
     with torch.no_grad():

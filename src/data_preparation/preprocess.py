@@ -27,7 +27,10 @@ def get_inference_transform():
     Applies only normalization and converts to tensor.
     """
     return A.Compose(
-        [A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ToTensorV2()]
+        [
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]
     )
 
 

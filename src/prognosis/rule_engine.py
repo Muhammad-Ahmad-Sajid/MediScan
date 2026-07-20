@@ -2,7 +2,11 @@ from typing import Dict, List, Any
 
 
 def calculate_prognosis(
-    severity: str, confidence: float, age: int, comorbidities: List[str], bone_affected: str
+    severity: str,
+    confidence: float,
+    age: int,
+    comorbidities: List[str],
+    bone_affected: str,
 ) -> Dict[str, Any]:
     """
     Evaluates clinical prognosis recommendations using a rules-based engine.
@@ -32,7 +36,11 @@ def calculate_prognosis(
     # Hip/Leg fractures in elderly patients with osteoporosis are also surgical high-risks.
     if severity_lower in ["comminuted", "displaced"]:
         referral_flag = "surgical"
-    elif bone_lower in ["hip", "leg"] and age >= 65 and "osteoporosis" in comorbidities_lower:
+    elif (
+        bone_lower in ["hip", "leg"]
+        and age >= 65
+        and "osteoporosis" in comorbidities_lower
+    ):
         referral_flag = "surgical"
     else:
         referral_flag = "conservative"
@@ -112,7 +120,9 @@ def calculate_prognosis(
         if severity_lower == "hairline":
             weight_bearing_status = "Full weight bearing (No lifting over 2 lbs)"
         else:
-            weight_bearing_status = "Non-weight bearing for affected arm (Strict sling/elevation)"
+            weight_bearing_status = (
+                "Non-weight bearing for affected arm (Strict sling/elevation)"
+            )
 
     return {
         "rest_weeks_min": rest_min,

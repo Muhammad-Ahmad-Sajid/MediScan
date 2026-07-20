@@ -25,7 +25,9 @@ def main():
     original_len = len(df)
 
     # We also check if the file path ends with a filename starting with ._
-    df = df[~df["file_path"].apply(lambda x: Path(x).name.startswith("._"))].reset_index(drop=True)
+    df = df[
+        ~df["file_path"].apply(lambda x: Path(x).name.startswith("._"))
+    ].reset_index(drop=True)
     skipped_resource_files = original_len - len(df)
     print(f"Filtered out {skipped_resource_files} macOS resource files.")
 
@@ -37,7 +39,9 @@ def main():
         df, test_size=0.15, random_state=42, stratify=df["stratify_col"]
     )
 
-    print(f"Stratified split completed: Train size = {len(train_df)}, Val size = {len(val_df)}")
+    print(
+        f"Stratified split completed: Train size = {len(train_df)}, Val size = {len(val_df)}"
+    )
 
     # 4. Copy files to data/mura/
     # Target folders structure:

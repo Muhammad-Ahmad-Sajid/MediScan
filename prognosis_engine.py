@@ -44,9 +44,24 @@ BASE_HEALING_WEEKS: Dict[str, Dict[str, Tuple[int, int]]] = {
         "displaced": (8, 10),
         "comminuted": (10, 12),
     },
-    "ankle": {"hairline": (4, 6), "simple": (6, 8), "displaced": (8, 12), "comminuted": (12, 16)},
-    "femur": {"hairline": (6, 8), "simple": (8, 12), "displaced": (12, 16), "comminuted": (16, 24)},
-    "humerus": {"hairline": (3, 5), "simple": (6, 8), "displaced": (8, 12), "comminuted": (12, 16)},
+    "ankle": {
+        "hairline": (4, 6),
+        "simple": (6, 8),
+        "displaced": (8, 12),
+        "comminuted": (12, 16),
+    },
+    "femur": {
+        "hairline": (6, 8),
+        "simple": (8, 12),
+        "displaced": (12, 16),
+        "comminuted": (16, 24),
+    },
+    "humerus": {
+        "hairline": (3, 5),
+        "simple": (6, 8),
+        "displaced": (8, 12),
+        "comminuted": (12, 16),
+    },
     "metatarsal": {
         "hairline": (3, 4),
         "simple": (6, 8),
@@ -96,7 +111,9 @@ CAST_LOOKUP: Dict[str, Dict[str, str]] = {
 }
 
 
-def get_prognosis(bone: str, severity: str, age: int, comorbidities: List[str]) -> PrognosisResult:
+def get_prognosis(
+    bone: str, severity: str, age: int, comorbidities: List[str]
+) -> PrognosisResult:
     """
     Computes recovery prognosis recommendations using AO Foundation guidelines and modifier metrics.
 
@@ -161,12 +178,16 @@ def get_prognosis(bone: str, severity: str, age: int, comorbidities: List[str]) 
         if severity_clean == "hairline":
             weight_bearing_status = "Full weight-bearing as tolerated"
         elif severity_clean == "simple":
-            weight_bearing_status = "Partial weight-bearing (touch-down) with assistive device"
+            weight_bearing_status = (
+                "Partial weight-bearing (touch-down) with assistive device"
+            )
         else:
             weight_bearing_status = "Non-weight-bearing (strict wheelchair/crutches)"
     else:
         # Upper limb bones: distal_radius, clavicle, humerus
-        weight_bearing_status = "Upper extremity: Non-weight-bearing (No lifting/pushing)"
+        weight_bearing_status = (
+            "Upper extremity: Non-weight-bearing (No lifting/pushing)"
+        )
 
     # 5. Determine Referral Flag (Surgical vs Conservative)
     # Displaced/comminuted bone fractures require reduction (surgery).
@@ -194,7 +215,12 @@ def get_prognosis(bone: str, severity: str, age: int, comorbidities: List[str]) 
 if __name__ == "__main__":
     examples = [
         # Example 1: Tommy Shelby (14yo, hairline, wrist/distal_radius)
-        {"bone": "distal_radius", "severity": "hairline", "age": 14, "comorbidities": []},
+        {
+            "bone": "distal_radius",
+            "severity": "hairline",
+            "age": 14,
+            "comorbidities": [],
+        },
         # Example 2: Arthur Dent (75yo, simple, leg/ankle, osteoporosis + diabetes)
         {
             "bone": "ankle",
@@ -203,7 +229,12 @@ if __name__ == "__main__":
             "comorbidities": ["Osteoporosis", "Diabetes"],
         },
         # Example 3: Bruce Wayne (45yo, displaced, femur, diabetes)
-        {"bone": "femur", "severity": "displaced", "age": 45, "comorbidities": ["Diabetes"]},
+        {
+            "bone": "femur",
+            "severity": "displaced",
+            "age": 45,
+            "comorbidities": ["Diabetes"],
+        },
     ]
 
     print("=" * 80)
@@ -215,7 +246,9 @@ if __name__ == "__main__":
         print(
             f"\nExample {i}: Patient Profile - Age {ex['age']}, Bone: {ex['bone']}, Severity: {ex['severity']}, Comorbidities: {ex['comorbidities']}"
         )
-        print(f"  -> Rest Weeks:       {res.rest_weeks_min} - {res.rest_weeks_max} weeks")
+        print(
+            f"  -> Rest Weeks:       {res.rest_weeks_min} - {res.rest_weeks_max} weeks"
+        )
         print(f"  -> Cast Type:        {res.cast_type}")
         print(f"  -> Plaster Required: {res.plaster_required}")
         print(f"  -> Weight Bearing:   {res.weight_bearing_status}")

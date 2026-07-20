@@ -38,11 +38,12 @@ def get_patient_scans(patient_id: str, db: Session = Depends(get_db), current_us
     return scans
 """
 
-if "@patient_router.get(\"/{patient_id}\"" in content:
+if '@patient_router.get("/{patient_id}"' in content:
     # Insert right before the GET /patients/{patient_id} route
     content = content.replace(
         '@patient_router.get("/{patient_id}", response_model=schemas.PatientResponse)',
-        endpoint_code + '\n@patient_router.get("/{patient_id}", response_model=schemas.PatientResponse)'
+        endpoint_code
+        + '\n@patient_router.get("/{patient_id}", response_model=schemas.PatientResponse)',
     )
     with open("d:/X-ray ML Model/main.py", "w", encoding="utf-8") as f:
         f.write(content)

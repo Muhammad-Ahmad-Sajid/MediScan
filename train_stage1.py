@@ -39,7 +39,9 @@ class MURAPretrainDataset(Dataset):
         self.samples = []
 
         if not self.split_dir.exists():
-            raise FileNotFoundError(f"MURA directory split not found at: {self.split_dir}")
+            raise FileNotFoundError(
+                f"MURA directory split not found at: {self.split_dir}"
+            )
 
         for label_name, label_idx in [("normal", 0), ("abnormal", 1)]:
             class_dir = self.split_dir / label_name
@@ -110,7 +112,9 @@ class MuraResNet50(nn.Module):
             if name in ["layer3", "layer4", "fc"]:
                 for param in child.parameters():
                     param.requires_grad = True
-        print("[*] Frozen lower layers: only layer3, layer4, and fc head are trainable.")
+        print(
+            "[*] Frozen lower layers: only layer3, layer4, and fc head are trainable."
+        )
 
     def unfreeze_all(self):
         """Unfreezes all layers for end-to-end training."""
@@ -146,7 +150,9 @@ def train_epoch(
             continue
 
         images = images.to(device)
-        labels = labels.to(device).float().unsqueeze(1)  # Shape: (B, 1) for BCEWithLogitsLoss
+        labels = (
+            labels.to(device).float().unsqueeze(1)
+        )  # Shape: (B, 1) for BCEWithLogitsLoss
 
         optimizer.zero_grad()
         outputs = model(images)
@@ -183,7 +189,9 @@ def train_epoch(
                     "optimizer_state_dict": optimizer.state_dict(),
                     "val_loss": 0.0,
                     "val_acc": 0.0,
-                    "best_val_loss": best_val_loss if best_val_loss is not None else float("inf"),
+                    "best_val_loss": (
+                        best_val_loss if best_val_loss is not None else float("inf")
+                    ),
                     "early_stop_counter": (
                         early_stop_counter if early_stop_counter is not None else 0
                     ),
@@ -233,11 +241,15 @@ def val_epoch(model, loader, criterion, device):
 # ------------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description="MURA Stage 1 Pretraining")
-    parser.add_argument("--epochs", type=int, default=25, help="Total number of training epochs")
+    parser.add_argument(
+        "--epochs", type=int, default=25, help="Total number of training epochs"
+    )
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument(
-        "--resume", action="store_true", help="Resume training from the last saved best checkpoint"
+        "--resume",
+        action="store_true",
+        help="Resume training from the last saved best checkpoint",
     )
     args = parser.parse_args()
 
@@ -259,7 +271,10 @@ def main():
     )
 
     val_transform = A.Compose(
-        [A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ToTensorV2()]
+        [
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]
     )
 
     # 2. Datasets
@@ -368,7 +383,9 @@ def main():
             else:
                 start_epoch = checkpoint["epoch"] + 1
                 start_batch = 0
-                print(f"[*] Successfully loaded checkpoint. Resuming from Epoch {start_epoch}")
+                print(
+                    f"[*] Successfully loaded checkpoint. Resuming from Epoch {start_epoch}"
+                )
 
             best_val_loss = checkpoint.get(
                 "best_val_loss", checkpoint.get("val_loss", float("inf"))
@@ -387,7 +404,9 @@ def main():
                     "[*] Optimizer state loading skipped to prevent shape mismatch runtime errors."
                 )
         else:
-            print("[!] Warning: No checkpoint found to resume from. Starting from scratch.")
+            print(
+                "[!] Warning: No checkpoint found to resume from. Starting from scratch."
+            )
 
     # 7. Training loop
     for epoch in range(start_epoch, args.epochs + 1):
@@ -464,7 +483,9 @@ def main():
             )
         else:
             early_stop_counter += 1
-            print(f"  Early stopping counter: {early_stop_counter}/{early_stop_patience}")
+            print(
+                f"  Early stopping counter: {early_stop_counter}/{early_stop_patience}"
+            )
 
         if early_stop_counter >= early_stop_patience:
             print(

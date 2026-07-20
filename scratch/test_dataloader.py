@@ -39,7 +39,9 @@ class MURAPretrainDataset(Dataset):
                         ".jpeg",
                     ] and not file.name.startswith("._"):
                         self.samples.append((file, label_idx))
-                        if len(self.samples) >= 100:  # limit to 100 samples for quick test
+                        if (
+                            len(self.samples) >= 100
+                        ):  # limit to 100 samples for quick test
                             break
 
     def __len__(self):

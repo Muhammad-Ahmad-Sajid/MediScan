@@ -38,7 +38,10 @@ Base.metadata.create_all(bind=engine)
 db = TestingSessionLocal()
 try:
     p = Patient(
-        full_name="Bruce Wayne", age=35, gender="Male", comorbidities=["Osteoporosis", "Diabetes"]
+        full_name="Bruce Wayne",
+        age=35,
+        gender="Male",
+        comorbidities=["Osteoporosis", "Diabetes"],
     )
     db.add(p)
     db.commit()

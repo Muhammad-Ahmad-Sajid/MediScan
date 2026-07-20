@@ -21,7 +21,9 @@ if str(project_root) not in sys.path:
 from src.model_training.model import Stage2FractureModel
 
 # Setup structured logger
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Constants
@@ -62,7 +64,9 @@ def load_global_model():
         logger.error(err_msg)
         raise FileNotFoundError(err_msg)
 
-    logger.info(f"Loading Stage 2 best checkpoint model from {CHECKPOINT_PATH.resolve()}...")
+    logger.info(
+        f"Loading Stage 2 best checkpoint model from {CHECKPOINT_PATH.resolve()}..."
+    )
     try:
         # Load Model architecture and set strictly to False for backbone, then load weights
         model = Stage2FractureModel(pretrained=False)
@@ -102,7 +106,10 @@ class ModelWrapper(nn.Module):
 # Grad-CAM Heatmap Generation Helper
 # ------------------------------------------------------------------------------
 def generate_gradcam_heatmap(
-    image_path: str, input_tensor: torch.Tensor, predicted_class_idx: int, img_resized: np.ndarray
+    image_path: str,
+    input_tensor: torch.Tensor,
+    predicted_class_idx: int,
+    img_resized: np.ndarray,
 ) -> str:
     """
     Generates a Grad-CAM heatmap highlighting regions contributing to the prediction
@@ -123,7 +130,9 @@ def generate_gradcam_heatmap(
         # Overlay on the original grayscale 224x224 image
         # Extract grayscale channel, repeat it to create 3-channel RGB float [0, 1]
         img_gray_resized = img_resized[:, :, 0]
-        rgb_img_float = np.float32(cv2.cvtColor(img_gray_resized, cv2.COLOR_GRAY2RGB)) / 255.0
+        rgb_img_float = (
+            np.float32(cv2.cvtColor(img_gray_resized, cv2.COLOR_GRAY2RGB)) / 255.0
+        )
 
         # show_cam_on_image overlays CAM mask on the image using COLORMAP_JET
         cam_image = show_cam_on_image(
@@ -240,7 +249,9 @@ def run_inference(image_path: str) -> InferenceResult:
     img_normalized = (img_float - mean) / std
 
     # Transpose HWC -> CHW, unsqueeze batch dim, and send to device
-    input_tensor = torch.from_numpy(img_normalized.transpose(2, 0, 1)).unsqueeze(0).to(device)
+    input_tensor = (
+        torch.from_numpy(img_normalized.transpose(2, 0, 1)).unsqueeze(0).to(device)
+    )
 
     # 2. Forward Pass for Fracture Head
     with torch.no_grad():

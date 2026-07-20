@@ -43,8 +43,9 @@ logger = logging.getLogger("mediscan.tb.inference")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
     logger.addHandler(handler)
+
 
 # ==============================================================================
 # OUTPUT DATACLASS
@@ -59,6 +60,7 @@ class TBInferenceResult:
     clinical_recommendation: str
     prediction_time_ms: float
     model_version: str
+
 
 # ==============================================================================
 # CLINICAL RECOMMENDATIONS
@@ -94,11 +96,13 @@ RECOMMENDATIONS = {
 # ==============================================================================
 # PREPROCESSING (must match train_tb.py exactly)
 # ==============================================================================
-val_transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
+val_transform = transforms.Compose(
+    [
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
 
 
 def preprocess_image(image_path: str):
@@ -111,7 +115,9 @@ def preprocess_image(image_path: str):
         raise ValueError(f"Cannot load image: {image_path}")
 
     if img_gray.shape[0] < 50 or img_gray.shape[1] < 50:
-        raise ValueError(f"Image too small: {img_gray.shape[1]}x{img_gray.shape[0]} pixels")
+        raise ValueError(
+            f"Image too small: {img_gray.shape[1]}x{img_gray.shape[0]} pixels"
+        )
 
     # CLAHE with clipLimit=3.0 (higher for chest X-rays)
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
@@ -127,6 +133,7 @@ def preprocess_image(image_path: str):
 
     return input_tensor, img_rgb
 
+
 # ==============================================================================
 # MODEL CREATION & LOADING (Module Level — Lazy Singleton)
 # ==============================================================================
@@ -141,10 +148,7 @@ def _create_model():
     # Architecture must match train_tb.py: Linear(2048,512)->ReLU->Dropout(0.5)->Linear(512,1)
     # Single output node was used with BCEWithLogitsLoss during training.
     model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 512),
-        nn.ReLU(),
-        nn.Dropout(0.5),
-        nn.Linear(512, 1)
+        nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 1)
     )
     return model
 
@@ -176,6 +180,7 @@ def get_model():
 
     _model = model
     return _model
+
 
 # ==============================================================================
 # GRAD-CAM HEATMAP GENERATION
@@ -220,6 +225,7 @@ def generate_heatmap(model, input_tensor, original_rgb):
         logger.warning(f"Grad-CAM heatmap generation failed: {e}")
         return None
 
+
 # ==============================================================================
 # CONFIDENCE FLAG & RECOMMENDATION LOGIC
 # ==============================================================================
@@ -249,6 +255,7 @@ def _get_recommendation(confidence_flag: str, has_tb: bool) -> str:
         return RECOMMENDATIONS[("likely_normal", None)]
     else:
         return RECOMMENDATIONS[(confidence_flag, has_tb)]
+
 
 # ==============================================================================
 # MAIN INFERENCE FUNCTION
@@ -312,6 +319,7 @@ def run_tb_inference(image_path: str) -> TBInferenceResult:
         prediction_time_ms=round(prediction_time_ms, 2),
         model_version=MODEL_VERSION,
     )
+
 
 # ==============================================================================
 # STANDALONE TEST

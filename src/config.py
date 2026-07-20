@@ -25,7 +25,9 @@ UPLOAD_FOLDER_RAW: str = os.getenv("UPLOAD_FOLDER", "uploads/")
 UPLOAD_FOLDER: Path = BASE_DIR / UPLOAD_FOLDER_RAW
 
 # File path to the saved PyTorch model weights (.pth)
-MODEL_CHECKPOINT_PATH_RAW: str = os.getenv("MODEL_CHECKPOINT_PATH", "checkpoints/best_model.pth")
+MODEL_CHECKPOINT_PATH_RAW: str = os.getenv(
+    "MODEL_CHECKPOINT_PATH", "checkpoints/best_model.pth"
+)
 MODEL_CHECKPOINT_PATH: Path = BASE_DIR / MODEL_CHECKPOINT_PATH_RAW
 
 # Folder for outputting Grad-CAM heatmap visualization images

@@ -20,7 +20,9 @@ class PrognosisOverride(BaseModel):
     cast_type: Optional[str] = Field(None, max_length=100)
     plaster_required: Optional[bool] = None
     weight_bearing_status: Optional[str] = Field(None, max_length=100)
-    referral_flag: Optional[str] = Field(None, description="'conservative' or 'surgical'")
+    referral_flag: Optional[str] = Field(
+        None, description="'conservative' or 'surgical'"
+    )
     override_notes: str = Field(
         ..., min_length=5, description="Justification for clinical override"
     )

@@ -46,8 +46,12 @@ def test_age_modifier_increases_rest_time():
 def test_comorbidity_stacking_modifiers():
     """Verifies that osteoporosis (25%) and diabetes (20%) modifiers stack correctly to 45%."""
     res_none = get_prognosis("distal_radius", "simple", age=30, comorbidities=[])
-    res_osteo = get_prognosis("distal_radius", "simple", age=30, comorbidities=["Osteoporosis"])
-    res_diab = get_prognosis("distal_radius", "simple", age=30, comorbidities=["Diabetes"])
+    res_osteo = get_prognosis(
+        "distal_radius", "simple", age=30, comorbidities=["Osteoporosis"]
+    )
+    res_diab = get_prognosis(
+        "distal_radius", "simple", age=30, comorbidities=["Diabetes"]
+    )
     res_both = get_prognosis(
         "distal_radius", "simple", age=30, comorbidities=["Osteoporosis", "Diabetes"]
     )

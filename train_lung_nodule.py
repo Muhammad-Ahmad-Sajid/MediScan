@@ -1,14 +1,10 @@
 import os
 import sys
-import glob
 import json
 import time
 import logging
-import random
 import numpy as np
-import pandas as pd
 import cv2
-from collections import Counter
 
 import torch
 import torch.nn as nn
@@ -244,7 +240,7 @@ def load_split_data(split_name):
         label = 0 if "normal" in class_folder.lower() else 1
 
         for img_name in os.listdir(class_path):
-            if img_name.lower().endswith((".png", ".jpg", ".jpeg", ".tif")):
+            if img_name.lower().endswith((".png", ".jpg", ".jpeg", ".ti")):
                 paths.append(os.path.join(class_path, img_name))
                 labels.append(label)
 
@@ -350,7 +346,7 @@ def main():
     )
 
     mlflow.set_experiment("lung_nodule_detection")
-    best_val_loss = float("inf")
+    best_val_loss = float("in")
     epochs_no_improve = 0
     best_epoch = 0
     best_sensitivity = 0.0

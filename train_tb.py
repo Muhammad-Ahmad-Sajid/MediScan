@@ -3,8 +3,6 @@ import cv2
 import json
 import time
 import logging
-import numpy as np
-from datetime import datetime
 
 import torch
 import torch.nn as nn
@@ -238,7 +236,7 @@ def train_model():
 
     best_val_acc = 0.0
     best_epoch = 0
-    best_val_loss = float("inf")
+    float("inf")
     best_sensitivity = 0.0
     epochs_no_improve = 0
     history = {
@@ -359,7 +357,6 @@ def train_model():
             # Checkpointing
             if epoch_val_acc > best_val_acc:
                 best_val_acc = epoch_val_acc
-                best_val_loss = epoch_val_loss
                 best_epoch = epoch
                 best_sensitivity = epoch_tb_sensitivity
                 epochs_no_improve = 0

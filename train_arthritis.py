@@ -15,7 +15,6 @@ from sklearn.metrics import (
     confusion_matrix,
     f1_score,
     accuracy_score,
-    recall_score,
 )
 import mlflow
 
@@ -245,7 +244,7 @@ def main():
     mlflow.set_experiment("arthritis_grading")
 
     history = []
-    best_val_loss = float("inf")
+    best_val_loss = float("in")
     best_val_acc = 0.0
     epochs_no_improve = 0
     best_epoch = 0
@@ -425,7 +424,7 @@ def main():
             # Early Stopping
             if epochs_no_improve >= EARLY_STOPPING_PATIENCE:
                 logger.info(
-                    f"Early stopping condition met (7 epochs without improvement), but forcefully ignored to reach Epoch 30."
+                    "Early stopping condition met (7 epochs without improvement), but forcefully ignored to reach Epoch 30."
                 )
                 # break
 

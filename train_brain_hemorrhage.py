@@ -1,6 +1,5 @@
 import os
 import cv2
-import json
 import time
 import torch
 import logging
@@ -134,7 +133,7 @@ def perform_discovery():
             [
                 f
                 for f in files
-                if f.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".dcm"))
+                if f.lower().endswith((".png", ".jpg", ".jpeg", ".ti", ".dcm"))
             ]
         )
         total += img_count
@@ -162,7 +161,7 @@ def perform_discovery():
                     [
                         f
                         for f in files
-                        if f.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".dcm"))
+                        if f.lower().endswith((".png", ".jpg", ".jpeg", ".ti", ".dcm"))
                     ]
                 )
                 logger.info(f"{indent}{os.path.basename(root)}/  [{img_count} images]")
@@ -188,7 +187,7 @@ def perform_discovery():
                 [
                     f
                     for f in files
-                    if f.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".dcm"))
+                    if f.lower().endswith((".png", ".jpg", ".jpeg", ".ti", ".dcm"))
                 ]
             )
             if img_count > 0:
@@ -353,7 +352,7 @@ def run_cross_validation(X, y):
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
     fold_metrics = []
-    best_overall_val_loss = float("inf")
+    best_overall_val_loss = float("in")
     best_overall_sens = 0
 
     start_time = time.time()
@@ -399,9 +398,8 @@ def run_cross_validation(X, y):
             optimizer, mode="min", patience=3, factor=0.5
         )
 
-        best_val_loss = float("inf")
+        best_val_loss = float("in")
         patience_counter = 0
-        best_epoch = 0
         best_sens = 0
 
         logger.info(
@@ -442,7 +440,6 @@ def run_cross_validation(X, y):
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                best_epoch = epoch
                 best_sens = sens
                 patience_counter = 0
 
@@ -496,7 +493,7 @@ def run_cross_validation(X, y):
         sens, spec, preds, labels = tta_evaluate(model, full_ds)
 
     if sens < 0.90:
-        logger.warning(f"⚠️ HEMORRHAGE SENSITIVITY BELOW 90% CLINICAL THRESHOLD.")
+        logger.warning("⚠️ HEMORRHAGE SENSITIVITY BELOW 90% CLINICAL THRESHOLD.")
         logger.info(
             "Actions: (1) Lower classification threshold to 0.35, (2) Combine with additional hemorrhage datasets, (3) Apply test-time augmentation (TTA)."
         )

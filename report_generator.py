@@ -185,7 +185,7 @@ def generate_report(
             [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
         )
         scan_id = scan.get("scan_id", "unknown")
-        filename = f"{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
         report_id = str(uuid.uuid4())[:8].upper()
@@ -488,7 +488,7 @@ def generate_tb_report(
             [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
         )
         scan_id = scan.get("scan_id", "unknown")
-        filename = f"tb_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"tb_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
         report_id = str(uuid.uuid4())[:8].upper()
@@ -755,7 +755,7 @@ def generate_lung_nodule_report(
             [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
         )
         scan_id = scan.get("scan_id", "unknown")
-        filename = f"lung_nodule_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"lung_nodule_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
         report_id = str(uuid.uuid4())[:8].upper()
@@ -1049,7 +1049,7 @@ def generate_brain_tumor_report(
             [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
         )
         scan_id = scan.get("scan_id", "unknown")
-        filename = f"brain_tumor_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"brain_tumor_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
         report_id = str(uuid.uuid4())[:8].upper()
@@ -1474,7 +1474,7 @@ def generate_brain_hemorrhage_report(
             [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
         )
         scan_id = scan.get("scan_id", "unknown")
-        filename = f"brain_hemorrhage_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"brain_hemorrhage_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
         report_id = str(uuid.uuid4())[:8].upper()
@@ -1818,12 +1818,12 @@ def generate_brain_hemorrhage_report(
 
 
 def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str:
-    from reportlab.graphics.shapes import Drawing, Rect, String, Line, Group
+    from reportlab.graphics.shapes import Drawing, Rect, String, Line
 
     logger.info("Generating Bone Age report...")
     try:
         os.makedirs("reports", exist_ok=True)
-        filename = f"bone_age_{scan['scan_id']}.pdf"
+        filename = f"bone_age_{scan['scan_id']}.pd"
         filepath = os.path.join("reports", filename)
 
         doc = ReportTemplate(
@@ -1844,7 +1844,7 @@ def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str
             "H1_Center", parent=styles["Heading1"], alignment=TA_CENTER
         )
         h2_style = styles["Heading2"]
-        h3_style = styles["Heading3"]
+        styles["Heading3"]
 
         elements = []
 
@@ -2111,7 +2111,7 @@ Provide patient date of birth for complete assessment."""
             Paragraph(
                 perf_note,
                 ParagraphStyle(
-                    "Perf", parent=normal_style, fontSize=9, textColor=colors.dimgrey
+                    "Per", parent=normal_style, fontSize=9, textColor=colors.dimgrey
                 ),
             )
         )
@@ -2135,13 +2135,13 @@ Provide patient date of birth for complete assessment."""
 
 
 def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> str:
-    from reportlab.graphics.shapes import Drawing, Rect, String, Line, Group
+    from reportlab.graphics.shapes import Drawing, Rect, String
     import json
 
     logger.info("Generating Retinopathy report...")
     try:
         os.makedirs("reports", exist_ok=True)
-        filename = f"retinopathy_{scan['scan_id']}.pdf"
+        filename = f"retinopathy_{scan['scan_id']}.pd"
         filepath = os.path.join("reports", filename)
 
         doc = ReportTemplate(
@@ -2292,7 +2292,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
         if inference_result.referable_dr:
             ref_msg = "⚠️ REFERABLE DIABETIC RETINOPATHY<br/>This patient requires ophthalmology referral.<br/>Grade 2+ DR needs specialist management."
             ref_style = ParagraphStyle(
-                "Ref",
+                "Re",
                 parent=normal_style,
                 alignment=TA_CENTER,
                 backColor=colors.HexColor("#FEEBC8"),
@@ -2305,7 +2305,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
         else:
             ref_msg = "Non-referable. Routine monitoring advised."
             ref_style = ParagraphStyle(
-                "Ref",
+                "Re",
                 parent=normal_style,
                 alignment=TA_CENTER,
                 backColor=colors.HexColor("#F0FFF4"),
@@ -2594,7 +2594,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
             Paragraph(
                 perf_note,
                 ParagraphStyle(
-                    "Perf", parent=normal_style, fontSize=9, textColor=colors.dimgrey
+                    "Per", parent=normal_style, fontSize=9, textColor=colors.dimgrey
                 ),
             )
         )
@@ -2618,7 +2618,6 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
 
 
 if __name__ == "__main__":
-    from inference import InferenceResult
 
     dummy_patient = {
         "full_name": "Jane Doe",
@@ -2696,7 +2695,7 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
             if isinstance(scan, dict)
             else getattr(scan, "id", "unknown")
         )
-        filename = f"fracture_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"fracture_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
         report_id = str(uuid.uuid4())[:8].upper()
@@ -2913,7 +2912,7 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
             if isinstance(scan, dict)
             else getattr(scan, "id", "unknown")
         )
-        filename = f"arthritis_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"arthritis_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
         report_id = str(uuid.uuid4())[:8].upper()
@@ -3110,7 +3109,7 @@ def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
             if isinstance(scan, dict)
             else getattr(scan, "id", "unknown")
         )
-        filename = f"osteoporosis_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"osteoporosis_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
         report_id = str(uuid.uuid4())[:8].upper()

@@ -9,7 +9,6 @@ from torchvision import models
 import logging
 from dataclasses import dataclass
 from typing import Optional
-from pathlib import Path
 import mlflow
 
 from pytorch_grad_cam import GradCAM

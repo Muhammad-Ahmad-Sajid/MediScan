@@ -39,7 +39,7 @@ def train_one_epoch(
     start_batch=0,
     save_freq=300,
     checkpoint_dir=None,
-    best_val_loss=float("inf"),
+    best_val_loss=float("in"),
     early_stop_counter=0,
     scheduler_state_dict=None,
 ):
@@ -260,7 +260,7 @@ def main():
     best_checkpoint_path = checkpoint_dir / "stage2_best.pth"
     latest_checkpoint_path = checkpoint_dir / "stage2_latest.pth"
 
-    best_val_loss = float("inf")
+    best_val_loss = float("in")
     start_epoch = 1
     start_batch = 0
     early_stop_patience = 5
@@ -297,7 +297,7 @@ def main():
                 except Exception as e:
                     print(f"[!] Warning: Could not load scheduler state: {e}")
 
-            best_val_loss = checkpoint.get("best_val_loss", float("inf"))
+            best_val_loss = checkpoint.get("best_val_loss", float("in"))
             early_stop_counter = checkpoint.get("early_stop_counter", 0)
             best_epoch = checkpoint.get("best_epoch", checkpoint.get("epoch", 1))
             best_fracture_acc = checkpoint.get("best_fracture_acc", 0.0)

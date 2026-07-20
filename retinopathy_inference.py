@@ -6,7 +6,7 @@ import uuid
 import logging
 import datetime
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -154,7 +154,7 @@ def get_clinical_recommendation(
         rec += (
             f"\n\nNote: Combined probability of Severe/Proliferative DR is "
             f"elevated ({severe_prob:.1%}). Given the risk of vision loss, "
-            f"ophthalmology referral is recommended regardless of grade."
+            "ophthalmology referral is recommended regardless of grade."
         )
 
     return rec
@@ -346,6 +346,6 @@ if __name__ == "__main__":
         rec_short = rec_short[:77] + "..."
     print(f"Recommendation    : {rec_short}")
     print(f"Prediction Time   : {res.prediction_time_ms:.1f}ms")
-    print(f"Model QWK         : 0.8708")
+    print("Model QWK         : 0.8708")
     print(f"Model Version     : {res.model_version}")
     print("==================================================\n")

@@ -1,5 +1,4 @@
 import json
-import time
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import os
@@ -45,7 +44,7 @@ def update(frame):
         ax2.legend()
         ax2.grid(True)
 
-    except Exception as e:
+    except Exception:
         # Ignore read collisions
         pass
 

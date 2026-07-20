@@ -7,7 +7,7 @@ import time
 import logging
 import datetime
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional
 
 import cv2
 import numpy as np

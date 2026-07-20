@@ -162,7 +162,7 @@ def get_model():
     if not os.path.exists(CHECKPOINT_PATH):
         raise FileNotFoundError(
             f"TB model checkpoint not found at: {CHECKPOINT_PATH}. "
-            f"Please run train_tb.py first to generate the checkpoint."
+            "Please run train_tb.py first to generate the checkpoint."
         )
 
     logger.info(f"Loading TB model from {CHECKPOINT_PATH} onto {_device}")

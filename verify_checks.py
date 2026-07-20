@@ -21,7 +21,7 @@ if "epoch" in checkpoint:
     print(f"[OK] Val loss: {checkpoint['val_loss']:.4f}")
     print(f"[OK] Keys in checkpoint: {list(checkpoint.keys())}")
 else:
-    print(f"[OK] Checkpoint contains raw state_dict (which is standard for inference).")
+    print("[OK] Checkpoint contains raw state_dict (which is standard for inference).")
     print(f"[OK] Number of layer weights saved: {len(checkpoint.keys())}")
 
 print("\nCheck 2 - Run a real inference test on actual osteoporosis image")

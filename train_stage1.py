@@ -190,7 +190,7 @@ def train_epoch(
                     "val_loss": 0.0,
                     "val_acc": 0.0,
                     "best_val_loss": (
-                        best_val_loss if best_val_loss is not None else float("inf")
+                        best_val_loss if best_val_loss is not None else float("in")
                     ),
                     "early_stop_counter": (
                         early_stop_counter if early_stop_counter is not None else 0
@@ -325,7 +325,7 @@ def main():
 
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
-    best_val_loss = float("inf")
+    best_val_loss = float("in")
     start_epoch = 1
     start_batch = 0
     early_stop_patience = 5
@@ -388,7 +388,7 @@ def main():
                 )
 
             best_val_loss = checkpoint.get(
-                "best_val_loss", checkpoint.get("val_loss", float("inf"))
+                "best_val_loss", checkpoint.get("val_loss", float("in"))
             )
             early_stop_counter = checkpoint.get("early_stop_counter", 0)
 

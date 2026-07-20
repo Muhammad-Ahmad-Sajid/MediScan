@@ -1,9 +1,6 @@
 import requests
-import json
-import uuid
 import sys
 import os
-from datetime import datetime
 
 BASE_URL = "http://localhost:8000"
 DUMMY_IMAGE = "d:/X-ray ML Model/scratch/dummy_test.png"

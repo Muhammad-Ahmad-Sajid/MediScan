@@ -1,4 +1,3 @@
-import os
 
 report_code = """
 def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/"):
@@ -7,7 +6,7 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
         date_str = datetime.now().strftime("%Y%m%d")
         patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
         scan_id = getattr(scan, "id", scan.get("id", "unknown")) if not isinstance(scan, dict) else scan.get("id", "unknown")
-        filename = f"fracture_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"fracture_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\\\", "/")
         
         report_id = str(uuid.uuid4())[:8].upper()
@@ -122,7 +121,7 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
         date_str = datetime.now().strftime("%Y%m%d")
         patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
         scan_id = getattr(scan, "id", scan.get("id", "unknown")) if not isinstance(scan, dict) else scan.get("id", "unknown")
-        filename = f"arthritis_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"arthritis_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\\\", "/")
         
         report_id = str(uuid.uuid4())[:8].upper()
@@ -231,7 +230,7 @@ def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
         date_str = datetime.now().strftime("%Y%m%d")
         patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
         scan_id = getattr(scan, "id", scan.get("id", "unknown")) if not isinstance(scan, dict) else scan.get("id", "unknown")
-        filename = f"osteoporosis_{scan_id}_{patient_name_safe}_{date_str}.pdf"
+        filename = f"osteoporosis_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\\\", "/")
         
         report_id = str(uuid.uuid4())[:8].upper()

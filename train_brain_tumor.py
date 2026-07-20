@@ -1,6 +1,5 @@
 import os
 import sys
-import glob
 import json
 import time
 import logging
@@ -337,11 +336,10 @@ def main():
     )
 
     mlflow.set_experiment("brain_tumor_detection")
-    best_val_loss = float("inf")
+    best_val_loss = float("in")
     epochs_no_improve = 0
     best_epoch = 0
     best_acc = 0.0
-    best_recalls = {}
     history = []
 
     start_time = time.time()
@@ -422,7 +420,6 @@ def main():
                 best_val_loss = v_loss
                 best_epoch = epoch
                 best_acc = v_acc
-                best_recalls = recalls
                 epochs_no_improve = 0
                 torch.save(
                     {

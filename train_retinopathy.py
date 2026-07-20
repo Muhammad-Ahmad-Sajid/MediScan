@@ -2,11 +2,9 @@ print("STARTING SCRIPT", flush=True)
 import os
 
 os.environ["OMP_NUM_THREADS"] = "1"
-import sys
 import time
 import json
 import logging
-from collections import defaultdict
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     cohen_kappa_score,
@@ -45,7 +43,6 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def run_dataset_discovery():
     logger.info("=== DATASET DISCOVERY ===")
-    img_folders = []
     csv_file = None
 
     for root, dirs, files in os.walk(BASE_DIR):
@@ -179,7 +176,7 @@ def get_dataloaders(csv_file):
 
     # Print distribution
     logger.info("\nClass Distribution:")
-    logger.info(f"Split | Grade 0 | Grade 1 | Grade 2 | Grade 3 | Grade 4 | Total")
+    logger.info("Split | Grade 0 | Grade 1 | Grade 2 | Grade 3 | Grade 4 | Total")
     for name, split_df in [("train", train_df), ("val", val_df), ("test", test_df)]:
         counts = split_df[label_col].value_counts()
         c0, c1, c2, c3, c4 = (
@@ -472,7 +469,7 @@ def train_model():
     logger.info(f"Overall Accuracy: {acc*100:.2f}%")
 
     # Combined G3+G4 recall
-    g34_true = [1 if l in [3, 4] else 0 for l in all_labels]
+    g34_true = [1 if label_idx in [3, 4] else 0 for label_idx in all_labels]
     g34_pred = [1 if p in [3, 4] else 0 for p in all_preds]
     combined_recall = recall_score(g34_true, g34_pred, pos_label=1, zero_division=0)
     logger.info(

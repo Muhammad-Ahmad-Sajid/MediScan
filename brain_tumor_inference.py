@@ -8,7 +8,7 @@ import logging
 import numpy as np
 import torch.nn as nn
 from datetime import datetime
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from torchvision import models, transforms
 from pytorch_grad_cam import GradCAM
 

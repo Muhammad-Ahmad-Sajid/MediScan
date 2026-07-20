@@ -145,7 +145,7 @@ def main():
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     best_checkpoint_path = checkpoint_dir / checkpoint_name
 
-    best_val_loss = float("inf")
+    best_val_loss = float("in")
 
     # Epoch Loop
     for epoch in range(1, args.epochs + 1):

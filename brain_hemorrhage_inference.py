@@ -8,7 +8,7 @@ import logging
 import numpy as np
 import torch.nn as nn
 from datetime import datetime
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from torchvision import models, transforms
 from pytorch_grad_cam import GradCAM
 
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     print(
         f"Urgency             : {res.urgency.upper() if res.urgency == 'emergency' else res.urgency}"
     )
-    print(f"Dataset Warning     : Model trained on 200 images")
+    print("Dataset Warning     : Model trained on 200 images")
     print(f"Heatmap Path        : {res.heatmap_path}")
 
     rec_preview = res.clinical_recommendation.replace("\n", " ")[:80] + (

@@ -3,9 +3,6 @@ import cv2
 import json
 import time
 import logging
-import numpy as np
-from pathlib import Path
-from datetime import datetime
 
 import torch
 import torch.nn as nn
@@ -17,7 +14,6 @@ from sklearn.metrics import (
     classification_report,
     confusion_matrix,
     accuracy_score,
-    recall_score,
 )
 import mlflow
 

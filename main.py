@@ -2,10 +2,9 @@ import os
 import uuid
 import time
 import shutil
-import json
 import logging
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import (
@@ -24,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from database import engine, Base, get_db
+from database import engine, get_db
 from models import db_models
 import schemas
 
@@ -37,7 +36,6 @@ from prognosis_engine import get_prognosis as get_fracture_prognosis
 from arthritis_inference import analyze_arthritis as run_arthritis_inference
 from osteoporosis_inference import run_inference as run_osteoporosis_inference
 from report_generator import (
-    generate_report,
     generate_tb_report,
     generate_fracture_report,
     generate_arthritis_report,
@@ -82,7 +80,7 @@ except ImportError as e:
     logger.warning(f"Failed to load Bone Age inference module: {e}")
 
 try:
-    from retinopathy_inference import run_retinopathy_inference
+    pass
 
     models_loaded.append("retinopathy")
 except ImportError as e:
@@ -538,7 +536,7 @@ def get_fracture_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pdf",
+            media_type="application/pd",
             filename=f"Fracture_Report_{scan_id}.pdf",
         )
 
@@ -561,8 +559,8 @@ def get_fracture_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pdf",
-        filename=f"Fracture_Report_{scan_id}.pdf",
+        media_type="application/pd",
+        filename=f"Fracture_Report_{scan_id}.pd",
     )
 
 
@@ -677,7 +675,7 @@ def get_arthritis_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pdf",
+            media_type="application/pd",
             filename=f"Arthritis_Report_{scan_id}.pdf",
         )
 
@@ -695,8 +693,8 @@ def get_arthritis_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pdf",
-        filename=f"Arthritis_Report_{scan_id}.pdf",
+        media_type="application/pd",
+        filename=f"Arthritis_Report_{scan_id}.pd",
     )
 
 
@@ -810,7 +808,7 @@ def get_osteo_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pdf",
+            media_type="application/pd",
             filename=f"Osteoporosis_Report_{scan_id}.pdf",
         )
 
@@ -828,8 +826,8 @@ def get_osteo_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pdf",
-        filename=f"Osteoporosis_Report_{scan_id}.pdf",
+        media_type="application/pd",
+        filename=f"Osteoporosis_Report_{scan_id}.pd",
     )
 
 
@@ -950,7 +948,7 @@ def get_tb_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pdf",
+            media_type="application/pd",
             filename=f"TB_Report_{scan_id}.pdf",
         )
 
@@ -984,7 +982,7 @@ def get_tb_report(
     scan.report_path = report_path
     db.commit()
     return FileResponse(
-        report_path, media_type="application/pdf", filename=f"TB_Report_{scan_id}.pdf"
+        report_path, media_type="application/pd", filename=f"TB_Report_{scan_id}.pd"
     )
 
 
@@ -1106,7 +1104,7 @@ def get_lung_nodule_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pdf",
+            media_type="application/pd",
             filename=f"LungNodule_Report_{scan_id}.pdf",
         )
 
@@ -1141,8 +1139,8 @@ def get_lung_nodule_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pdf",
-        filename=f"LungNodule_Report_{scan_id}.pdf",
+        media_type="application/pd",
+        filename=f"LungNodule_Report_{scan_id}.pd",
     )
 
 
@@ -1272,7 +1270,7 @@ def get_brain_tumor_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pdf",
+            media_type="application/pd",
             filename=f"BrainTumor_Report_{scan_id}.pdf",
         )
 
@@ -1307,8 +1305,8 @@ def get_brain_tumor_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pdf",
-        filename=f"BrainTumor_Report_{scan_id}.pdf",
+        media_type="application/pd",
+        filename=f"BrainTumor_Report_{scan_id}.pd",
     )
 
 
@@ -1449,7 +1447,7 @@ def get_brain_hemorrhage_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pdf",
+            media_type="application/pd",
             filename=f"BrainHemorrhage_Report_{scan_id}.pdf",
         )
 
@@ -1484,8 +1482,8 @@ def get_brain_hemorrhage_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pdf",
-        filename=f"BrainHemorrhage_Report_{scan_id}.pdf",
+        media_type="application/pd",
+        filename=f"BrainHemorrhage_Report_{scan_id}.pd",
     )
 
 
@@ -1618,7 +1616,7 @@ def get_bone_age_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pdf",
+            media_type="application/pd",
             filename=f"BoneAge_Report_{scan_id}.pdf",
         )
 
@@ -1654,8 +1652,8 @@ def get_bone_age_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pdf",
-        filename=f"BoneAge_Report_{scan_id}.pdf",
+        media_type="application/pd",
+        filename=f"BoneAge_Report_{scan_id}.pd",
     )
 
 
@@ -1767,7 +1765,7 @@ def get_retinopathy_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pdf",
+            media_type="application/pd",
             filename=f"Retinopathy_Report_{scan_id}.pdf",
         )
 
@@ -1804,8 +1802,8 @@ def get_retinopathy_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pdf",
-        filename=f"Retinopathy_Report_{scan_id}.pdf",
+        media_type="application/pd",
+        filename=f"Retinopathy_Report_{scan_id}.pd",
     )
 
 

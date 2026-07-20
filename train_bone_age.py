@@ -1,6 +1,5 @@
 import os
 import cv2
-import json
 import time
 import torch
 import logging
@@ -231,7 +230,7 @@ def prepare_data(csv_path, img_dir):
     if len(df_valid) == 0:
         return None, None, None, use_gender
 
-    bins = [0, 24, 60, 120, 180, 228, float("inf")]
+    bins = [0, 24, 60, 120, 180, 228, float("in")]
     labels = ["0-24", "25-60", "61-120", "121-180", "181-228", "228+"]
     df_valid["age_bin"] = pd.cut(
         df_valid["age_months"], bins=bins, labels=labels, right=True
@@ -385,7 +384,7 @@ def main():
         optimizer, mode="min", patience=3, factor=0.5
     )
 
-    best_val_mae = float("inf")
+    best_val_mae = float("in")
     patience_counter = 0
     best_epoch = 0
     best_rmse = 0

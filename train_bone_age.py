@@ -390,7 +390,7 @@ def main():
     best_rmse = 0
 
     logger.info(
-        f"Epoch | Train Loss | Train MAE | Val Loss | Val MAE (months) | Val RMSE | Within ±12mo | LR"
+        "Epoch | Train Loss | Train MAE | Val Loss | Val MAE (months) | Val RMSE | Within ±12mo | LR"
     )
     logger.info("-" * 95)
 

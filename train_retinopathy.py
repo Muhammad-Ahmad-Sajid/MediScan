@@ -313,7 +313,7 @@ def train_model():
     # mlflow.set_experiment removed
 
     logger.info(
-        f"\nEpoch | Train Loss | Train Acc | Val Loss | Val Acc | Val QWK | Grade4 Recall | LR"
+        "\nEpoch | Train Loss | Train Acc | Val Loss | Val Acc | Val QWK | Grade4 Recall | LR"
     )
     logger.info("-" * 85)
 
@@ -486,7 +486,7 @@ def train_model():
         1 for p, t in zip(all_preds, all_labels) if p == 0 and t in [3, 4]
     )
 
-    logger.info(f"\nOrdinal Error Analysis:")
+    logger.info("\nOrdinal Error Analysis:")
     logger.info(f"Average prediction error: {avg_err:.2f} grades")
     logger.info(f"Predictions off by <= 1 grade: {off_by_1:.2f}%")
     logger.info(f"Dangerous errors (off by >= 2): {dangerous_err:.2f}%")

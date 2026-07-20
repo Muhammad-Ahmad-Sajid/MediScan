@@ -403,7 +403,7 @@ def run_cross_validation(X, y):
         best_sens = 0
 
         logger.info(
-            f"Epoch | Train Loss | Train Acc | Val Loss | Val Acc | Sensitivity | Specificity | LR"
+            "Epoch | Train Loss | Train Acc | Val Loss | Val Acc | Sensitivity | Specificity | LR"
         )
         logger.info("-" * 85)
 

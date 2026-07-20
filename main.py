@@ -3,6 +3,7 @@ import uuid
 import time
 import shutil
 import logging
+logger = logging.getLogger(__name__)
 import traceback
 from datetime import datetime
 from typing import List, Optional
@@ -28,7 +29,6 @@ from models import db_models
 import schemas
 
 from auth import auth_router, get_current_doctor, get_current_admin
-from auth import UserCreate  # using db_models.User in endpoints
 
 # Import existing inference engines
 from inference import run_inference as run_fracture_inference
@@ -48,28 +48,28 @@ try:
 
     models_loaded.append("tb")
 except ImportError as e:
-    logger.warning(f"Failed to load TB inference module: {e}")
+    logger.warning(f"Failed to load TB inference module: ")
 
 try:
     from lung_nodule_inference import run_lung_nodule_inference
 
     models_loaded.append("lung_nodule")
 except ImportError as e:
-    logger.warning(f"Failed to load Lung Nodule inference module: {e}")
+    logger.warning(f"Failed to load Lung Nodule inference module: ")
 
 try:
     from brain_tumor_inference import run_brain_tumor_inference
 
     models_loaded.append("brain_tumor")
 except ImportError as e:
-    logger.warning(f"Failed to load Brain Tumor inference module: {e}")
+    logger.warning(f"Failed to load Brain Tumor inference module: ")
 
 try:
     from brain_hemorrhage_inference import run_brain_hemorrhage_inference
 
     models_loaded.append("brain_hemorrhage")
 except ImportError as e:
-    logger.warning(f"Failed to load Brain Hemorrhage inference module: {e}")
+    logger.warning(f"Failed to load Brain Hemorrhage inference module: ")
 
 
 try:
@@ -77,14 +77,14 @@ try:
 
     models_loaded.append("bone_age")
 except ImportError as e:
-    logger.warning(f"Failed to load Bone Age inference module: {e}")
+    logger.warning(f"Failed to load Bone Age inference module: ")
 
 try:
     pass
 
     models_loaded.append("retinopathy")
 except ImportError as e:
-    logger.warning(f"Failed to load Retinopathy inference module: {e}")
+    logger.warning(f"Failed to load Retinopathy inference module: ")
 
 # Setup logging
 logging.basicConfig(
@@ -314,7 +314,7 @@ def get_all_overrides(
                             "notes": getattr(scan, "override_notes", ""),
                         }
                     )
-        except Exception as e:
+        except Exception:
             pass  # Ignore if table doesn't have it
 
     # Sort by date descending
@@ -897,8 +897,8 @@ async def upload_tb(
 
     try:
         res = run_tb_inference(filepath)
-    except Exception as e:
-        logger.error(f"Inference failed: {e}")
+    except Exception:
+        logger.error(f"Inference failed: ")
         logger.error(traceback.format_exc())
         raise HTTPException(500, f"Inference failed: {str(e)}")
 
@@ -1047,8 +1047,8 @@ async def upload_lung_nodule(
 
     try:
         res = run_lung_nodule_inference(filepath)
-    except Exception as e:
-        logger.error(f"Inference failed: {e}")
+    except Exception:
+        logger.error(f"Inference failed: ")
         logger.error(traceback.format_exc())
         raise HTTPException(500, f"Inference failed: {str(e)}")
 
@@ -1211,8 +1211,8 @@ async def upload_brain_tumor(
 
     try:
         res = run_brain_tumor_inference(filepath)
-    except Exception as e:
-        logger.error(f"Inference failed: {e}")
+    except Exception:
+        logger.error(f"Inference failed: ")
         logger.error(traceback.format_exc())
         raise HTTPException(500, f"Inference failed: {str(e)}")
 
@@ -1381,8 +1381,8 @@ async def upload_brain_hemorrhage(
 
     try:
         res = run_brain_hemorrhage_inference(filepath)
-    except Exception as e:
-        logger.error(f"Inference failed: {e}")
+    except Exception:
+        logger.error(f"Inference failed: ")
         logger.error(traceback.format_exc())
         raise HTTPException(500, f"Inference failed: {str(e)}")
 
@@ -1557,8 +1557,8 @@ async def upload_bone_age(
         res = run_bone_age_inference(
             filepath, chronological_age_months=chronological_age_months
         )
-    except Exception as e:
-        logger.error(f"Inference failed: {e}")
+    except Exception:
+        logger.error(f"Inference failed: ")
         logger.error(traceback.format_exc())
         raise HTTPException(500, f"Inference failed: {str(e)}")
 
@@ -1704,8 +1704,8 @@ async def upload_retinopathy(
         from retinopathy_inference import run_retinopathy_inference
 
         result = run_retinopathy_inference(filepath)
-    except Exception as e:
-        logger.error(f"Retinopathy inference failed: {e}", exc_info=True)
+    except Exception:
+        logger.error(f"Retinopathy inference failed: ", exc_info=True)
         raise HTTPException(500, "Inference engine failed")
 
     db_scan = db_models.RetinopathyScan(

@@ -1,30 +1,14 @@
-"""
-Root-level database gateway, exposing SQLAlchemy engine, session maker,
-base class, utility functions, and ORM models.
-"""
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+from config import DATABASE_URL
 
-from src.database.connection import engine, SessionLocal, get_db
-from src.database.models import (
-    Base,
-    DatasetSource,
-    Severity,
-    ReferralFlag,
-    Patient,
-    XrayScan,
-    FracturePrediction,
-    PrognosisResult,
-)
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-__all__ = [
-    "engine",
-    "SessionLocal",
-    "get_db",
-    "Base",
-    "DatasetSource",
-    "Severity",
-    "ReferralFlag",
-    "Patient",
-    "XrayScan",
-    "FracturePrediction",
-    "PrognosisResult",
-]
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

@@ -1,445 +1,250 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CortexRay - Patient History</title>
-    <link rel="stylesheet" href="/templates/style.css">
+  <meta charset="UTF-8">
+  <title>Patient History - MediScan AI</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 2rem;
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-light);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      white-space: nowrap;
+    }
+    .tab:hover {
+      color: var(--text-dark);
+    }
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .history-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .search-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+    }
+  </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">&#x1F9B4; CortexRay</div>
-        <div class="nav-right hidden" id="nav-user-info">
-            <span id="user-name"></span>
-            <span id="user-role" class="role-badge"></span>
-            <button id="btn-logout" class="btn-logout">Logout</button>
-        </div>
-    </nav>
+  <header>
+    <div class="logo-title"><a href="/" style="text-decoration:none; color:inherit;">MediScan AI</a></div>
+    <div class="user-info">
+      <a href="/" style="color:var(--text-dark); text-decoration:none; margin-right:1rem; font-weight:600;">Dashboard</a>
+      <span id="user-name"></span>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </header>
 
-    <div class="container">
-        <!-- LOGIN SECTION -->
-        <section id="login-section" class="hidden">
-            <div class="card login-card">
-                <h2>&#x1F9B4; CortexRay Login</h2>
-                <form id="login-form">
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" class="form-control" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Login</button>
-                    <div id="login-error" class="msg-error hidden"></div>
-                </form>
-            </div>
-        </section>
-
-        <!-- HISTORY SECTION -->
-        <section id="history-section" class="hidden">
-            <div class="history-controls">
-                <a href="/" id="link-dashboard" style="color: var(--primary-color); font-weight: 500; display: inline-block; margin-bottom: 1rem; text-decoration: none;">&larr; Back to Dashboard</a>
-                <div class="card" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
-                    <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
-                        <label for="search-patient-id">Patient ID</label>
-                        <input type="text" id="search-patient-id" class="form-control" placeholder="Enter Patient ID (e.g. 1)">
-                    </div>
-                    <button id="btn-search" class="btn btn-primary" style="width: auto;">Search History</button>
-                </div>
-                <div id="search-error" class="msg-error hidden"></div>
-            </div>
-
-            <div id="patient-info" class="card hidden">
-                <h2 id="hist-patient-name" style="color: var(--primary-color);"></h2>
-                <div style="color: var(--text-light); margin-bottom: 1rem; font-weight: 500;">
-                    <span id="hist-patient-age"></span> yrs | <span id="hist-patient-gender"></span>
-                </div>
-                <div style="margin-bottom: 1.5rem;">
-                    <strong>Comorbidities:</strong> <span id="hist-patient-comorb"></span>
-                </div>
-                
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <div style="background: var(--bg-color); padding: 1.5rem 1rem; border-radius: 4px; flex: 1; text-align: center; border: 1px solid var(--border-color);">
-                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary-color); line-height: 1;" id="stat-total">0</div>
-                        <div style="color: var(--text-light); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500;">Total Scans</div>
-                    </div>
-                    <div style="background: var(--bg-color); padding: 1.5rem 1rem; border-radius: 4px; flex: 1; text-align: center; border: 1px solid var(--border-color);">
-                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--danger-red); line-height: 1;" id="stat-fractures">0</div>
-                        <div style="color: var(--text-light); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500;">Fractures Detected</div>
-                    </div>
-                    <div style="background: var(--bg-color); padding: 1.5rem 1rem; border-radius: 4px; flex: 1; text-align: center; border: 1px solid var(--border-color);">
-                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--warning-amber); line-height: 1;" id="stat-surgical">0</div>
-                        <div style="color: var(--text-light); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500;">Surgical Referrals</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-switcher hidden" id="history-tabs">
-                <button id="tab-fracture" class="tab-btn active" onclick="switchHistoryTab('fracture')">Fracture Scans</button>
-                <button id="tab-arthritis" class="tab-btn" onclick="switchHistoryTab('arthritis')">Arthritis Scans</button>
-            </div>
-            <h3 style="margin-bottom: 1rem; color: var(--text-dark);">Scan History</h3>
-            <div id="scan-list">
-                <!-- Scans injected here -->
-                <div class="card" style="text-align: center; color: var(--text-light); padding: 3rem;">Enter a Patient ID and click search to view scan history.</div>
-            </div>
-        </section>
+  <div class="container">
+    <h2>Patient Scan History</h2>
+    
+    <div class="search-bar">
+      <input type="text" id="patient-id-input" placeholder="Enter Patient ID (UUID)">
+      <button onclick="searchPatient()">View History</button>
     </div>
 
-    <!-- FULLSCREEN MODAL -->
-    <div id="heatmap-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button id="modal-close" class="modal-close">&times;</button>
-            <img id="modal-image" src="" alt="Heatmap Fullscreen">
-        </div>
+    <div id="patient-info" style="display:none; margin-bottom:2rem; background:white; padding:1.5rem; border-radius:0.5rem; border:1px solid var(--border-color);">
+      <h3 style="margin-top:0" id="pi-name">Patient Name</h3>
+      <p style="margin:0; color:var(--text-light)">
+        Age: <span id="pi-age"></span> | Gender: <span id="pi-gender"></span> | Registered: <span id="pi-date"></span><br>
+        Comorbidities: <span id="pi-comorb"></span>
+      </p>
     </div>
 
-    <script>
-        const API_BASE = "http://localhost:8000";
+    <div id="history-section" style="display:none;">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('fracture')">Fracture</div>
+        <div class="tab" onclick="switchTab('arthritis')">Arthritis</div>
+        <div class="tab" onclick="switchTab('osteoporosis')">Osteoporosis</div>
+        <div class="tab" onclick="switchTab('tb')">TB</div>
+        <div class="tab" onclick="switchTab('lung-nodule')">Lung Nodule</div>
+        <div class="tab" onclick="switchTab('brain-tumor')">Brain Tumor</div>
+        <div class="tab" onclick="switchTab('brain-hemorrhage')">Brain Hemorrhage</div>
+        <div class="tab" onclick="switchTab('bone-age')">Bone Age</div>
+        <div class="tab" onclick="switchTab('retinopathy')">Retinopathy</div>
+      </div>
 
-        function checkAuth() {
-            const token = sessionStorage.getItem("cortexray_token");
-            if (token) {
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('history-section').classList.remove('hidden');
-                document.getElementById('nav-user-info').classList.remove('hidden');
-                document.getElementById('user-name').innerText = sessionStorage.getItem("cortexray_name") || "User";
-                document.getElementById('user-role').innerText = sessionStorage.getItem("cortexray_role") || "Staff";
-            } else {
-                document.getElementById('login-section').classList.remove('hidden');
-                document.getElementById('history-section').classList.add('hidden');
-                document.getElementById('nav-user-info').classList.add('hidden');
-            }
-        }
+      <div id="history-content" class="history-grid">
+        <!-- Cards injected here -->
+      </div>
+      <div id="empty-state" style="display:none; text-align:center; padding:3rem; color:var(--text-light);">
+        No scans found for this patient in this module.
+      </div>
+    </div>
+  </div>
 
-        async function fetchWithAuth(url, options = {}) {
-            const token = sessionStorage.getItem("cortexray_token");
-            if (!options.headers) options.headers = {};
-            if (token) {
-                options.headers['Authorization'] = `Bearer ${token}`;
-            }
-            const response = await fetch(url, options);
-            if (response.status === 401) {
-                sessionStorage.removeItem("cortexray_token");
-                checkAuth();
-                throw new Error("Session expired. Please login again.");
-            }
-            if (response.status === 403) {
-                throw new Error("Access denied.");
-            }
-            return response;
-        }
+  <script>
+    let currentPatientId = '';
+    let currentTab = 'fracture';
+    
+    window.onload = () => {
+      const token = sessionStorage.getItem('token');
+      if (!token) window.location.href = '/';
+      
+      fetch('/auth/me', { headers: {'Authorization': `Bearer ${token}`} })
+        .then(r => r.json())
+        .then(d => document.getElementById('user-name').innerText = d.full_name);
+    };
 
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('login-error');
-            const submitBtn = e.target.querySelector('button');
+    function logout() {
+      sessionStorage.removeItem('token');
+      window.location.href = '/';
+    }
+
+    async function searchPatient() {
+      const pid = document.getElementById('patient-id-input').value;
+      if (!pid) return;
+      currentPatientId = pid;
+      
+      const res = await fetch(`/patients/${pid}`, {
+        headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('patient-info').style.display = 'block';
+        document.getElementById('pi-name').innerText = data.full_name;
+        document.getElementById('pi-age').innerText = data.age;
+        document.getElementById('pi-gender').innerText = data.gender;
+        document.getElementById('pi-date').innerText = new Date(data.created_at).toLocaleDateString();
+        document.getElementById('pi-comorb').innerText = data.comorbidities.join(', ') || 'None';
+        
+        document.getElementById('history-section').style.display = 'block';
+        loadHistory(currentTab);
+      } else {
+        alert("Patient not found");
+      }
+    }
+
+    function switchTab(moduleName) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      currentTab = moduleName;
+      loadHistory(currentTab);
+    }
+
+    async function loadHistory(moduleName) {
+      const res = await fetch(`/patients/${currentPatientId}/${moduleName}-history`, {
+        headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
+      });
+      
+      const content = document.getElementById('history-content');
+      const empty = document.getElementById('empty-state');
+      content.innerHTML = '';
+      
+      const existingWarning = document.getElementById('bh-warning');
+      if (existingWarning) existingWarning.remove();
+      
+      if (moduleName === 'brain-hemorrhage') {
+          const tabsContainer = document.querySelector('.tabs');
+          tabsContainer.insertAdjacentHTML('afterend', `<div id="bh-warning" style="width:100%; padding:1rem; background-color:#FEFCBF; color:#744210; font-weight:bold; border-radius:0.5rem; margin-bottom:1rem; border:1px solid #F6E05E;">&#9888; This module was trained on 200 images. Results require radiologist confirmation.</div>`);
+      }
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.length === 0) {
+          empty.style.display = 'block';
+        } else {
+          empty.style.display = 'none';
+          data.forEach(scan => {
+            const date = scan.upload_timestamp ? new Date(scan.upload_timestamp).toLocaleString() : 'Unknown date';
+            let summary = '';
+            if(moduleName==='fracture') summary = scan.fracture_detected ? 'Fracture Detected' : 'No Fracture';
+            if(moduleName==='arthritis') summary = `Grade ${scan.grade}: ${scan.grade_name}`;
+            if(moduleName==='osteoporosis') summary = scan.has_osteoporosis ? 'Osteoporosis' : 'Normal';
+            if(moduleName==='tb') summary = scan.has_tb ? 'TB Detected' : 'Normal';
+            if(moduleName==='lung-nodule') summary = scan.has_nodule ? 'Lung Nodule Detected' : 'Normal';
+            if(moduleName==='brain-tumor') {
+                summary = scan.tumor_type ? scan.tumor_type.toUpperCase() : 'NO TUMOR';
+                if(scan.glioma_risk_flag) summary += ' (⚠ Risk Alert)';
+            }
+            if(moduleName==='brain-hemorrhage') {
+                summary = scan.has_hemorrhage ? '🚨 HEMORRHAGE DETECTED' : 'No Hemorrhage';
+            }
+            if(moduleName==='retinopathy') {
+                summary = `Grade ${scan.grade}: ${scan.grade_name}`;
+                if(scan.referable_dr) summary += ' (⚠ Referable)';
+                if(scan.grade === 4) summary += ' 🚨';
+            }
             
-            errorDiv.classList.add('hidden');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Logging in...";
+            let cardStyle = "";
+            if(moduleName==='brain-hemorrhage' && scan.has_hemorrhage) {
+                cardStyle = "border-left: 5px solid #C53030;";
+            }
             
-            try {
-                const formData = new URLSearchParams();
-                formData.append('username', email);
-                formData.append('password', password);
-
-                const response = await fetch(`${API_BASE}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData
-                });
-                
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || "Login failed");
-                sessionStorage.setItem("cortexray_token", data.access_token);
-                sessionStorage.setItem("cortexray_name", data.user?.full_name || email.split('@')[0]);
-                sessionStorage.setItem("cortexray_role", data.user?.role || "Doctor");
-                checkAuth();
-            } catch (err) {
-                errorDiv.innerText = err.message;
-                errorDiv.classList.remove('hidden');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Login";
-            }
-        });
-
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            sessionStorage.removeItem("cortexray_token");
-            checkAuth();
-        });
-
-        let currentHistoryTab = 'fracture';
-        let currentPatientIdSearch = null;
-
-        document.getElementById('btn-search').addEventListener('click', async () => {
-            const patientId = document.getElementById('search-patient-id').value.trim();
-            if (!patientId) return;
-            currentPatientIdSearch = patientId;
-            await loadHistory(currentPatientIdSearch, currentHistoryTab);
-        });
-
-        async function switchHistoryTab(tab) {
-            currentHistoryTab = tab;
-            document.getElementById('tab-fracture').classList.remove('active');
-            document.getElementById('tab-arthritis').classList.remove('active');
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            if (currentPatientIdSearch) {
-                await loadHistory(currentPatientIdSearch, tab);
-            }
-        }
-
-        async function loadHistory(patientId, tab) {
-            const errorDiv = document.getElementById('search-error');
-            const btnSearch = document.getElementById('btn-search');
-            errorDiv.classList.add('hidden');
-            const scanList = document.getElementById('scan-list');
-            scanList.innerHTML = '<div class="loading-container"><div class="spinner"></div><div>Loading history...</div></div>';
-            document.getElementById('patient-info').classList.add('hidden');
-            document.getElementById('history-tabs').classList.add('hidden');
-
-            btnSearch.disabled = true;
-            btnSearch.innerText = "Searching...";
-
-            try {
-                const endpoint = tab === 'arthritis' 
-                    ? `${API_BASE}/patients/${patientId}/arthritis-history` 
-                    : `${API_BASE}/patients/${patientId}/history`;
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            if (cardStyle) card.setAttribute("style", cardStyle);
+            
+            if (moduleName === 'bone-age') {
+                let inner = `<div style="color:var(--text-light); font-size:0.875rem; margin-bottom:0.5rem">${date}</div>
+                             <h3 style="margin-top:0; margin-bottom:0.5rem; color:#2B6CB0;">Est. Age: ${scan.predicted_display}</h3>`;
+                if(scan.chronological_age_months !== null) {
+                    let flag = scan.skeletal_age_flag;
+                    let color = "#38A169";
+                    if (flag === "advanced" || flag === "delayed") color = "#D69E2E";
+                    else if (flag === "significantly_advanced" || flag === "significantly_delayed") color = "#E53E3E";
                     
-                const response = await fetchWithAuth(endpoint);
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || "Failed to load patient history");
-
-                document.getElementById('history-tabs').classList.remove('hidden');
-                
-                if (tab === 'arthritis') {
-                    renderArthritisHistory(data);
+                    inner += `<div style="font-size:0.875rem; margin-bottom:0.5rem;">Dev: <strong>${scan.deviation_months > 0 ? '+' : ''}${scan.deviation_months.toFixed(1)}m</strong></div>`;
+                    inner += `<div class="badge" style="background:${color}; color:white; margin-bottom:1rem; display:inline-block;">${flag.replace('_', ' ').toUpperCase()}</div>`;
                 } else {
-                    renderHistory(data);
+                    inner += `<div style="font-size:0.875rem; color:#718096; margin-bottom:1rem;">No chrono age provided</div>`;
                 }
-            } catch (err) {
-                errorDiv.innerText = err.message;
-                errorDiv.classList.remove('hidden');
-                scanList.innerHTML = '';
-            } finally {
-                btnSearch.disabled = false;
-                btnSearch.innerText = "Search History";
-            }
-        }
-
-        function renderHistory(data) {
-            document.getElementById('patient-info').classList.remove('hidden');
-            document.getElementById('hist-patient-name').innerText = data.full_name || "Unknown Patient";
-            document.getElementById('hist-patient-age').innerText = data.age || "N/A";
-            document.getElementById('hist-patient-gender').innerText = data.gender || "N/A";
-            document.getElementById('hist-patient-comorb').innerText = (data.comorbidities && data.comorbidities.length > 0) ? data.comorbidities.join(', ') : "None";
-
-            const scans = data.scans || [];
-            
-            document.getElementById('stat-total').innerText = scans.length;
-            document.getElementById('stat-fractures').innerText = scans.filter(s => s.prediction && s.prediction.fracture_detected).length;
-            document.getElementById('stat-surgical').innerText = scans.filter(s => s.prediction && s.prediction.prognosis && s.prediction.prognosis.referral_flag === "surgical").length;
-
-            const scanList = document.getElementById('scan-list');
-            scanList.innerHTML = '';
-
-            if (scans.length === 0) {
-                scanList.innerHTML = '<div class="card" style="text-align: center; color: var(--text-light); padding: 3rem;">No scans found for this patient</div>';
-                return;
-            }
-
-            scans.sort((a, b) => new Date(b.upload_timestamp || 0) - new Date(a.upload_timestamp || 0));
-
-            scans.forEach(scan => {
-                const isFracture = scan.prediction && scan.prediction.fracture_detected;
-                const fracBadge = isFracture 
-                    ? `<span class="badge badge-red">FRACTURE DETECTED</span>`
-                    : `<span class="badge badge-green">NO FRACTURE</span>`;
-                
-                let flagClass = "badge-green";
-                let flagText = "CLEAR";
-                if (scan.prediction) {
-                    const conf = scan.prediction.confidence_score * 100;
-                    if (conf < 80) { flagClass = "badge-red"; flagText = "INCONCLUSIVE"; }
-                    else if (conf < 90) { flagClass = "badge-amber"; flagText = "LOW CONFIDENCE"; }
-                }
-                const flagBadge = `<span class="badge ${flagClass}">${flagText}</span>`;
-
-                const dateStr = scan.upload_timestamp ? new Date(scan.upload_timestamp).toLocaleString() : "Unknown date";
-                
-                let progHtml = "";
-                let refBadge = "";
-                if (scan.prediction && scan.prediction.prognosis) {
-                    const prog = scan.prediction.prognosis;
-                    progHtml = `<div style="margin-top: 0.5rem;"><strong>Rest:</strong> ${prog.rest_weeks_min}-${prog.rest_weeks_max} weeks &nbsp;|&nbsp; <strong>Immobilisation:</strong> ${prog.cast_type}</div>`;
-                    const rClass = prog.referral_flag === "surgical" ? "badge-red" : "badge-green";
-                    refBadge = `<span class="badge ${rClass}">${prog.referral_flag.toUpperCase()}</span>`;
-                }
-
-                let dlButton = "";
-                if (flagText !== "INCONCLUSIVE") {
-                    dlButton = `<button class="btn btn-outline" onclick="downloadReport('${scan.id}', this, false)">&#x1F4E5; Download Report</button>`;
-                }
-
-                const cardHtml = `
-                    <div class="scan-card">
-                        <div class="scan-header">
-                            <div>
-                                <div style="font-weight: 600; font-size: 1.125rem;">${dateStr}</div>
-                            </div>
-                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                                <span class="badge" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: var(--text-dark);">${scan.bone_affected || "Unknown"}</span>
-                                ${fracBadge}
-                            </div>
-                        </div>
-                        <div class="details-grid" style="margin-bottom: 0;">
-                            <div class="detail-item">
-                                <span class="detail-label">Confidence</span>
-                                <span class="detail-value">${scan.prediction ? (scan.prediction.confidence_score * 100).toFixed(1) + '%' : 'N/A'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Flag</span>
-                                ${flagBadge}
-                            </div>
-                        </div>
-                        <div style="font-size: 0.875rem;">
-                            ${progHtml}
-                            ${refBadge ? `<div style="margin-top: 0.5rem;"><strong>Referral:</strong> ${refBadge}</div>` : ''}
-                        </div>
-                        <div class="scan-actions">
-                            <button class="btn btn-primary" style="width: auto;" onclick="openHeatmap('${scan.prediction && scan.prediction.heatmap_path ? scan.prediction.heatmap_path : ''}')">View Heatmap</button>
-                            ${dlButton}
-                        </div>
-                        <div id="dl-error-${scan.id || scan.scan_id}" class="msg-error hidden" style="margin-top: 1rem;"></div>
-                    </div>
+                inner += `
+                  <div style="display:flex; gap:0.5rem;">
+                    ${scan.heatmap_path ? `<button onclick="window.open('/${scan.heatmap_path}', '_blank')" style="background:var(--secondary-color); font-size:0.75rem">View Heatmap</button>` : ''}
+                    ${scan.report_path ? `<button onclick="window.open('/${scan.report_path}', '_blank')" style="font-size:0.75rem">PDF Report</button>` : ''}
+                  </div>
                 `;
-                scanList.innerHTML += cardHtml;
-            });
-        }
-
-        function renderArthritisHistory(data) {
-            document.getElementById('patient-info').classList.remove('hidden');
-            document.getElementById('hist-patient-name').innerText = data.full_name || "Unknown Patient";
-            document.getElementById('hist-patient-age').innerText = data.age || "N/A";
-            document.getElementById('hist-patient-gender').innerText = data.gender || "N/A";
-            document.getElementById('hist-patient-comorb').innerText = (data.comorbidities && data.comorbidities.length > 0) ? data.comorbidities.join(', ') : "None";
-
-            const scans = data.scans || [];
-            
-            document.getElementById('stat-total').innerText = scans.length;
-            document.getElementById('stat-fractures').innerText = scans.filter(s => s.grade >= 3).length; // Map fractures block to severe for arthritis
-            document.getElementById('stat-fractures').nextElementSibling.innerText = "Severe Cases (Grade 3+)";
-            document.getElementById('stat-surgical').innerText = scans.filter(s => s.confidence_flag !== "clear").length;
-            document.getElementById('stat-surgical').nextElementSibling.innerText = "Reviews Required";
-
-            const scanList = document.getElementById('scan-list');
-            scanList.innerHTML = '';
-
-            if (scans.length === 0) {
-                scanList.innerHTML = '<div class="card" style="text-align: center; color: var(--text-light); padding: 3rem;">No arthritis scans found for this patient</div>';
-                return;
-            }
-
-            scans.sort((a, b) => new Date(b.scan_timestamp || 0) - new Date(a.scan_timestamp || 0));
-
-            scans.forEach(scan => {
-                const gradeBadge = `<span class="grade-badge grade-${scan.grade}" style="font-size: 1rem; padding: 0.25rem 0.75rem; margin: 0;">${scan.grade_name.toUpperCase()}</span>`;
-                
-                let flagClass = "badge-green";
-                let flagText = "HIGH CONFIDENCE";
-                if (scan.confidence_flag !== "clear") {
-                    flagClass = "badge-amber";
-                    flagText = "REVIEW REQUIRED";
-                }
-                const flagBadge = `<span class="badge ${flagClass}">${flagText}</span>`;
-                const dateStr = scan.scan_timestamp ? new Date(scan.scan_timestamp).toLocaleString() : "Unknown date";
-                
-                const dlButton = `<button class="btn btn-outline" onclick="downloadReport('${scan.id}', this, true)">&#x1F4E5; Download Report</button>`;
-
-                const cardHtml = `
-                    <div class="scan-card">
-                        <div class="scan-header">
-                            <div>
-                                <div style="font-weight: 600; font-size: 1.125rem;">${dateStr}</div>
-                            </div>
-                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                                ${gradeBadge}
-                            </div>
-                        </div>
-                        <div class="details-grid" style="margin-bottom: 0;">
-                            <div class="detail-item">
-                                <span class="detail-label">Confidence</span>
-                                <span class="detail-value">${(scan.confidence * 100).toFixed(1)}%</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Flag</span>
-                                ${flagBadge}
-                            </div>
-                        </div>
-                        <div class="recommendation-box" style="margin-top: 1rem; padding: 0.75rem;">
-                            <strong>Recommendation:</strong> ${scan.clinical_recommendation}
-                        </div>
-                        <div class="scan-actions" style="margin-top: 1.5rem;">
-                            <button class="btn btn-primary" style="width: auto;" onclick="openHeatmap('${scan.heatmap_path ? scan.heatmap_path : ''}')">View Heatmap</button>
-                            ${dlButton}
-                        </div>
-                        <div id="dl-error-${scan.id}" class="msg-error hidden" style="margin-top: 1rem;"></div>
-                    </div>
+                card.innerHTML = inner;
+            } else {
+                card.innerHTML = `
+                  <div style="color:var(--text-light); font-size:0.875rem; margin-bottom:0.5rem">${date}</div>
+                  <h3 style="margin-top:0; margin-bottom:0.5rem">${summary}</h3>
+                  <div class="badge confidence-${scan.confidence_flag || 'inconclusive'}" style="display:inline-block; margin-bottom:1rem;">
+                    Confidence: ${scan.confidence_flag}
+                  </div>
+                  <div style="display:flex; gap:0.5rem;">
+                    ${scan.heatmap_path ? `<button onclick="window.open('/${scan.heatmap_path}', '_blank')" style="background:var(--secondary-color); font-size:0.75rem">View Heatmap</button>` : ''}
+                    ${scan.report_path ? `<button onclick="window.open('/${scan.report_path}', '_blank')" style="font-size:0.75rem">PDF Report</button>` : ''}
+                  </div>
                 `;
-                scanList.innerHTML += cardHtml;
-            });
-        }
-
-        const modal = document.getElementById('heatmap-modal');
-        window.openHeatmap = (path) => {
-            if (!path || path === 'null' || path === 'undefined') return;
-            const formattedPath = path.startsWith('/') ? path : `/${path}`;
-            document.getElementById('modal-image').src = `${API_BASE}${formattedPath}`;
-            modal.classList.remove('hidden');
-        };
-
-        document.getElementById('modal-close').addEventListener('click', () => modal.classList.add('hidden'));
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.add('hidden');
-        });
-
-        window.downloadReport = async (scanId, btnEl, isArthritis=false) => {
-            if (!scanId) return;
-            const originalText = btnEl.innerHTML;
-            btnEl.innerHTML = 'Downloading...';
-            btnEl.disabled = true;
-            
-            const errDiv = document.getElementById(`dl-error-${scanId}`);
-            if(errDiv) errDiv.classList.add('hidden');
-
-            try {
-                const endpoint = isArthritis ? `${API_BASE}/arthritis/scan/${scanId}/report` : `${API_BASE}/scan/${scanId}/report`;
-                const response = await fetchWithAuth(endpoint);
-                if (!response.ok) throw new Error("Report download failed");
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `CortexRay_Report_${scanId}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-            } catch (err) {
-                if(errDiv) {
-                    errDiv.innerText = err.message;
-                    errDiv.classList.remove('hidden');
-                }
-            } finally {
-                btnEl.innerHTML = originalText;
-                btnEl.disabled = false;
             }
-        };
-
-        checkAuth();
-    </script>
+            content.appendChild(card);
+          });
+        }
+      } else {
+        empty.style.display = 'block';
+      }
+    }
+  </script>
 </body>
 </html>

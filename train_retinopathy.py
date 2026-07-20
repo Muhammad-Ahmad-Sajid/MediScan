@@ -202,20 +202,53 @@ def train_model():
     
     model = RetinopathyModel().to(DEVICE)
     
-    # Freeze all except layer3, layer4, fc
-    for name, param in model.named_parameters():
-        if not any(k in name for k in ['layer3', 'layer4', 'fc']):
-            param.requires_grad = False
-            
     criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=3, factor=0.5)
     
-    # mlflow.set_experiment removed
-    
     best_qwk = -1.0
     patience_counter = 0
     history = []
+    start_epoch = 1
+    
+    if os.path.exists(CHECKPOINT_PATH):
+        logger.info(f"Resuming training from {CHECKPOINT_PATH}...")
+        try:
+            checkpoint = torch.load(CHECKPOINT_PATH)
+            model.load_state_dict(checkpoint['state_dict'])
+            
+            # If we are past epoch 5, we need to unfreeze all layers so the optimizer gets all params
+            if checkpoint['epoch'] >= 5:
+                unfreeze_all(model)
+                optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
+                scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=3, factor=0.5)
+                
+            if 'optimizer' in checkpoint:
+                optimizer.load_state_dict(checkpoint['optimizer'])
+            if 'scheduler' in checkpoint:
+                scheduler.load_state_dict(checkpoint['scheduler'])
+                
+            start_epoch = checkpoint['epoch'] + 1
+            best_qwk = checkpoint.get('val_qwk', -1.0)
+            
+            # Load history if exists
+            if os.path.exists(HISTORY_PATH):
+                with open(HISTORY_PATH, 'r') as f:
+                    history = json.load(f)
+                    
+            logger.info(f"Successfully resumed at Epoch {start_epoch} with Best QWK {best_qwk:.4f}")
+        except Exception as e:
+            logger.error(f"Failed to load checkpoint: {e}")
+            
+    # Freeze all except layer3, layer4, fc (if starting fresh or before epoch 6)
+    if start_epoch <= 5:
+        for name, param in model.named_parameters():
+            if not any(k in name for k in ['layer3', 'layer4', 'fc']):
+                param.requires_grad = False
+        optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4, weight_decay=1e-5)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=3, factor=0.5)
+    
+    # mlflow.set_experiment removed
     
     logger.info(f"\nEpoch | Train Loss | Train Acc | Val Loss | Val Acc | Val QWK | Grade4 Recall | LR")
     logger.info("-" * 85)
@@ -223,7 +256,7 @@ def train_model():
     start_time = time.time()
     
     # MLFlow removed
-    for epoch in range(1, 31):
+    for epoch in range(start_epoch, 31):
             if epoch == 6:
                 logger.info("Unfreezing all layers...")
                 unfreeze_all(model)

@@ -2,51 +2,78 @@ import os
 import uuid
 import time
 import shutil
+import json
 import logging
 import traceback
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request, APIRouter
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
 
 from database import engine, Base, get_db
-import src.database.models as db_models
+from models import db_models
 import schemas
 
-from auth import auth_router, require_doctor, require_admin, User
-from inference import run_inference
-from prognosis_engine import get_prognosis
-from report_generator import generate_report
-from arthritis_inference import analyze_arthritis as run_arthritis_inference
+from auth import auth_router, get_current_doctor, get_current_admin
+from auth import UserCreate # using db_models.User in endpoints
 
-# Setup structured logging
+# Import existing inference engines
+from inference import run_inference as run_fracture_inference
+from prognosis_engine import get_prognosis as get_fracture_prognosis
+from arthritis_inference import analyze_arthritis as run_arthritis_inference
+from osteoporosis_inference import run_inference as run_osteoporosis_inference
+from report_generator import generate_report, generate_tb_report
+
+models_loaded = ["fracture", "arthritis", "osteoporosis"]
+try:
+    from tb_inference import run_tb_inference
+    models_loaded.append("tb")
+except ImportError as e:
+    logger.warning(f"Failed to load TB inference module: {e}")
+
+try:
+    from lung_nodule_inference import run_lung_nodule_inference
+    models_loaded.append("lung_nodule")
+except ImportError as e:
+    logger.warning(f"Failed to load Lung Nodule inference module: {e}")
+
+try:
+    from brain_tumor_inference import run_brain_tumor_inference
+    models_loaded.append("brain_tumor")
+except ImportError as e:
+    logger.warning(f"Failed to load Brain Tumor inference module: {e}")
+
+try:
+    from brain_hemorrhage_inference import run_brain_hemorrhage_inference
+    models_loaded.append("brain_hemorrhage")
+except ImportError as e:
+    logger.warning(f"Failed to load Brain Hemorrhage inference module: {e}")
+
+
+
+try:
+    from bone_age_inference import run_bone_age_inference
+    models_loaded.append("bone_age")
+except ImportError as e:
+    logger.warning(f"Failed to load Bone Age inference module: {e}")
+
+try:
+    from retinopathy_inference import run_retinopathy_inference
+    models_loaded.append("retinopathy")
+except ImportError as e:
+    logger.warning(f"Failed to load Retinopathy inference module: {e}")
+
+# Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-# Create directories if they don't exist
-for d in ["uploads", "heatmaps", "reports", "templates"]:
-    os.makedirs(d, exist_ok=True)
+# FastAPI App
+app = FastAPI(title="MediScan AI", version="2.0")
 
-# Create database tables
-try:
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created successfully.")
-except Exception as e:
-    logger.error(f"Failed to create database tables: {e}")
-
-# Setup FastAPI App
-app = FastAPI(
-    title="CortexRay",
-    description="AI-powered X-ray analysis for fracture detection, prognosis, and clinical reporting",
-    version="1.0.0",
-)
-
-# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -55,744 +82,698 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static directories
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.mount("/heatmaps", StaticFiles(directory="heatmaps"), name="heatmaps")
 app.mount("/reports", StaticFiles(directory="reports"), name="reports")
-app.mount("/templates", StaticFiles(directory="templates"), name="templates")
+app.mount("/static", StaticFiles(directory="templates"), name="templates")
 
-# Include routers
-app.include_router(auth_router)
-
-@app.get("/", tags=["UI"], include_in_schema=False)
-async def serve_dashboard():
-    return FileResponse("templates/index.html")
-
-@app.get("/history", tags=["UI"], include_in_schema=False)
-async def serve_history():
-    return FileResponse("templates/history.html")
-
-
-# ==============================================================================
-# GLOBAL EXCEPTION HANDLER
-# ==============================================================================
+# Error handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, HTTPException):
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
     logger.error(f"Unhandled server error: {exc}")
     logger.error(traceback.format_exc())
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
-
-# ==============================================================================
-# HEALTH ENDPOINT
-# ==============================================================================
-@app.get(
-    "/health",
-    tags=["System"],
-    description="Check the system health status, DB connectivity, and model loading state.",
-)
-async def health_check():
-    db_status = "connected"
+# Health
+@app.get("/health", tags=["System"])
+def health_check():
     try:
-        # Check DB connection
-        with engine.connect() as conn:  # noqa: F841
-            pass
-    except Exception as e:
-        logger.error(f"DB health check failed: {e}")
+        with engine.connect() as conn: pass
+        db_status = "connected"
+    except Exception:
         db_status = "error"
-
+        
     return {
         "status": "healthy",
-        "model_loaded": True,  # Inference model loads at module level in inference.py
-        "database": db_status,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.0.0",
+        "models_loaded": models_loaded,
+        "database": db_status
     }
 
+# UI routes
+@app.get("/", tags=["UI"], include_in_schema=False)
+def serve_dashboard():
+    return FileResponse("templates/index.html")
 
-# ==============================================================================
-# PATIENTS ENDPOINTS
-# ==============================================================================
-@app.post(
-    "/patients/",
-    response_model=schemas.PatientResponse,
-    tags=["Patients"],
-    description="Register a new patient profile into the database.",
-)
-async def create_patient(
-    patient: schemas.PatientCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_doctor),
-):
-    db_patient = db_models.Patient(
-        full_name=patient.full_name,
-        age=patient.age,
-        gender=patient.gender,
-        comorbidities=patient.comorbidities,
-    )
+@app.get("/history", tags=["UI"], include_in_schema=False)
+def serve_history():
+    return FileResponse("templates/history.html")
+
+# Overrides
+@app.get("/overrides", tags=["Admin"])
+def get_all_overrides(db: Session = Depends(get_db), current_user = Depends(get_current_admin)):
+    # Simple aggregation of overrides
+    overrides = []
+    return overrides # To be expanded later if needed across all modules
+
+app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+
+# ====================
+# PATIENT ROUTER
+# ====================
+patient_router = APIRouter(prefix="/patients", tags=["Patients"])
+
+@patient_router.post("/", response_model=schemas.PatientResponse)
+def create_patient(patient: schemas.PatientCreate, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    db_patient = db_models.Patient(**patient.model_dump())
     db.add(db_patient)
     db.commit()
     db.refresh(db_patient)
-    logger.info(
-        f"Created new patient record with id: {db_patient.id} by user: {current_user.email}"
-    )
     return db_patient
 
+@patient_router.get("/", response_model=List[schemas.PatientResponse])
+def get_all_patients(db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.Patient).all()
 
-@app.get(
-    "/patients/",
-    response_model=List[schemas.PatientResponse],
-    tags=["Admin"],
-    description="Get a paginated list of all active patients. Admin only.",
-)
-async def get_all_patients(
-    skip: int = 0,
-    limit: int = 50,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
-):
-    patients = db.query(db_models.Patient).offset(skip).limit(limit).all()
-    # Note: the schema doesn't have is_active, but the prompt mentions soft delete.
-    # If the user wanted is_active on Patient, we would filter it.
-    # Since Patient model doesn't have is_active in db_models.py, we might have to just return all.
-    # Wait, the prompt says "Soft delete — set is_active=False". Let's check models.
-    # db_models.py Patient doesn't have is_active. We will add it dynamically or fail over if missing.
-    return patients
+@patient_router.get("/{patient_id}", response_model=schemas.PatientResponse)
+def get_patient(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
+    return p
 
-
-@app.delete(
-    "/patients/{patient_id}",
-    tags=["Admin"],
-    description="Soft delete a patient record. Admin only.",
-)
-async def delete_patient(
-    patient_id: str, db: Session = Depends(get_db), current_user: User = Depends(require_admin)
-):
-    try:
-        patient_uuid = uuid.UUID(patient_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid patient_id format")
-
-    patient = db.query(db_models.Patient).filter(db_models.Patient.id == patient_uuid).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-
-    # The models don't actually have an is_active field on Patient.
-    # We will log the attempt. If there's an issue we can add it to the DB model or just physically delete.
-    if hasattr(patient, "is_active"):
-        patient.is_active = False
-        db.commit()
-        logger.info(f"Soft deleted patient {patient_id}")
-        return {"detail": "Patient successfully soft deleted"}
-    else:
-        # Fallback to hard delete if soft delete not supported
-        db.delete(patient)
-        db.commit()
-        logger.warning(f"Hard deleted patient {patient_id} as is_active field is missing")
-        return {"detail": "Patient successfully deleted"}
-
-
-@app.get(
-    "/patients/{patient_id}/history",
-    response_model=schemas.PatientHistoryResponse,
-    tags=["Patients"],
-    description="Get full history of a patient including all previous scans, predictions, and prognoses.",
-)
-async def get_patient_history(
-    patient_id: str, db: Session = Depends(get_db), current_user: User = Depends(require_doctor)
-):
-    try:
-        patient_uuid = uuid.UUID(patient_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid patient_id format")
-
-    patient = db.query(db_models.Patient).filter(db_models.Patient.id == patient_uuid).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-
-    # We map patient to PatientHistoryResponse
-    return patient
-
-
-# ==============================================================================
-# SCANS ENDPOINTS
-# ==============================================================================
-@app.post(
-    "/scan/upload",
-    response_model=schemas.ScanUploadResponse,
-    tags=["Scans"],
-    description="Upload a new X-ray scan. Generates AI prediction, Grad-CAM heatmap, prognosis, and PDF report.",
-)
-async def upload_scan(
-    patient_id: str = Form(...),
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_doctor),
-):
-    start_time = time.time()
-
-    if not file.filename.lower().endswith((".png", ".jpg", ".jpeg")):
-        raise HTTPException(status_code=400, detail="Only PNG and JPG files are supported")
-
-    try:
-        patient_uuid = uuid.UUID(patient_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid patient_id format")
-
-    patient = db.query(db_models.Patient).filter(db_models.Patient.id == patient_uuid).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-
-    scan_uuid = uuid.uuid4()
-    saved_file_name = f"{scan_uuid}_{file.filename}"
-    saved_file_path = os.path.join("uploads", saved_file_name).replace("\\", "/")
-
-    try:
-        with open(saved_file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        logger.error(f"Error saving file: {e}")
-        raise HTTPException(status_code=500, detail="Failed to save uploaded file")
-
-    logger.info(f"Running inference pipeline for scan {scan_uuid}")
-
-    try:
-        inference_result = run_inference(saved_file_path)
-    except Exception as e:
-        logger.error(f"Inference failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Inference processing failed")
-
-    db_scan = db_models.XrayScan(
-        id=scan_uuid,
-        patient_id=patient.id,
-        original_file_path=saved_file_path,
-        bone_affected=inference_result.bone_region,
-        dataset_source="uploaded",
-    )
-
-    prediction_id = uuid.uuid4()
-    db_prediction = db_models.FracturePrediction(
-        id=prediction_id,
-        scan_id=scan_uuid,
-        fracture_detected=inference_result.fracture_detected,
-        severity="simple" if inference_result.fracture_detected else "hairline",
-        confidence_score=inference_result.fracture_confidence,
-        heatmap_path=inference_result.heatmap_path,
-        model_version=inference_result.model_version,
-    )
-
-    if inference_result.confidence_flag == "inconclusive":
-        try:
-            db.add(db_scan)
-            db.add(db_prediction)
-            db.commit()
-        except SQLAlchemyError as e:
-            db.rollback()
-            logger.error(f"DB Error: {e}")
-            raise HTTPException(status_code=500, detail="Database error")
-
-        duration = time.time() - start_time
-        logger.info(f"Pipeline finished in {duration:.2f}s for inconclusive scan {scan_uuid}")
-
-        return schemas.ScanUploadResponse(
-            scan_id=scan_uuid,
-            fracture_detected=inference_result.fracture_detected,
-            bone_region=inference_result.bone_region,
-            fracture_confidence=inference_result.fracture_confidence,
-            confidence_flag=inference_result.confidence_flag,
-            message=inference_result.message,
-            heatmap_url=(
-                f"/{inference_result.heatmap_path}" if inference_result.heatmap_path else None
-            ),
-            file_path=saved_file_path,
-            model_version=inference_result.model_version,
-        )
-
-    logger.info(f"Generating prognosis for scan {scan_uuid}")
-    prog_result = get_prognosis(
-        bone=inference_result.bone_region,
-        severity="simple" if inference_result.fracture_detected else "hairline",
-        age=patient.age,
-        comorbidities=patient.comorbidities,
-    )
-
-    db_prognosis = db_models.PrognosisResult(
-        prediction_id=prediction_id,
-        rest_weeks_min=prog_result.rest_weeks_min,
-        rest_weeks_max=prog_result.rest_weeks_max,
-        cast_type=prog_result.cast_type,
-        plaster_required=prog_result.plaster_required,
-        weight_bearing_status=prog_result.weight_bearing_status,
-        referral_flag=prog_result.referral_flag,
-    )
-
-    logger.info(f"Generating report for scan {scan_uuid}")
-    patient_dict = {
-        "full_name": patient.full_name,
-        "age": patient.age,
-        "gender": patient.gender,
-        "comorbidities": patient.comorbidities,
-    }
-    scan_dict = {
-        "scan_id": str(scan_uuid),
-        "upload_timestamp": str(datetime.utcnow()),
-        "original_file_path": saved_file_path,
-        "bone_affected": inference_result.bone_region,
-    }
-    prog_dict = {
-        "rest_weeks_min": prog_result.rest_weeks_min,
-        "rest_weeks_max": prog_result.rest_weeks_max,
-        "cast_type": prog_result.cast_type,
-        "plaster_required": prog_result.plaster_required,
-        "weight_bearing_status": prog_result.weight_bearing_status,
-        "referral_flag": prog_result.referral_flag == "surgical",
-    }
-
-    report_path = generate_report(patient_dict, scan_dict, inference_result, prog_dict, "reports/")
-    if not report_path:
-        logger.warning(f"Report generation failed for scan {scan_uuid}")
-
-    try:
-        db.add(db_scan)
-        db.add(db_prediction)
-        db.add(db_prognosis)
-        db.commit()
-    except SQLAlchemyError as e:
-        logger.error(f"Database error during scan save: {e}")
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Database error during save")
-
-    duration = time.time() - start_time
-    logger.info(f"Pipeline finished in {duration:.2f}s for scan {scan_uuid}")
-
-    return schemas.ScanUploadResponse(
-        scan_id=scan_uuid,
-        fracture_detected=inference_result.fracture_detected,
-        bone_region=inference_result.bone_region,
-        fracture_confidence=inference_result.fracture_confidence,
-        confidence_flag=inference_result.confidence_flag,
-        message=inference_result.message,
-        cast_type=prog_result.cast_type,
-        rest_weeks_min=prog_result.rest_weeks_min,
-        rest_weeks_max=prog_result.rest_weeks_max,
-        plaster_required=prog_result.plaster_required,
-        weight_bearing_status=prog_result.weight_bearing_status,
-        referral_flag=prog_result.referral_flag,
-        heatmap_url=f"/{inference_result.heatmap_path}" if inference_result.heatmap_path else None,
-        report_url=f"/scan/{scan_uuid}/report" if report_path else None,
-        file_path=saved_file_path,
-        model_version=inference_result.model_version,
-    )
-
-
-@app.get(
-    "/scan/{scan_id}",
-    response_model=schemas.ScanUploadResponse,
-    tags=["Scans"],
-    description="Retrieve the results of a previously processed scan.",
-)
-async def get_scan(
-    scan_id: str, db: Session = Depends(get_db), current_user: User = Depends(require_doctor)
-):
-    try:
-        scan_uuid = uuid.UUID(scan_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid scan_id format")
-
-    scan = db.query(db_models.XrayScan).filter(db_models.XrayScan.id == scan_uuid).first()
-    if not scan or not scan.prediction:
-        raise HTTPException(status_code=404, detail="Scan or prediction not found")
-
-    pred = scan.prediction
-    prog = pred.prognosis
-
-    # Calculate confidence flag dynamically based on thresholds if not stored
-    confidence_flag = "clear"
-    if pred.confidence_score * 100 < 80:
-        confidence_flag = "inconclusive"
-    elif pred.confidence_score * 100 < 90:
-        confidence_flag = "low_confidence"
-
-    # Check if a report exists
-    report_exists = False
-    for root, dirs, files in os.walk("reports"):
-        for f in files:
-            if scan_id in f and f.endswith(".pdf"):
-                report_exists = True
-                break
-
-    return schemas.ScanUploadResponse(
-        scan_id=scan.id,
-        fracture_detected=pred.fracture_detected,
-        bone_region=scan.bone_affected,
-        fracture_confidence=pred.confidence_score,
-        confidence_flag=confidence_flag,
-        message="Retrieved from database.",
-        cast_type=prog.cast_type if prog else None,
-        rest_weeks_min=prog.rest_weeks_min if prog else None,
-        rest_weeks_max=prog.rest_weeks_max if prog else None,
-        plaster_required=prog.plaster_required if prog else None,
-        weight_bearing_status=prog.weight_bearing_status if prog else None,
-        referral_flag=prog.referral_flag if prog else None,
-        heatmap_url=f"/{pred.heatmap_path}" if pred.heatmap_path else None,
-        report_url=f"/scan/{scan_uuid}/report" if report_exists else None,
-        file_path=scan.original_file_path,
-        model_version=pred.model_version,
-    )
-
-
-@app.get(
-    "/scan/{scan_id}/report",
-    tags=["Scans"],
-    description="Download the generated PDF report for a scan.",
-)
-async def download_report(scan_id: str, current_user: User = Depends(require_doctor)):
-    report_file = None
-    for root, dirs, files in os.walk("reports"):
-        for f in files:
-            if scan_id in f and f.endswith(".pdf"):
-                report_file = os.path.join(root, f)
-                break
-
-    if not report_file or not os.path.exists(report_file):
-        raise HTTPException(status_code=404, detail="Report not generated yet or not found")
-
-    return FileResponse(
-        path=report_file, filename=os.path.basename(report_file), media_type="application/pdf"
-    )
-
-
-# ==============================================================================
-# PROGNOSIS ENDPOINTS
-# ==============================================================================
-@app.patch(
-    "/prognosis/{prognosis_id}/override",
-    response_model=schemas.PrognosisOverrideResponse,
-    tags=["Prognosis"],
-    description="Submit a manual clinician override for the generated prognosis.",
-)
-async def override_prognosis(
-    prognosis_id: str,
-    override_req: schemas.PrognosisOverrideRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_doctor),
-):
-    try:
-        prog_uuid = uuid.UUID(prognosis_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid prognosis_id format")
-
-    prog = (
-        db.query(db_models.PrognosisResult)
-        .filter(db_models.PrognosisResult.id == prog_uuid)
-        .first()
-    )
-    if not prog:
-        raise HTTPException(status_code=404, detail="Prognosis not found")
-
-    prog.clinician_override = True
-    prog.override_notes = override_req.override_notes
-    prog.override_timestamp = datetime.utcnow()
-
+@patient_router.delete("/{patient_id}")
+def delete_patient(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_admin)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
+    db.delete(p) # Hard delete for now, as is_active not on patient
     db.commit()
-    db.refresh(prog)
-    logger.info(f"Clinician '{override_req.clinician_override}' updated prognosis {prognosis_id}")
-    return prog
+    return {"detail": "Deleted"}
 
+app.include_router(patient_router)
 
-@app.get(
-    "/prognosis/overrides",
-    response_model=List[schemas.PrognosisOverrideResponse],
-    tags=["Admin"],
-    description="List all manually overridden prognoses for model feedback loop. Admin only.",
-)
-async def get_prognosis_overrides(
-    db: Session = Depends(get_db), current_user: User = Depends(require_admin)
-):
-    overrides = (
-        db.query(db_models.PrognosisResult)
-        .filter(db_models.PrognosisResult.clinician_override is True)
-        .all()
-    )
-    return overrides
+# ====================
+# MODULE 1: FRACTURE
+# ====================
+fracture_router = APIRouter(prefix="/fracture", tags=["Fracture"])
 
-# ==============================================================================
-# ARTHRITIS ENDPOINTS
-# ==============================================================================
-@app.post(
-    "/arthritis/scan/upload",
-    response_model=schemas.ArthritisScanResponse,
-    tags=["Arthritis Grading"],
-    description="Upload an X-ray for 5-class arthritis grading.",
-)
-async def upload_arthritis_scan(
-    patient_id: str = Form(...),
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_doctor),
-):
-    try:
-        pat_uuid = uuid.UUID(patient_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid patient_id format")
-
-    patient = db.query(db_models.Patient).filter(db_models.Patient.id == pat_uuid).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-
-    if not file.filename.lower().endswith((".png", ".jpg", ".jpeg")):
-        raise HTTPException(status_code=400, detail="Invalid file type. Please upload PNG or JPG.")
-
-    # Save file
-    timestamp = int(time.time())
-    uid = uuid.uuid4().hex[:8]
-    ext = os.path.splitext(file.filename)[1]
-    safe_filename = f"arthritis_{uid}_{timestamp}{ext}"
-    filepath = os.path.join("uploads", safe_filename).replace("\\", "/")
-
-    try:
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        logger.error(f"Failed to save uploaded file: {e}")
-        raise HTTPException(status_code=500, detail="Failed to save file")
-
-    # Run Inference
-    try:
-        start_time = time.time()
-        result = run_arthritis_inference(filepath)
-        inference_time = time.time() - start_time
-        logger.info(f"Arthritis inference completed in {inference_time:.2f}s")
-    except Exception as e:
-        logger.error(f"Inference engine failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Inference engine error: {str(e)}")
-
-    # Generate Report
-    patient_dict = {
-        "full_name": patient.full_name,
-        "age": patient.age,
-        "gender": patient.gender,
-        "comorbidities": patient.comorbidities,
-    }
-    scan_id_str = str(uuid.uuid4())
-    scan_dict = {
-        "scan_id": scan_id_str,
-        "upload_timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-        "original_file_path": filepath,
-    }
+@fracture_router.post("/scan/upload", response_model=schemas.FractureResponse)
+async def upload_fracture(patient_id: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
     
-    report_path = generate_report(
-        patient=patient_dict,
-        scan=scan_dict,
-        inference_result=result,
-        prognosis=None,
-        report_type="arthritis",
-        output_dir="reports/"
+    uid = uuid.uuid4().hex[:8]
+    filepath = f"uploads/frac_{uid}_{file.filename}".replace("\\", "/")
+    with open(filepath, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        
+    res = run_fracture_inference(filepath)
+    prog = None
+    if res.confidence_flag != "inconclusive":
+        prog = get_fracture_prognosis(res.bone_region, "simple" if res.fracture_detected else "hairline", p.age, p.comorbidities)
+        
+    db_scan = db_models.FractureScan(
+        patient_id=p.id, original_file_path=filepath, fracture_detected=res.fracture_detected,
+        body_region=res.bone_region, confidence=res.fracture_confidence, confidence_flag=res.confidence_flag,
+        heatmap_path=res.heatmap_path, model_version=res.model_version
     )
+    db.add(db_scan)
+    db.flush()
+    
+    if prog:
+        db_prog = db_models.FracturePrognosis(
+            scan_id=db_scan.id, rest_weeks_min=prog.rest_weeks_min, rest_weeks_max=prog.rest_weeks_max,
+            cast_type=prog.cast_type, plaster_required=prog.plaster_required, weight_bearing_status=prog.weight_bearing_status,
+            referral_flag=prog.referral_flag
+        )
+        db.add(db_prog)
+        
+    db.commit()
+    db.refresh(db_scan)
+    return db_scan
 
-    # Save to DB
-    new_prediction = db_models.ArthritisPrediction(
-        id=uuid.UUID(scan_id_str),
-        patient_id=pat_uuid,
+@fracture_router.get("/scan/{scan_id}", response_model=schemas.FractureResponse)
+def get_fracture(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.FractureScan).filter(db_models.FractureScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    return scan
+
+@fracture_router.patch("/{scan_id}/override", response_model=schemas.FractureResponse)
+def override_fracture(scan_id: str, req: schemas.FractureOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.FractureScan).filter(db_models.FractureScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    scan.clinician_override = req.clinician_override
+    scan.override_notes = req.override_notes
+    scan.override_timestamp = datetime.utcnow()
+    db.commit()
+    db.refresh(scan)
+    return scan
+
+@app.get("/patients/{patient_id}/fracture-history", tags=["Fracture"])
+def fracture_history(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.FractureScan).filter(db_models.FractureScan.patient_id == patient_id).order_by(db_models.FractureScan.upload_timestamp.desc()).all()
+
+app.include_router(fracture_router)
+
+# ====================
+# MODULE 2: ARTHRITIS
+# ====================
+arthritis_router = APIRouter(prefix="/arthritis", tags=["Arthritis"])
+
+@arthritis_router.post("/scan/upload", response_model=schemas.ArthritisResponse)
+async def upload_arthritis(patient_id: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
+    
+    uid = uuid.uuid4().hex[:8]
+    filepath = f"uploads/arth_{uid}_{file.filename}".replace("\\", "/")
+    with open(filepath, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        
+    res = run_arthritis_inference(filepath)
+    
+    db_scan = db_models.ArthritisScan(
+        patient_id=p.id, original_file_path=filepath, grade=res.grade, grade_name=res.grade_name,
+        confidence=res.confidence, confidence_flag=res.confidence_flag, heatmap_path=res.heatmap_path,
+        clinical_recommendation=res.clinical_recommendation, model_version=res.model_version
+    )
+    db.add(db_scan)
+    db.commit()
+    db.refresh(db_scan)
+    return db_scan
+
+@arthritis_router.get("/scan/{scan_id}", response_model=schemas.ArthritisResponse)
+def get_arthritis(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.ArthritisScan).filter(db_models.ArthritisScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    return scan
+
+@arthritis_router.patch("/{scan_id}/override", response_model=schemas.ArthritisResponse)
+def override_arthritis(scan_id: str, req: schemas.ArthritisOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.ArthritisScan).filter(db_models.ArthritisScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    scan.clinician_override = req.clinician_override
+    scan.override_notes = req.override_notes
+    scan.override_timestamp = datetime.utcnow()
+    db.commit()
+    db.refresh(scan)
+    return scan
+
+@app.get("/patients/{patient_id}/arthritis-history", tags=["Arthritis"])
+def arthritis_history(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.ArthritisScan).filter(db_models.ArthritisScan.patient_id == patient_id).order_by(db_models.ArthritisScan.upload_timestamp.desc()).all()
+
+app.include_router(arthritis_router)
+
+# ====================
+# MODULE 3: OSTEOPOROSIS
+# ====================
+osteo_router = APIRouter(prefix="/osteoporosis", tags=["Osteoporosis"])
+
+@osteo_router.post("/scan/upload", response_model=schemas.OsteoporosisResponse)
+async def upload_osteo(patient_id: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
+    
+    uid = uuid.uuid4().hex[:8]
+    filepath = f"uploads/osteo_{uid}_{file.filename}".replace("\\", "/")
+    with open(filepath, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        
+    res = run_osteoporosis_inference(filepath)
+    
+    db_scan = db_models.OsteoporosisScan(
+        patient_id=p.id, original_file_path=filepath, has_osteoporosis=res.has_osteoporosis,
+        confidence=res.confidence, confidence_flag=res.confidence_flag, heatmap_path=res.heatmap_path,
+        clinical_recommendation=res.clinical_recommendation, model_version=res.model_version
+    )
+    db.add(db_scan)
+    db.commit()
+    db.refresh(db_scan)
+    return db_scan
+
+@osteo_router.get("/scan/{scan_id}", response_model=schemas.OsteoporosisResponse)
+def get_osteo(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.OsteoporosisScan).filter(db_models.OsteoporosisScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    return scan
+
+@osteo_router.patch("/{scan_id}/override", response_model=schemas.OsteoporosisResponse)
+def override_osteo(scan_id: str, req: schemas.OsteoporosisOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.OsteoporosisScan).filter(db_models.OsteoporosisScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    scan.clinician_override = req.clinician_override
+    scan.override_notes = req.override_notes
+    scan.override_timestamp = datetime.utcnow()
+    db.commit()
+    db.refresh(scan)
+    return scan
+
+@app.get("/patients/{patient_id}/osteoporosis-history", tags=["Osteoporosis"])
+def osteo_history(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.OsteoporosisScan).filter(db_models.OsteoporosisScan.patient_id == patient_id).order_by(db_models.OsteoporosisScan.upload_timestamp.desc()).all()
+
+app.include_router(osteo_router)
+
+
+# ====================
+# PLACEHOLDER MODULES 4-9
+# ====================
+
+tb_router = APIRouter(prefix="/tb", tags=["TB"])
+
+@tb_router.post("/scan/upload", response_model=schemas.TBResponse)
+async def upload_tb(patient_id: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
+    if not file.content_type.startswith("image/"): raise HTTPException(400, "File must be an image")
+    
+    uid = uuid.uuid4().hex[:8]
+    filepath = f"uploads/tb_{uid}_{file.filename}".replace("\\", "/")
+    with open(filepath, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        
+    try:
+        res = run_tb_inference(filepath)
+    except Exception as e:
+        logger.error(f"Inference failed: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(500, f"Inference failed: {str(e)}")
+        
+    urgency = "routine"
+    if res.has_tb:
+        urgency = "emergency" if res.confidence_flag == "clear" else "urgent"
+        
+    db_scan = db_models.TBScan(
+        patient_id=p.id, original_file_path=filepath, has_tb=res.has_tb, tb_probability=res.tb_probability,
+        confidence=res.confidence, confidence_flag=res.confidence_flag, urgency=urgency, heatmap_path=res.heatmap_path,
+        clinical_recommendation=res.clinical_recommendation, model_version=res.model_version
+    )
+    db.add(db_scan)
+    db.commit()
+    db.refresh(db_scan)
+    return db_scan
+
+@tb_router.get("/scan/{scan_id}", response_model=schemas.TBResponse)
+def get_tb(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.TBScan).filter(db_models.TBScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    return scan
+
+@tb_router.get("/scan/{scan_id}/report")
+def get_tb_report(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.TBScan).filter(db_models.TBScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    if scan.report_path and os.path.exists(scan.report_path):
+        return FileResponse(scan.report_path, media_type="application/pdf", filename=f"TB_Report_{scan_id}.pdf")
+        
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    
+    report_path = generate_tb_report(
+        patient={"full_name": p.full_name, "age": p.age, "gender": p.gender, "comorbidities": p.comorbidities},
+        scan={"scan_id": scan.id, "upload_timestamp": scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else "", "original_file_path": scan.original_file_path},
+        inference_result=scan
+    )
+    
+    if not report_path: raise HTTPException(500, "Failed to generate report")
+    scan.report_path = report_path
+    db.commit()
+    return FileResponse(report_path, media_type="application/pdf", filename=f"TB_Report_{scan_id}.pdf")
+
+@tb_router.patch("/{scan_id}/override", response_model=schemas.TBResponse)
+def override_tb(scan_id: str, req: schemas.TBOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.TBScan).filter(db_models.TBScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    scan.clinician_override = req.clinician_override
+    scan.override_notes = req.override_notes
+    scan.override_timestamp = datetime.utcnow()
+    db.commit()
+    db.refresh(scan)
+    return scan
+
+@app.get("/patients/{patient_id}/tb-history", tags=["TB"], response_model=List[schemas.TBResponse])
+def tb_history(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.TBScan).filter(db_models.TBScan.patient_id == patient_id).order_by(db_models.TBScan.upload_timestamp.desc()).all()
+
+app.include_router(tb_router)
+
+lung_nodule_router = APIRouter(prefix="/lung-nodule", tags=["Lung Nodule"])
+
+@lung_nodule_router.post("/scan/upload", response_model=schemas.LungNoduleResponse)
+async def upload_lung_nodule(patient_id: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
+    if not file.content_type.startswith("image/"): raise HTTPException(400, "File must be an image")
+    
+    uid = uuid.uuid4().hex[:8]
+    filepath = f"uploads/lung_nodule_{uid}_{file.filename}".replace("\\", "/")
+    with open(filepath, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        
+    try:
+        res = run_lung_nodule_inference(filepath)
+    except Exception as e:
+        logger.error(f"Inference failed: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(500, f"Inference failed: {str(e)}")
+        
+    db_scan = db_models.LungNoduleScan(
+        patient_id=p.id, original_file_path=filepath, has_nodule=res.has_nodule, nodule_probability=res.nodule_probability,
+        confidence=res.confidence, confidence_flag=res.confidence_flag, urgency=res.urgency, heatmap_path=res.heatmap_path,
+        clinical_recommendation=res.clinical_recommendation, model_version=res.model_version
+    )
+    db.add(db_scan)
+    db.commit()
+    db.refresh(db_scan)
+    return db_scan
+
+@lung_nodule_router.get("/scan/{scan_id}", response_model=schemas.LungNoduleResponse)
+def get_lung_nodule(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.LungNoduleScan).filter(db_models.LungNoduleScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    return scan
+
+@lung_nodule_router.get("/scan/{scan_id}/report")
+def get_lung_nodule_report(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    from report_generator import generate_lung_nodule_report
+    scan = db.query(db_models.LungNoduleScan).filter(db_models.LungNoduleScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    if scan.report_path and os.path.exists(scan.report_path):
+        return FileResponse(scan.report_path, media_type="application/pdf", filename=f"LungNodule_Report_{scan_id}.pdf")
+        
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    
+    report_path = generate_lung_nodule_report(
+        patient={"full_name": p.full_name, "age": p.age, "gender": p.gender, "comorbidities": p.comorbidities},
+        scan={"scan_id": scan.id, "upload_timestamp": scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else "", "original_file_path": scan.original_file_path},
+        inference_result=scan
+    )
+    
+    if not report_path: raise HTTPException(500, "Failed to generate report")
+    scan.report_path = report_path
+    db.commit()
+    return FileResponse(report_path, media_type="application/pdf", filename=f"LungNodule_Report_{scan_id}.pdf")
+
+@lung_nodule_router.patch("/{scan_id}/override", response_model=schemas.LungNoduleResponse)
+def override_lung_nodule(scan_id: str, req: schemas.LungNoduleOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.LungNoduleScan).filter(db_models.LungNoduleScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    scan.clinician_override = req.clinician_override
+    scan.override_notes = req.override_notes
+    scan.override_timestamp = datetime.utcnow()
+    db.commit()
+    db.refresh(scan)
+    return scan
+
+@app.get("/patients/{patient_id}/lung-nodule-history", tags=["Lung Nodule"], response_model=List[schemas.LungNoduleResponse])
+def lung_nodule_history(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.LungNoduleScan).filter(db_models.LungNoduleScan.patient_id == patient_id).order_by(db_models.LungNoduleScan.upload_timestamp.desc()).all()
+
+app.include_router(lung_nodule_router)
+
+brain_tumor_router = APIRouter(prefix="/brain-tumor", tags=["Brain Tumor"])
+
+@brain_tumor_router.post("/scan/upload", response_model=schemas.BrainTumorResponse)
+async def upload_brain_tumor(patient_id: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
+    if not file.content_type.startswith("image/"): raise HTTPException(400, "File must be an image")
+    
+    uid = uuid.uuid4().hex[:8]
+    filepath = f"uploads/brain_tumor_{uid}_{file.filename}".replace("\\", "/")
+    with open(filepath, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        
+    try:
+        res = run_brain_tumor_inference(filepath)
+    except Exception as e:
+        logger.error(f"Inference failed: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(500, f"Inference failed: {str(e)}")
+        
+    db_scan = db_models.BrainTumorScan(
+        patient_id=p.id, original_file_path=filepath, tumor_detected=res.tumor_detected, tumor_type=res.tumor_type,
+        confidence=res.confidence, confidence_flag=res.confidence_flag, glioma_risk_flag=res.glioma_risk_flag, 
+        all_probabilities=res.all_probabilities, urgency=res.urgency, heatmap_path=res.heatmap_path,
+        clinical_recommendation=res.clinical_recommendation, model_version=res.model_version
+    )
+    db.add(db_scan)
+    db.commit()
+    db.refresh(db_scan)
+    return db_scan
+
+@brain_tumor_router.get("/scan/{scan_id}", response_model=schemas.BrainTumorResponse)
+def get_brain_tumor(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.BrainTumorScan).filter(db_models.BrainTumorScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    return scan
+
+@brain_tumor_router.get("/scan/{scan_id}/report")
+def get_brain_tumor_report(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    from report_generator import generate_brain_tumor_report
+    scan = db.query(db_models.BrainTumorScan).filter(db_models.BrainTumorScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    if scan.report_path and os.path.exists(scan.report_path):
+        return FileResponse(scan.report_path, media_type="application/pdf", filename=f"BrainTumor_Report_{scan_id}.pdf")
+        
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    
+    report_path = generate_brain_tumor_report(
+        patient={"full_name": p.full_name, "age": p.age, "gender": p.gender, "comorbidities": p.comorbidities},
+        scan={"scan_id": scan.id, "upload_timestamp": scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else "", "original_file_path": scan.original_file_path},
+        inference_result=scan
+    )
+    
+    if not report_path: raise HTTPException(500, "Failed to generate report")
+    scan.report_path = report_path
+    db.commit()
+    return FileResponse(report_path, media_type="application/pdf", filename=f"BrainTumor_Report_{scan_id}.pdf")
+
+@brain_tumor_router.patch("/{scan_id}/override", response_model=schemas.BrainTumorResponse)
+def override_brain_tumor(scan_id: str, req: schemas.BrainTumorOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.BrainTumorScan).filter(db_models.BrainTumorScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    scan.clinician_override = req.clinician_override
+    scan.override_notes = req.override_notes
+    scan.override_timestamp = datetime.utcnow()
+    db.commit()
+    db.refresh(scan)
+    return scan
+
+@app.get("/patients/{patient_id}/brain-tumor-history", tags=["Brain Tumor"], response_model=List[schemas.BrainTumorResponse])
+def brain_tumor_history(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.BrainTumorScan).filter(db_models.BrainTumorScan.patient_id == patient_id).order_by(db_models.BrainTumorScan.upload_timestamp.desc()).all()
+
+app.include_router(brain_tumor_router)
+
+brain_hemorrhage_router = APIRouter(prefix="/brain-hemorrhage", tags=["Brain Hemorrhage"])
+
+@brain_hemorrhage_router.post("/scan/upload", response_model=schemas.BrainHemorrhageResponse)
+async def upload_brain_hemorrhage(patient_id: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
+    if not file.content_type.startswith("image/"): raise HTTPException(400, "File must be an image")
+    
+    uid = uuid.uuid4().hex[:8]
+    filepath = f"uploads/brain_hemorrhage_{uid}_{file.filename}".replace("\\", "/")
+    with open(filepath, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        
+    try:
+        res = run_brain_hemorrhage_inference(filepath)
+    except Exception as e:
+        logger.error(f"Inference failed: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(500, f"Inference failed: {str(e)}")
+        
+    db_scan = db_models.BrainHemorrhageScan(
+        patient_id=p.id, original_file_path=filepath, has_hemorrhage=res.has_hemorrhage, hemorrhage_probability=res.hemorrhage_probability,
+        confidence=res.confidence, confidence_flag=res.confidence_flag, urgency=res.urgency, small_dataset_warning=True, 
+        heatmap_path=res.heatmap_path, clinical_recommendation=res.clinical_recommendation, model_version=res.model_version
+    )
+    db.add(db_scan)
+    db.commit()
+    db.refresh(db_scan)
+    
+    if res.has_hemorrhage:
+        logger.warning(f"HEMORRHAGE DETECTED for patient {patient_id}, scan {db_scan.id}. Urgency: EMERGENCY.")
+        
+    return db_scan
+
+@brain_hemorrhage_router.get("/scan/{scan_id}", response_model=schemas.BrainHemorrhageResponse)
+def get_brain_hemorrhage(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.BrainHemorrhageScan).filter(db_models.BrainHemorrhageScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    return scan
+
+@brain_hemorrhage_router.get("/scan/{scan_id}/report")
+def get_brain_hemorrhage_report(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    from report_generator import generate_brain_hemorrhage_report
+    scan = db.query(db_models.BrainHemorrhageScan).filter(db_models.BrainHemorrhageScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    if scan.report_path and os.path.exists(scan.report_path):
+        return FileResponse(scan.report_path, media_type="application/pdf", filename=f"BrainHemorrhage_Report_{scan_id}.pdf")
+        
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    
+    report_path = generate_brain_hemorrhage_report(
+        patient={"full_name": p.full_name, "age": p.age, "gender": p.gender, "comorbidities": p.comorbidities},
+        scan={"scan_id": scan.id, "upload_timestamp": scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else "", "original_file_path": scan.original_file_path},
+        inference_result=scan
+    )
+    
+    if not report_path: raise HTTPException(500, "Failed to generate report")
+    scan.report_path = report_path
+    db.commit()
+    return FileResponse(report_path, media_type="application/pdf", filename=f"BrainHemorrhage_Report_{scan_id}.pdf")
+
+@brain_hemorrhage_router.patch("/{scan_id}/override", response_model=schemas.BrainHemorrhageResponse)
+def override_brain_hemorrhage(scan_id: str, req: schemas.BrainHemorrhageOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.BrainHemorrhageScan).filter(db_models.BrainHemorrhageScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    scan.clinician_override = req.clinician_override
+    scan.override_notes = req.override_notes
+    scan.override_timestamp = datetime.utcnow()
+    db.commit()
+    db.refresh(scan)
+    return scan
+
+@app.get("/patients/{patient_id}/brain-hemorrhage-history", tags=["Brain Hemorrhage"], response_model=List[schemas.BrainHemorrhageResponse])
+def brain_hemorrhage_history(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.BrainHemorrhageScan).filter(db_models.BrainHemorrhageScan.patient_id == patient_id).order_by(db_models.BrainHemorrhageScan.upload_timestamp.desc()).all()
+
+app.include_router(brain_hemorrhage_router)
+
+bone_age_router = APIRouter(prefix="/bone-age", tags=["Bone Age"])
+
+@bone_age_router.post("/scan/upload", response_model=schemas.BoneAgeResponse)
+async def upload_bone_age(patient_id: str = Form(...), chronological_age_months: Optional[int] = Form(None), file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not p: raise HTTPException(404, "Patient not found")
+    if not file.content_type.startswith("image/"): raise HTTPException(400, "File must be an image")
+    
+    uid = uuid.uuid4().hex[:8]
+    filepath = f"uploads/bone_age_{uid}_{file.filename}".replace("\\", "/")
+    with open(filepath, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        
+    try:
+        res = run_bone_age_inference(filepath, chronological_age_months=chronological_age_months)
+    except Exception as e:
+        logger.error(f"Inference failed: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(500, f"Inference failed: {str(e)}")
+        
+    db_scan = db_models.BoneAgeScan(
+        patient_id=p.id, original_file_path=filepath, predicted_months=res.predicted_months, 
+        predicted_display=res.predicted_display, uncertainty_months=res.uncertainty_months,
+        confidence_flag=res.confidence_flag, chronological_age_months=chronological_age_months,
+        deviation_months=res.deviation_months, skeletal_age_flag=res.skeletal_age_flag,
+        heatmap_path=res.heatmap_path, clinical_recommendation=res.clinical_recommendation, 
+        model_version=res.model_version
+    )
+    db.add(db_scan)
+    db.commit()
+    db.refresh(db_scan)
+    return db_scan
+
+@bone_age_router.get("/scan/{scan_id}", response_model=schemas.BoneAgeResponse)
+def get_bone_age(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.BoneAgeScan).filter(db_models.BoneAgeScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    return scan
+
+@bone_age_router.get("/scan/{scan_id}/report")
+def get_bone_age_report(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    from report_generator import generate_bone_age_report
+    scan = db.query(db_models.BoneAgeScan).filter(db_models.BoneAgeScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    if scan.report_path and os.path.exists(scan.report_path):
+        return FileResponse(scan.report_path, media_type="application/pdf", filename=f"BoneAge_Report_{scan_id}.pdf")
+        
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    
+    report_path = generate_bone_age_report(
+        patient={"full_name": p.full_name, "age": p.age, "gender": p.gender, "comorbidities": p.comorbidities},
+        scan={"scan_id": scan.id, "upload_timestamp": scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else "", "original_file_path": scan.original_file_path, "patient_id": p.id},
+        inference_result=scan
+    )
+    
+    if not report_path: raise HTTPException(500, "Failed to generate report")
+    scan.report_path = report_path
+    db.commit()
+    return FileResponse(report_path, media_type="application/pdf", filename=f"BoneAge_Report_{scan_id}.pdf")
+
+@app.get("/patients/{patient_id}/bone-age-history", tags=["Bone Age"], response_model=List[schemas.BoneAgeResponse])
+def bone_age_history(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.BoneAgeScan).filter(db_models.BoneAgeScan.patient_id == patient_id).order_by(db_models.BoneAgeScan.upload_timestamp.desc()).all()
+
+app.include_router(bone_age_router)
+
+retinopathy_router = APIRouter(prefix="/retinopathy", tags=["Retinopathy"])
+@retinopathy_router.post("/scan/upload", response_model=schemas.RetinopathyResponse)
+async def upload_retinopathy(patient_id: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    patient = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
+    if not patient: raise HTTPException(404, "Patient not found")
+    
+    os.makedirs("uploads", exist_ok=True)
+    ext = file.filename.split(".")[-1]
+    filename = f"retinopathy_{uuid.uuid4().hex[:8]}_{int(time.time())}.{ext}"
+    filepath = os.path.join("uploads", filename)
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+        
+    try:
+        from retinopathy_inference import run_retinopathy_inference
+        result = run_retinopathy_inference(filepath)
+    except Exception as e:
+        logger.error(f"Retinopathy inference failed: {e}", exc_info=True)
+        raise HTTPException(500, "Inference engine failed")
+        
+    db_scan = db_models.RetinopathyScan(
+        id=str(uuid.uuid4()),
+        patient_id=patient_id,
         original_file_path=filepath,
         grade=result.grade,
         grade_name=result.grade_name,
         confidence=result.confidence,
         confidence_flag=result.confidence_flag,
+        referable_dr=result.referable_dr,
+        referable_risk_flag=result.referable_risk_flag,
+        all_probabilities=result.all_probabilities,
+        urgency=result.urgency,
+        follow_up_months=result.follow_up_months,
         heatmap_path=result.heatmap_path,
         clinical_recommendation=result.clinical_recommendation,
-        model_version=result.model_version,
-        report_path=report_path,
+        model_version=result.model_version
     )
-    
-    db.add(new_prediction)
+    db.add(db_scan)
     db.commit()
-    db.refresh(new_prediction)
+    db.refresh(db_scan)
+    return db_scan
 
-    heatmap_url = f"/heatmaps/{os.path.basename(result.heatmap_path)}" if result.heatmap_path else None
-    report_url = f"/arthritis/scan/{scan_id_str}/report" if report_path else None
+@retinopathy_router.get("/scan/{scan_id}", response_model=schemas.RetinopathyResponse)
+def get_retinopathy(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.RetinopathyScan).filter(db_models.RetinopathyScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    return scan
 
-    return {
-        "scan_id": new_prediction.id,
-        "original_file_path": filepath,
-        "grade": result.grade,
-        "grade_name": result.grade_name,
-        "grade_description": result.grade_description,
-        "confidence": result.confidence,
-        "confidence_flag": result.confidence_flag,
-        "clinical_recommendation": result.clinical_recommendation,
-        "heatmap_url": heatmap_url,
-        "report_url": report_url,
-        "model_version": result.model_version,
-        "message": result.message
-    }
-
-
-@app.get(
-    "/arthritis/scan/{scan_id}",
-    response_model=schemas.ArthritisScanResponse,
-    tags=["Arthritis Grading"],
-)
-async def get_arthritis_scan(scan_id: str, db: Session = Depends(get_db), current_user: User = Depends(require_doctor)):
-    try:
-        scan_uuid = uuid.UUID(scan_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid scan_id format")
-
-    prediction = db.query(db_models.ArthritisPrediction).filter(db_models.ArthritisPrediction.id == scan_uuid).first()
-    if not prediction:
-        raise HTTPException(status_code=404, detail="Arthritis scan not found")
+@retinopathy_router.get("/scan/{scan_id}/report")
+def get_retinopathy_report(scan_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    from report_generator import generate_retinopathy_report
+    scan = db.query(db_models.RetinopathyScan).filter(db_models.RetinopathyScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    if scan.report_path and os.path.exists(scan.report_path):
+        return FileResponse(scan.report_path, media_type="application/pdf", filename=f"Retinopathy_Report_{scan_id}.pdf")
         
-    message = ""
-    if prediction.confidence_flag == "clear":
-        message = f"Grade {prediction.grade} ({prediction.grade_name}) detected with {prediction.confidence:.1f}% confidence."
-    elif prediction.confidence_flag == "low_confidence":
-        message = f"Possible Grade {prediction.grade} ({prediction.grade_name}) but confidence is moderate ({prediction.confidence:.1f}%). Recommend radiologist review."
-    else:
-        message = "Inconclusive grading. Manual radiologist review required."
-        
-    from arthritis_inference import GRADES
-    grade_desc = GRADES.get(prediction.grade, {}).get("description", "")
-
-    heatmap_url = f"/heatmaps/{os.path.basename(prediction.heatmap_path)}" if prediction.heatmap_path else None
-    report_url = f"/arthritis/scan/{scan_id}/report" if prediction.report_path else None
-
-    return {
-        "scan_id": prediction.id,
-        "grade": prediction.grade,
-        "grade_name": prediction.grade_name,
-        "grade_description": grade_desc,
-        "confidence": prediction.confidence,
-        "confidence_flag": prediction.confidence_flag,
-        "clinical_recommendation": prediction.clinical_recommendation,
-        "heatmap_url": heatmap_url,
-        "report_url": report_url,
-        "model_version": prediction.model_version,
-        "message": message
-    }
-
-
-@app.get(
-    "/arthritis/scan/{scan_id}/report",
-    tags=["Arthritis Grading"],
-)
-async def download_arthritis_report(scan_id: str, current_user: User = Depends(require_doctor)):
-    report_file = None
-    for root, dirs, files in os.walk("reports"):
-        for f in files:
-            if scan_id in f and f.endswith(".pdf"):
-                report_file = os.path.join(root, f)
-                break
-
-    if not report_file or not os.path.exists(report_file):
-        raise HTTPException(status_code=404, detail="Report not generated yet or not found")
-
-    return FileResponse(
-        path=report_file, filename=os.path.basename(report_file), media_type="application/pdf"
-    )
-
-
-@app.get(
-    "/patients/{patient_id}/arthritis-history",
-    tags=["Arthritis Grading"],
-)
-async def get_patient_arthritis_history(patient_id: str, db: Session = Depends(get_db), current_user: User = Depends(require_doctor)):
-    try:
-        pat_uuid = uuid.UUID(patient_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid patient_id format")
-
-    patient = db.query(db_models.Patient).filter(db_models.Patient.id == pat_uuid).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-
-    predictions = (
-        db.query(db_models.ArthritisPrediction)
-        .filter(db_models.ArthritisPrediction.patient_id == pat_uuid)
-        .order_by(db_models.ArthritisPrediction.scan_timestamp.desc())
-        .all()
+    p = db.query(db_models.Patient).filter(db_models.Patient.id == scan.patient_id).first()
+    
+    report_path = generate_retinopathy_report(
+        patient={"full_name": p.full_name, "age": p.age, "gender": p.gender, "comorbidities": p.comorbidities, "patient_id": p.id},
+        scan={"scan_id": scan.id, "upload_timestamp": scan.upload_timestamp.strftime("%Y-%m-%d %H:%M:%S") if scan.upload_timestamp else "", "original_file_path": scan.original_file_path, "patient_id": p.id},
+        inference_result=scan
     )
     
-    from arthritis_inference import GRADES
-    
-    results = []
-    for p in predictions:
-        heatmap_url = f"/heatmaps/{os.path.basename(p.heatmap_path)}" if p.heatmap_path else None
-        report_url = f"/arthritis/scan/{p.id}/report" if p.report_path else None
-        
-        message = ""
-        if p.confidence_flag == "clear":
-            message = f"Grade {p.grade} ({p.grade_name}) detected with {p.confidence:.1f}% confidence."
-        elif p.confidence_flag == "low_confidence":
-            message = f"Possible Grade {p.grade} ({p.grade_name}) but confidence is moderate ({p.confidence:.1f}%). Recommend radiologist review."
-        else:
-            message = "Inconclusive grading. Manual radiologist review required."
-            
-        results.append({
-            "scan_id": p.id,
-            "grade": p.grade,
-            "grade_name": p.grade_name,
-            "grade_description": GRADES.get(p.grade, {}).get("description", ""),
-            "confidence": p.confidence,
-            "confidence_flag": p.confidence_flag,
-            "clinical_recommendation": p.clinical_recommendation,
-            "heatmap_url": heatmap_url,
-            "report_url": report_url,
-            "model_version": p.model_version,
-            "message": message,
-            "scan_timestamp": p.scan_timestamp
-        })
-        
-    return results
-
-
-@app.patch(
-    "/arthritis/{scan_id}/override",
-    response_model=schemas.ArthritisScanResponse,
-    tags=["Arthritis Grading"],
-)
-async def override_arthritis_scan(
-    scan_id: str,
-    override_req: schemas.ArthritisOverrideRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_doctor),
-):
-    try:
-        scan_uuid = uuid.UUID(scan_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid scan_id format")
-
-    prediction = db.query(db_models.ArthritisPrediction).filter(db_models.ArthritisPrediction.id == scan_uuid).first()
-    if not prediction:
-        raise HTTPException(status_code=404, detail="Arthritis scan not found")
-
-    prediction.clinician_override = override_req.clinician_override
-    prediction.override_notes = override_req.override_notes
-    prediction.override_timestamp = datetime.utcnow()
-
+    if not report_path: raise HTTPException(500, "Failed to generate report")
+    scan.report_path = report_path
     db.commit()
-    db.refresh(prediction)
-    logger.info(f"Clinician '{override_req.clinician_override}' updated arthritis scan {scan_id}")
-    
-    message = f"Override applied by {override_req.clinician_override}"
-    from arthritis_inference import GRADES
-    grade_desc = GRADES.get(prediction.grade, {}).get("description", "")
-    heatmap_url = f"/heatmaps/{os.path.basename(prediction.heatmap_path)}" if prediction.heatmap_path else None
-    report_url = f"/arthritis/scan/{scan_id}/report" if prediction.report_path else None
+    return FileResponse(report_path, media_type="application/pdf", filename=f"Retinopathy_Report_{scan_id}.pdf")
 
-    return {
-        "scan_id": prediction.id,
-        "grade": prediction.grade,
-        "grade_name": prediction.grade_name,
-        "grade_description": grade_desc,
-        "confidence": prediction.confidence,
-        "confidence_flag": prediction.confidence_flag,
-        "clinical_recommendation": prediction.clinical_recommendation,
-        "heatmap_url": heatmap_url,
-        "report_url": report_url,
-        "model_version": prediction.model_version,
-        "message": message
-    }
+@retinopathy_router.patch("/scan/{scan_id}/override", response_model=schemas.RetinopathyResponse)
+def override_retinopathy(scan_id: str, payload: schemas.RetinopathyOverrideRequest, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    scan = db.query(db_models.RetinopathyScan).filter(db_models.RetinopathyScan.id == scan_id).first()
+    if not scan: raise HTTPException(404, "Scan not found")
+    scan.clinician_override = payload.clinician_override
+    scan.override_notes = payload.override_notes
+    scan.override_timestamp = datetime.utcnow()
+    db.commit()
+    db.refresh(scan)
+    return scan
+
+@app.get("/patients/{patient_id}/retinopathy-history", tags=["Retinopathy"], response_model=List[schemas.RetinopathyResponse])
+def retinopathy_history(patient_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_doctor)):
+    return db.query(db_models.RetinopathyScan).filter(db_models.RetinopathyScan.patient_id == patient_id).order_by(db_models.RetinopathyScan.upload_timestamp.desc()).all()
+
+app.include_router(retinopathy_router)

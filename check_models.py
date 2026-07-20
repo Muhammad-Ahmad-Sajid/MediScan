@@ -1,4 +1,6 @@
-import json, torch, os
+import json
+import torch
+import os
 
 base = "d:/X-ray ML Model/checkpoints"
 

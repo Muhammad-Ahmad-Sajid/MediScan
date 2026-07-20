@@ -1,4 +1,3 @@
-
 report_code = """
 def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/"):
     try:

@@ -125,7 +125,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/health", tags=["System"])
 def health_check():
     try:
-        with engine.connect() as conn:
+        with engine.connect():
             pass
         db_status = "connected"
     except Exception:
@@ -900,7 +900,7 @@ async def upload_tb(
     except Exception:
         logger.error("Inference failed: ")
         logger.error(traceback.format_exc())
-        raise HTTPException(500, f"Inference failed: {str(e)}")
+        raise HTTPException(500, "Inference failed")
 
     urgency = "routine"
     if res.has_tb:
@@ -1050,7 +1050,7 @@ async def upload_lung_nodule(
     except Exception:
         logger.error("Inference failed: ")
         logger.error(traceback.format_exc())
-        raise HTTPException(500, f"Inference failed: {str(e)}")
+        raise HTTPException(500, "Inference failed")
 
     db_scan = db_models.LungNoduleScan(
         patient_id=p.id,
@@ -1214,7 +1214,7 @@ async def upload_brain_tumor(
     except Exception:
         logger.error("Inference failed: ")
         logger.error(traceback.format_exc())
-        raise HTTPException(500, f"Inference failed: {str(e)}")
+        raise HTTPException(500, "Inference failed")
 
     db_scan = db_models.BrainTumorScan(
         patient_id=p.id,
@@ -1384,7 +1384,7 @@ async def upload_brain_hemorrhage(
     except Exception:
         logger.error("Inference failed: ")
         logger.error(traceback.format_exc())
-        raise HTTPException(500, f"Inference failed: {str(e)}")
+        raise HTTPException(500, "Inference failed")
 
     db_scan = db_models.BrainHemorrhageScan(
         patient_id=p.id,
@@ -1560,7 +1560,7 @@ async def upload_bone_age(
     except Exception:
         logger.error("Inference failed: ")
         logger.error(traceback.format_exc())
-        raise HTTPException(500, f"Inference failed: {str(e)}")
+        raise HTTPException(500, "Inference failed")
 
     db_scan = db_models.BoneAgeScan(
         patient_id=p.id,
@@ -1705,7 +1705,7 @@ async def upload_retinopathy(
 
         result = run_retinopathy_inference(filepath)
     except Exception:
-        logger.error(f"Retinopathy inference failed: ", exc_info=True)
+        logger.error("Retinopathy inference failed: ", exc_info=True)
         raise HTTPException(500, "Inference engine failed")
 
     db_scan = db_models.RetinopathyScan(

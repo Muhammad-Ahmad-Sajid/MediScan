@@ -29,7 +29,7 @@ jobs:
         run: flake8 . || (echo "Please fix flake8 errors" && exit 1)
 
       - name: Run black
-        run: black --check . || (echo "Please run 'black .' locally to format your code" && exit 1)
+        run: black --check --exclude="scratch|venv|\.venv|myenv|myenv311|__pycache__|checkpoints|Mediscan|data|mura_images|archive|fracatlas|mlruns|heatmaps|uploads|reports" . || (echo "Please run 'black .' locally to format your code" && exit 1)
 
   test:
     name: "Run Tests"

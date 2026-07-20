@@ -58,9 +58,7 @@ class AddGaussianNoise(object):
         return tensor
 
     def __repr__(self):
-        return (
-            self.__class__.__name__ + f"(mean={self.mean}, std={self.std}, p={self.p})"
-        )
+        return self.__class__.__name__ + f"(mean={self.mean}, std={self.std}, p={self.p})"
 
 
 # Transforms
@@ -135,9 +133,7 @@ def build_model():
 
     # Replace final FC layer
     num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 5)
-    )
+    model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 5))
 
     # Freeze all layers except layer3, layer4, and fc
     for name, param in model.named_parameters():
@@ -215,15 +211,9 @@ def main():
     val_dataset = ArthritisDataset(BASE_DIR, "val", transform=val_transforms)
     test_dataset = ArthritisDataset(BASE_DIR, "test", transform=val_transforms)
 
-    train_loader = DataLoader(
-        train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS
-    )
-    val_loader = DataLoader(
-        val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
-    test_loader = DataLoader(
-        test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
 
     # Model Setup
     model = build_model()
@@ -236,9 +226,7 @@ def main():
         lr=LR,
         weight_decay=WEIGHT_DECAY,
     )
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", patience=3, factor=0.5, verbose=True
-    )
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5, verbose=True)
 
     # MLflow Setup
     mlflow.set_experiment("arthritis_grading")
@@ -252,9 +240,7 @@ def main():
 
     # Auto-resume logic
     if os.path.exists(LATEST_MODEL_PATH):
-        logger.info(
-            f"Found existing checkpoint at {LATEST_MODEL_PATH}. Resuming training..."
-        )
+        logger.info(f"Found existing checkpoint at {LATEST_MODEL_PATH}. Resuming training...")
         checkpoint = torch.load(LATEST_MODEL_PATH)
         start_epoch = checkpoint["epoch"] + 1
         best_val_loss = checkpoint.get("best_val_loss", best_val_loss)
@@ -306,21 +292,15 @@ def main():
             if epoch == 6:
                 unfreeze_all_layers(model)
                 # Re-initialize optimizer with all parameters
-                optimizer = optim.Adam(
-                    model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY
-                )
+                optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
                 scheduler = optim.lr_scheduler.ReduceLROnPlateau(
                     optimizer, mode="min", patience=3, factor=0.5, verbose=True
                 )
 
             current_lr = optimizer.param_groups[0]["lr"]
 
-            train_loss, train_acc = train_one_epoch(
-                model, train_loader, criterion, optimizer
-            )
-            val_loss, val_acc, val_preds, val_labels = evaluate_model(
-                model, val_loader, criterion
-            )
+            train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer)
+            val_loss, val_acc, val_preds, val_labels = evaluate_model(model, val_loader, criterion)
 
             scheduler.step(val_loss)
 
@@ -399,9 +379,7 @@ def main():
 
             # Warnings
             if epoch == 10 and val_acc <= 0.40:
-                logger.warning(
-                    f"Validation accuracy is only {val_acc:.2%}. Model may be failing to learn."
-                )
+                logger.warning(f"Validation accuracy is only {val_acc:.2%}. Model may be failing to learn.")
 
             # Class-wise stats every 5 epochs
             if epoch % 5 == 0:
@@ -429,18 +407,14 @@ def main():
                 # break
 
         total_time = time.time() - start_time
-        logger.info(
-            f"Training completed in {total_time // 60:.0f}m {total_time % 60:.0f}s"
-        )
+        logger.info(f"Training completed in {total_time // 60:.0f}m {total_time % 60:.0f}s")
 
         # --- FINAL EVALUATION ---
         logger.info("Loading best model for final evaluation on test set...")
         checkpoint = torch.load(BEST_MODEL_PATH)
         model.load_state_dict(checkpoint["model_state_dict"])
 
-        test_loss, test_acc, test_preds, test_labels = evaluate_model(
-            model, test_loader, criterion
-        )
+        test_loss, test_acc, test_preds, test_labels = evaluate_model(model, test_loader, criterion)
 
         overall_acc = accuracy_score(test_labels, test_preds)
         macro_f1 = f1_score(test_labels, test_preds, average="macro")
@@ -452,26 +426,16 @@ def main():
         logger.info(f"Best Epoch: {best_epoch}")
         logger.info(f"Best Val Acc: {best_val_acc:.4f}")
         logger.info(f"Best Val Loss: {best_val_loss:.4f}")
-        logger.info(
-            f"Total Training Time: {total_time // 60:.0f}m {total_time % 60:.0f}s"
-        )
+        logger.info(f"Total Training Time: {total_time // 60:.0f}m {total_time % 60:.0f}s")
         logger.info("-" * 50)
         logger.info(f"Test Accuracy: {overall_acc:.4f}")
         logger.info(f"Test Macro F1: {macro_f1:.4f}")
         logger.info(f"Test Weighted F1: {weighted_f1:.4f}")
         logger.info("-" * 50)
         logger.info("Classification Report:")
-        logger.info(
-            "\n"
-            + classification_report(
-                test_labels, test_preds, target_names=GRADE_NAMES, zero_division=0
-            )
-        )
+        logger.info("\n" + classification_report(test_labels, test_preds, target_names=GRADE_NAMES, zero_division=0))
         logger.info("Confusion Matrix:")
-        logger.info(
-            "\n"
-            + str(confusion_matrix(test_labels, test_preds, labels=[0, 1, 2, 3, 4]))
-        )
+        logger.info("\n" + str(confusion_matrix(test_labels, test_preds, labels=[0, 1, 2, 3, 4])))
         logger.info("=" * 50)
 
 

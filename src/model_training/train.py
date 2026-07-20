@@ -47,9 +47,7 @@ def train_one_epoch(model, loader, criterion, optimizer, device):
         # Print progress logs every 15 batches (or last batch)
         if (idx + 1) % 15 == 0 or (idx + 1) == len(loader):
             current_acc = 100.0 * correct / total
-            print(
-                f"  Batch {idx+1}/{len(loader)} - Loss: {loss.item():.4f} | Acc: {current_acc:.2f}%"
-            )
+            print(f"  Batch {idx+1}/{len(loader)} - Loss: {loss.item():.4f} | Acc: {current_acc:.2f}%")
 
     epoch_loss = running_loss / total
     epoch_acc = correct / total
@@ -90,12 +88,8 @@ def main():
         choices=["mura", "fracatlas"],
         help="Select the target dataset to train on ('mura' or 'fracatlas')",
     )
-    parser.add_argument(
-        "--epochs", type=int, default=5, help="Number of training epochs"
-    )
-    parser.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size for loaders"
-    )
+    parser.add_argument("--epochs", type=int, default=5, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for loaders")
     parser.add_argument("--lr", type=float, default=1e-4, help="Initial learning rate")
     args = parser.parse_args()
 
@@ -136,9 +130,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
 
     # Plateau learning rate decay
-    scheduler = ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=2, threshold=0.001
-    )
+    scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=2, threshold=0.001)
 
     # Verify save folder path
     checkpoint_dir = MODEL_CHECKPOINT_PATH.parent
@@ -152,9 +144,7 @@ def main():
         print("\n--- Epoch {epoch}/{args.epochs} ---")
 
         # Train
-        train_loss, train_acc = train_one_epoch(
-            model, train_loader, criterion, optimizer, device
-        )
+        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
         print(f"  -> Train Loss: {train_loss:.4f} | Train Acc: {train_acc*100.0:.2f}%")
 
         # Validate
@@ -179,9 +169,7 @@ def main():
                 },
                 best_checkpoint_path,
             )
-            print(
-                f"  *** Val Loss improved! Saved checkpoint to: {best_checkpoint_path.name} ***"
-            )
+            print(f"  *** Val Loss improved! Saved checkpoint to: {best_checkpoint_path.name} ***")
 
     print("\n" + "=" * 50)
     print(f"TRAINING COMPLETED FOR {args.dataset.upper()}!")

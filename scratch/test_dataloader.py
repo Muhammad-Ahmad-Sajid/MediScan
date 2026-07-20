@@ -39,9 +39,7 @@ class MURAPretrainDataset(Dataset):
                         ".jpeg",
                     ] and not file.name.startswith("._"):
                         self.samples.append((file, label_idx))
-                        if (
-                            len(self.samples) >= 100
-                        ):  # limit to 100 samples for quick test
+                        if len(self.samples) >= 100:  # limit to 100 samples for quick test
                             break
 
     def __len__(self):
@@ -68,9 +66,7 @@ class MuraResNet50(nn.Module):
     def __init__(self):
         super().__init__()
         self.backbone = models.resnet50()
-        self.backbone.fc = nn.Sequential(
-            nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.4), nn.Linear(512, 2)
-        )
+        self.backbone.fc = nn.Sequential(nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.4), nn.Linear(512, 2))
 
     def forward(self, x):
         return self.backbone(x)

@@ -55,9 +55,7 @@ def test_module(module_name, endpoint, token, patient_id):
             if "bone-age" in endpoint:
                 data["chronological_age"] = "150"
 
-            res = requests.post(
-                f"{BASE_URL}{endpoint}", headers=headers, files=files, data=data
-            )
+            res = requests.post(f"{BASE_URL}{endpoint}", headers=headers, files=files, data=data)
 
             if res.status_code == 200:
                 result = res.json()
@@ -78,9 +76,7 @@ def test_report(endpoint_prefix, scan_id, token):
         return "SKIP"
     headers = {"Authorization": f"Bearer {token}"}
     try:
-        res = requests.get(
-            f"{BASE_URL}{endpoint_prefix}/{scan_id}/report", headers=headers
-        )
+        res = requests.get(f"{BASE_URL}{endpoint_prefix}/{scan_id}/report", headers=headers)
         if res.status_code == 200:
             return "PASS"
         else:
@@ -219,22 +215,16 @@ def main():
                 "Report (PDF)": report_res,
                 "History": history_res,
                 "Override": override_res,
-                "Details": (
-                    upload_res["details"] if upload_res["status"] != "PASS" else "OK"
-                ),
+                "Details": (upload_res["details"] if upload_res["status"] != "PASS" else "OK"),
             }
         )
 
     # Generate Markdown Table
     print("\n\n=== 9-MODULE PLATFORM CHECK STATUS ===\n")
-    print(
-        "| Module | Upload (Inference) | Report (PDF) | History | Clinician Override |"
-    )
+    print("| Module | Upload (Inference) | Report (PDF) | History | Clinician Override |")
     print("|---|---|---|---|---|")
     for r in results:
-        print(
-            f"| {r['Module']} | {r['Upload (Inference)']} | {r['Report (PDF)']} | {r['History']} | {r['Override']} |"
-        )
+        print(f"| {r['Module']} | {r['Upload (Inference)']} | {r['Report (PDF)']} | {r['History']} | {r['Override']} |")
 
     print("\nDetailed Errors:")
     for r in results:

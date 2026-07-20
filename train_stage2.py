@@ -89,12 +89,7 @@ def train_one_epoch(
             gc.collect()
 
         # Save mid-epoch checkpoint
-        if (
-            save_freq > 0
-            and (idx + 1) % save_freq == 0
-            and (idx + 1) < len(loader)
-            and checkpoint_dir is not None
-        ):
+        if save_freq > 0 and (idx + 1) % save_freq == 0 and (idx + 1) < len(loader) and checkpoint_dir is not None:
             latest_checkpoint_path = checkpoint_dir / "stage2_latest.pth"
             torch.save(
                 {
@@ -194,12 +189,8 @@ def validate(model, loader, criterion_frac, criterion_region, device):
 
 def main():
     parser = argparse.ArgumentParser(description="Stage 2 Fine-Tuning Training Script")
-    parser.add_argument(
-        "--epochs", type=int, default=8, help="Number of fine-tuning epochs"
-    )
-    parser.add_argument(
-        "--batch_size", type=int, default=16, help="Batch size for training"
-    )
+    parser.add_argument("--epochs", type=int, default=8, help="Number of fine-tuning epochs")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training")
     parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate")
     parser.add_argument(
         "--csv_path",
@@ -221,9 +212,7 @@ def main():
     print("=" * 80)
 
     # Load loaders (set num_workers=0 on Windows CPU)
-    train_loader, val_loader = get_stage2_dataloaders(
-        csv_path=args.csv_path, batch_size=args.batch_size, num_workers=0
-    )
+    train_loader, val_loader = get_stage2_dataloaders(csv_path=args.csv_path, batch_size=args.batch_size, num_workers=0)
 
     # Initialize Stage 2 model
     # Check if pre-trained MURA backbone weights are available
@@ -234,16 +223,12 @@ def main():
     model = Stage2FractureModel(pretrained=not has_pretrained_mura)
 
     if has_pretrained_mura:
-        print(
-            f"[*] Loading pre-trained MURA backbone weights from {pretrained_mura_path}"
-        )
+        print(f"[*] Loading pre-trained MURA backbone weights from {pretrained_mura_path}")
         checkpoint = torch.load(pretrained_mura_path, map_location=device)
         # Load backbone weights with strict=False (ignores classification layer difference)
         model.load_state_dict(checkpoint["model_state_dict"], strict=False)
     else:
-        print(
-            f"[!] Warning: MURA pre-trained checkpoint not found at {pretrained_mura_path}."
-        )
+        print(f"[!] Warning: MURA pre-trained checkpoint not found at {pretrained_mura_path}.")
 
     model.unfreeze_all()
     model.to(device)
@@ -287,10 +272,7 @@ def main():
                     print(f"[!] Warning: Could not load optimizer state: {e}")
 
             # Load scheduler state
-            if (
-                "scheduler_state_dict" in checkpoint
-                and checkpoint["scheduler_state_dict"] is not None
-            ):
+            if "scheduler_state_dict" in checkpoint and checkpoint["scheduler_state_dict"] is not None:
                 try:
                     scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
                     print("[*] Successfully loaded scheduler state.")
@@ -315,13 +297,9 @@ def main():
             else:
                 start_epoch = checkpoint["epoch"] + 1
                 start_batch = 0
-                print(
-                    f"[*] Successfully loaded epoch-end checkpoint. Resuming from Epoch {start_epoch}"
-                )
+                print(f"[*] Successfully loaded epoch-end checkpoint. Resuming from Epoch {start_epoch}")
         else:
-            print(
-                "[!] Warning: No checkpoint found to resume from. Starting from scratch."
-            )
+            print("[!] Warning: No checkpoint found to resume from. Starting from scratch.")
 
     start_time = time.time()
 
@@ -332,9 +310,7 @@ def main():
 
         current_start_batch = start_batch if epoch == start_epoch else 0
         if current_start_batch > 0:
-            print(
-                f"[*] Skipping first {current_start_batch} batches to resume training mid-epoch..."
-            )
+            print(f"[*] Skipping first {current_start_batch} batches to resume training mid-epoch...")
 
         # Train one epoch
         train_loss, train_acc_frac, train_acc_region = train_one_epoch(
@@ -408,14 +384,10 @@ def main():
                 },
                 best_checkpoint_path,
             )
-            print(
-                f"  *** Val Loss improved! Saved best model to: {best_checkpoint_path.name} ***"
-            )
+            print(f"  *** Val Loss improved! Saved best model to: {best_checkpoint_path.name} ***")
         else:
             early_stop_counter += 1
-            print(
-                f"  Early stopping counter: {early_stop_counter}/{early_stop_patience}"
-            )
+            print(f"  Early stopping counter: {early_stop_counter}/{early_stop_patience}")
 
         # Save latest checkpoint at epoch end
         torch.save(
@@ -437,9 +409,7 @@ def main():
         print(f"  Saved latest model state to: {latest_checkpoint_path.name}")
 
         if early_stop_counter >= early_stop_patience:
-            print(
-                f"\n[!] Early stopping triggered. Validation loss has not improved for {early_stop_patience} epochs."
-            )
+            print(f"\n[!] Early stopping triggered. Validation loss has not improved for {early_stop_patience} epochs.")
             break
 
     # 1. Print the per-epoch history table
@@ -462,9 +432,7 @@ def main():
     hours = int(total_training_time // 3600)
     minutes = int((total_training_time % 3600) // 60)
     seconds = int(total_training_time % 60)
-    training_time_str = (
-        f"{hours}h {minutes}m {seconds}s" if hours > 0 else f"{minutes}m {seconds}s"
-    )
+    training_time_str = f"{hours}h {minutes}m {seconds}s" if hours > 0 else f"{minutes}m {seconds}s"
 
     # 2. Run Final Evaluation using the best model saved
     if best_checkpoint_path.exists():
@@ -536,9 +504,7 @@ def main():
         print(f"Total training time              : {training_time_str}")
         print("=" * 60)
     else:
-        print(
-            f"[!] Warning: Best checkpoint not found at {best_checkpoint_path} for final evaluation."
-        )
+        print(f"[!] Warning: Best checkpoint not found at {best_checkpoint_path} for final evaluation.")
 
 
 if __name__ == "__main__":

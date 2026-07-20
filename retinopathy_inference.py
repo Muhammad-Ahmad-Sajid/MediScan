@@ -20,9 +20,7 @@ logger = logging.getLogger("mediscan.retinopathy.inference")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     ch = logging.StreamHandler()
-    ch.setFormatter(
-        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    )
+    ch.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
     logger.addHandler(ch)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -38,9 +36,7 @@ class RetinopathyModel(nn.Module):
         from torchvision.models import resnet50
 
         self.backbone = resnet50(weights=None)
-        self.backbone.fc = nn.Sequential(
-            nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 5)
-        )
+        self.backbone.fc = nn.Sequential(nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 5))
 
     def forward(self, x):
         return self.backbone(x)
@@ -78,9 +74,7 @@ def load_model():
             raise FileNotFoundError(f"Checkpoint not found at {CHECKPOINT_PATH}")
 
         _model = RetinopathyModel().to(DEVICE)
-        checkpoint = torch.load(
-            CHECKPOINT_PATH, map_location=DEVICE, weights_only=False
-        )
+        checkpoint = torch.load(CHECKPOINT_PATH, map_location=DEVICE, weights_only=False)
         _model.load_state_dict(checkpoint["state_dict"])
         _model.eval()
 
@@ -89,9 +83,7 @@ def load_model():
         logger.info("Model and GradCAM initialized successfully.")
 
 
-def get_clinical_recommendation(
-    grade: int, conf_flag: str, referable_risk_flag: bool, severe_prob: float
-) -> str:
+def get_clinical_recommendation(grade: int, conf_flag: str, referable_risk_flag: bool, severe_prob: float) -> str:
     if grade == 0:
         if conf_flag == "clear":
             rec = (
@@ -195,9 +187,7 @@ def run_retinopathy_inference(image_path: str) -> RetinopathyResult:
 
     # 2. Green Channel Enhancement (EXACTLY matching training)
     logger.info("Applying Green Channel Enhancement...")
-    enhanced = cv2.addWeighted(
-        img_rgb, 4, cv2.GaussianBlur(img_rgb, (0, 0), 30), -4, 128
-    )
+    enhanced = cv2.addWeighted(img_rgb, 4, cv2.GaussianBlur(img_rgb, (0, 0), 30), -4, 128)
 
     # 3. Resize & Normalize
     enhanced_resized = cv2.resize(enhanced, (224, 224))
@@ -254,9 +244,7 @@ def run_retinopathy_inference(image_path: str) -> RetinopathyResult:
     else:
         urgency = "routine"
 
-    rec = get_clinical_recommendation(
-        predicted_grade, conf_flag, referable_risk_flag, severe_prob
-    )
+    rec = get_clinical_recommendation(predicted_grade, conf_flag, referable_risk_flag, severe_prob)
 
     # 5. Grad-CAM
     heatmap_path = None
@@ -277,9 +265,7 @@ def run_retinopathy_inference(image_path: str) -> RetinopathyResult:
         # Apply Jet colormap manually using cv2 as specified, or use the library function
         # The prompt says: "Blend: 0.5 * heatmap + 0.5 * original"
         # The library uses image_weight=0.5 by default
-        cam_image = show_cam_on_image(
-            orig_float, grayscale_cam, use_rgb=True, image_weight=0.5
-        )
+        cam_image = show_cam_on_image(orig_float, grayscale_cam, use_rgb=True, image_weight=0.5)
 
         # Save
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -335,9 +321,7 @@ if __name__ == "__main__":
     print(f"Urgency           : {res.urgency}")
     print(f"Follow-up         : {res.follow_up_months} months")
 
-    probs_str = " ".join(
-        [f"{k}={v*100:.1f}%" for k, v in res.all_probabilities.items()]
-    )
+    probs_str = " ".join([f"{k}={v*100:.1f}%" for k, v in res.all_probabilities.items()])
     print(f"Probabilities     : {probs_str}")
     print(f"Heatmap Path      : {res.heatmap_path}")
 

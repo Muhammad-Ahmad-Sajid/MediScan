@@ -134,9 +134,7 @@ def create_model():
     num_ftrs = model.fc.in_features
     # Note: Linear(512, 1) is used instead of Linear(512, 2) because BCEWithLogitsLoss
     # intrinsically requires a single output node for binary classification to work with pos_weight.
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 1)
-    )
+    model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 1))
     return model
 
 
@@ -188,37 +186,23 @@ def train_model():
 
     logger.info("=== Dataset Split Counts ===")
     logger.info(f"Total images: {len(all_labels)}")
-    logger.info(
-        f"Train : {len(y_train)} (Normal: {num_normal_train}, TB: {num_tb_train})"
-    )
-    logger.info(
-        f"Val   : {len(y_val)} (Normal: {y_val.count(0)}, TB: {y_val.count(1)})"
-    )
-    logger.info(
-        f"Test  : {len(y_test)} (Normal: {y_test.count(0)}, TB: {y_test.count(1)})"
-    )
+    logger.info(f"Train : {len(y_train)} (Normal: {num_normal_train}, TB: {num_tb_train})")
+    logger.info(f"Val   : {len(y_val)} (Normal: {y_val.count(0)}, TB: {y_val.count(1)})")
+    logger.info(f"Test  : {len(y_test)} (Normal: {y_test.count(0)}, TB: {y_test.count(1)})")
 
     # WeightedRandomSampler for class imbalance
     class_sample_counts = [num_normal_train, num_tb_train]
     weights = [1.0 / count if count > 0 else 0 for count in class_sample_counts]
     sample_weights = [weights[label] for label in y_train]
-    sampler = WeightedRandomSampler(
-        weights=sample_weights, num_samples=len(sample_weights), replacement=True
-    )
+    sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
 
     train_dataset = TBDataset(X_train, y_train, transform=train_transform)
     val_dataset = TBDataset(X_val, y_val, transform=val_transform)
     test_dataset = TBDataset(X_test, y_test, transform=val_transform)
 
-    train_loader = DataLoader(
-        train_dataset, batch_size=BATCH_SIZE, sampler=sampler, num_workers=NUM_WORKERS
-    )
-    val_loader = DataLoader(
-        val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
-    test_loader = DataLoader(
-        test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, sampler=sampler, num_workers=NUM_WORKERS)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
 
     model = create_model().to(device)
 
@@ -227,12 +211,8 @@ def train_model():
     pos_weight = torch.tensor([pos_weight_val]).to(device)
 
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-    optimizer = optim.Adam(
-        model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
-    )
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", patience=PATIENCE_LR, factor=FACTOR_LR
-    )
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=PATIENCE_LR, factor=FACTOR_LR)
 
     best_val_acc = 0.0
     best_epoch = 0
@@ -261,9 +241,7 @@ def train_model():
             }
         )
 
-        logger.info(
-            "\nEpoch | Train Loss | Train Acc | Val Loss | Val Acc | Sensitivity | LR"
-        )
+        logger.info("\nEpoch | Train Loss | Train Acc | Val Loss | Val Acc | Sensitivity | LR")
         logger.info("-" * 75)
 
         for epoch in range(1, EPOCHS + 1):
@@ -312,9 +290,7 @@ def train_model():
 
             epoch_val_loss = val_loss / len(val_dataset)
             epoch_val_acc = accuracy_score(val_targets, val_preds)
-            epoch_tb_sensitivity = recall_score(
-                val_targets, val_preds, pos_label=1, zero_division=0
-            )
+            epoch_tb_sensitivity = recall_score(val_targets, val_preds, pos_label=1, zero_division=0)
 
             current_lr = optimizer.param_groups[0]["lr"]
             scheduler.step(epoch_val_loss)
@@ -323,9 +299,7 @@ def train_model():
             logger.info(
                 f"{epoch:5d} | {epoch_train_loss:10.4f} | {epoch_train_acc:9.4f} | {epoch_val_loss:8.4f} | {epoch_val_acc:7.4f} | {epoch_tb_sensitivity:11.4f} | {current_lr:.1e}"
             )
-            logger.info(
-                f"TB Sensitivity: {epoch_tb_sensitivity*100:.2f}% — target above 85%"
-            )
+            logger.info(f"TB Sensitivity: {epoch_tb_sensitivity*100:.2f}% — target above 85%")
 
             mlflow.log_metrics(
                 {
@@ -346,13 +320,9 @@ def train_model():
 
             # Warnings Checks
             if epoch == 8 and epoch_val_acc <= 0.70:
-                logger.warning(
-                    "WARNING: Validation accuracy has not exceeded 70% by epoch 8."
-                )
+                logger.warning("WARNING: Validation accuracy has not exceeded 70% by epoch 8.")
             if epoch > 10 and epoch_tb_sensitivity < 0.70:
-                logger.warning(
-                    f"WARNING: TB Sensitivity dropped below 70% at epoch {epoch}!"
-                )
+                logger.warning(f"WARNING: TB Sensitivity dropped below 70% at epoch {epoch}!")
 
             # Checkpointing
             if epoch_val_acc > best_val_acc:
@@ -398,9 +368,7 @@ def train_model():
                 test_targets.extend(labels.cpu().numpy())
 
         cm = confusion_matrix(test_targets, test_preds)
-        report = classification_report(
-            test_targets, test_preds, target_names=["Normal", "Tuberculosis"]
-        )
+        report = classification_report(test_targets, test_preds, target_names=["Normal", "Tuberculosis"])
 
         tn, fp, fn, tp = cm.ravel()
         test_sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0.0  # TB class

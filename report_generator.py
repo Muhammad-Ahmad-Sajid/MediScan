@@ -4,9 +4,7 @@ import logging
 from datetime import datetime
 
 # Setup structured logger
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 try:
@@ -52,15 +50,9 @@ def draw_header(canvas, doc):
 
     # Report info (right side)
     canvas.setFont("Helvetica", 10)
-    canvas.drawRightString(
-        A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
-    )
-    canvas.drawRightString(
-        A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
-    )
-    canvas.drawRightString(
-        A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
-    )
+    canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
+    canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
+    canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
 
     # Line separator under header
     canvas.setStrokeColor(colors.gray)
@@ -120,9 +112,7 @@ def get_image_flowable(img_path, caption, style_normal):
                     [
                         Paragraph(
                             "<b>Image Not Available</b>",
-                            ParagraphStyle(
-                                "Centered", parent=style_normal, alignment=TA_CENTER
-                            ),
+                            ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                         )
                     ],
                 ],
@@ -149,9 +139,7 @@ def get_image_flowable(img_path, caption, style_normal):
                 Spacer(1, 0.1 * inch),
                 Paragraph(
                     f"<i>{caption}</i>",
-                    ParagraphStyle(
-                        "Centered", parent=style_normal, alignment=TA_CENTER
-                    ),
+                    ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                 ),
             ]
         except Exception as e:
@@ -159,9 +147,7 @@ def get_image_flowable(img_path, caption, style_normal):
             return [
                 Paragraph(
                     "<b>Error Loading Image</b>",
-                    ParagraphStyle(
-                        "Centered", parent=style_normal, alignment=TA_CENTER
-                    ),
+                    ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                 )
             ]
 
@@ -181,9 +167,7 @@ def generate_report(
         os.makedirs(output_dir, exist_ok=True)
 
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join(
-            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
-        )
+        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
         scan_id = scan.get("scan_id", "unknown")
         filename = f"{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
@@ -211,9 +195,7 @@ def generate_report(
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(
-                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
                 Paragraph(
                     f"<b>Comorbidities:</b> {', '.join(patient.get('comorbidities', [])) or 'None'}",
                     style_normal,
@@ -221,9 +203,7 @@ def generate_report(
             ],
             [Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal), ""],
             [
-                Paragraph(
-                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal),
                 "",
             ],
         ]
@@ -242,9 +222,7 @@ def generate_report(
         elements.append(Paragraph("SCAN DETAILS", style_h2))
         scan_data = [
             [
-                Paragraph(
-                    f"<b>Scan ID:</b> {scan.get('scan_id', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Scan ID:</b> {scan.get('scan_id', 'N/A')}", style_normal),
                 Paragraph(
                     f"<b>Upload Timestamp:</b> {scan.get('upload_timestamp', 'N/A')}",
                     style_normal,
@@ -270,15 +248,10 @@ def generate_report(
         elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
-        img_orig = get_image_flowable(
-            scan.get("original_file_path"), "Original X-ray", style_normal
-        )
+        img_orig = get_image_flowable(scan.get("original_file_path"), "Original X-ray", style_normal)
 
         # Only show heatmap if confidence is not inconclusive
-        show_heatmap = (
-            getattr(inference_result, "confidence_flag", "inconclusive")
-            != "inconclusive"
-        )
+        show_heatmap = getattr(inference_result, "confidence_flag", "inconclusive") != "inconclusive"
         img_heatmap = get_image_flowable(
             getattr(inference_result, "heatmap_path", None) if show_heatmap else None,
             "Heatmap",
@@ -313,9 +286,7 @@ def generate_report(
                 [
                     Paragraph(
                         f"<font color='white'><b>{flag.replace('_', ' ').upper()}</b></font>",
-                        ParagraphStyle(
-                            "Centered", parent=style_normal, alignment=TA_CENTER
-                        ),
+                        ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                     )
                 ]
             ],
@@ -332,7 +303,9 @@ def generate_report(
         if report_type == "fracture":
             fracture_det = getattr(inference_result, "fracture_detected", False)
             fracture_color = "red" if fracture_det else "green"
-            fracture_text = f"<font color='{fracture_color}'><b>{'DETECTED' if fracture_det else 'NOT DETECTED'}</b></font>"
+            fracture_text = (
+                f"<font color='{fracture_color}'><b>{'DETECTED' if fracture_det else 'NOT DETECTED'}</b></font>"
+            )
 
             bone_reg = getattr(inference_result, "bone_region", "N/A")
             if flag == "inconclusive":
@@ -347,9 +320,7 @@ def generate_report(
                     ),
                 ],
                 [
-                    Paragraph(
-                        f"<b>Body Region:</b> {bone_reg.capitalize()}", style_normal
-                    ),
+                    Paragraph(f"<b>Body Region:</b> {bone_reg.capitalize()}", style_normal),
                     badge,
                 ],
                 [
@@ -367,9 +338,7 @@ def generate_report(
 
             pred_data = [
                 [
-                    Paragraph(
-                        f"<b>Arthritis Grade:</b> {grade} ({grade_name})", style_normal
-                    ),
+                    Paragraph(f"<b>Arthritis Grade:</b> {grade} ({grade_name})", style_normal),
                     Paragraph(
                         f"<b>Confidence:</b> {getattr(inference_result, 'confidence', 0.0):.1f}%",
                         style_normal,
@@ -484,9 +453,7 @@ def generate_tb_report(
         os.makedirs(output_dir, exist_ok=True)
 
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join(
-            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
-        )
+        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
         scan_id = scan.get("scan_id", "unknown")
         filename = f"tb_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
@@ -514,12 +481,8 @@ def generate_tb_report(
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(
-                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
-                ),
-                Paragraph(
-                    f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
+                Paragraph(f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal),
             ],
             [
                 Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
@@ -529,9 +492,7 @@ def generate_tb_report(
                 ),
             ],
             [
-                Paragraph(
-                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal),
                 "",
             ],
         ]
@@ -556,9 +517,7 @@ def generate_tb_report(
                 [
                     Paragraph(
                         badge_text,
-                        ParagraphStyle(
-                            "Centered", parent=style_normal, alignment=TA_CENTER
-                        ),
+                        ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                     )
                 ]
             ],
@@ -576,11 +535,7 @@ def generate_tb_report(
         conf = getattr(inference_result, "confidence", 0.0)
         urgency = getattr(inference_result, "urgency", "routine").upper()
 
-        urg_color = (
-            "red"
-            if urgency == "EMERGENCY"
-            else ("orange" if urgency == "URGENT" else "green")
-        )
+        urg_color = "red" if urgency == "EMERGENCY" else ("orange" if urgency == "URGENT" else "green")
 
         pred_data = [
             [badge, Paragraph(f"<b>TB Probability:</b> {prob:.2f}%", style_normal)],
@@ -606,9 +561,7 @@ def generate_tb_report(
         elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
-        img_orig = get_image_flowable(
-            scan.get("original_file_path"), "Original Chest X-ray", style_normal
-        )
+        img_orig = get_image_flowable(scan.get("original_file_path"), "Original Chest X-ray", style_normal)
         img_heatmap = get_image_flowable(
             getattr(inference_result, "heatmap_path", None),
             "AI-highlighted regions of interest",
@@ -703,15 +656,9 @@ def generate_tb_report(
             )
             canvas.setFillColor(colors.black)
             canvas.setFont("Helvetica", 10)
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
-            )
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
-            )
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
-            )
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(1)
             canvas.line(0, A4[1] - 1.5 * inch, A4[0], A4[1] - 1.5 * inch)
@@ -725,9 +672,7 @@ def generate_tb_report(
             canvas.drawCentredString(A4[0] / 2.0, 0.6 * inch, disclaimer)
             canvas.setFont("Helvetica", 9)
             canvas.drawString(0.5 * inch, 0.4 * inch, "Generated by MediScan AI v1.0")
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, 0.4 * inch, "Model: tb_v1 | Sensitivity: 97.14%"
-            )
+            canvas.drawRightString(A4[0] - 0.5 * inch, 0.4 * inch, "Model: tb_v1 | Sensitivity: 97.14%")
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=on_page, onLaterPages=on_page)
@@ -751,9 +696,7 @@ def generate_lung_nodule_report(
         os.makedirs(output_dir, exist_ok=True)
 
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join(
-            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
-        )
+        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
         scan_id = scan.get("scan_id", "unknown")
         filename = f"lung_nodule_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
@@ -781,12 +724,8 @@ def generate_lung_nodule_report(
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(
-                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
-                ),
-                Paragraph(
-                    f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
+                Paragraph(f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal),
             ],
             [
                 Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
@@ -796,9 +735,7 @@ def generate_lung_nodule_report(
                 ),
             ],
             [
-                Paragraph(
-                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal),
                 "",
             ],
         ]
@@ -823,9 +760,7 @@ def generate_lung_nodule_report(
                 [
                     Paragraph(
                         badge_text,
-                        ParagraphStyle(
-                            "Centered", parent=style_normal, alignment=TA_CENTER
-                        ),
+                        ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                     )
                 ]
             ],
@@ -869,9 +804,7 @@ def generate_lung_nodule_report(
         elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
-        img_orig = get_image_flowable(
-            scan.get("original_file_path"), "Original CT Scan", style_normal
-        )
+        img_orig = get_image_flowable(scan.get("original_file_path"), "Original CT Scan", style_normal)
         img_heatmap = get_image_flowable(
             getattr(inference_result, "heatmap_path", None),
             "AI-highlighted regions of interest",
@@ -993,15 +926,9 @@ def generate_lung_nodule_report(
             )
             canvas.setFillColor(colors.black)
             canvas.setFont("Helvetica", 10)
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
-            )
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
-            )
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
-            )
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(1)
             canvas.line(0, A4[1] - 1.5 * inch, A4[0], A4[1] - 1.5 * inch)
@@ -1045,9 +972,7 @@ def generate_brain_tumor_report(
         os.makedirs(output_dir, exist_ok=True)
 
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join(
-            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
-        )
+        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
         scan_id = scan.get("scan_id", "unknown")
         filename = f"brain_tumor_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
@@ -1077,12 +1002,8 @@ def generate_brain_tumor_report(
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(
-                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
-                ),
-                Paragraph(
-                    f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
+                Paragraph(f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal),
             ],
             [
                 Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
@@ -1092,9 +1013,7 @@ def generate_brain_tumor_report(
                 ),
             ],
             [
-                Paragraph(
-                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal),
                 "",
             ],
         ]
@@ -1125,9 +1044,7 @@ def generate_brain_tumor_report(
                 [
                     Paragraph(
                         badge_text,
-                        ParagraphStyle(
-                            "Centered", parent=style_normal, alignment=TA_CENTER
-                        ),
+                        ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                     )
                 ]
             ],
@@ -1147,11 +1064,7 @@ def generate_brain_tumor_report(
             else getattr(inference_result, "confidence", 0.0)
         )
 
-        urg_color = (
-            "red"
-            if urgency == "emergency"
-            else ("orange" if urgency == "urgent" else "green")
-        )
+        urg_color = "red" if urgency == "emergency" else ("orange" if urgency == "urgent" else "green")
 
         pred_data = [
             [
@@ -1258,9 +1171,7 @@ def generate_brain_tumor_report(
                 glioma_prob *= 100
 
             flag_text = f"<b>\u26a0 Glioma Risk Alert:</b> Glioma probability is elevated ({glioma_prob:.2f}%) even though the primary prediction is {tumor_type.capitalize()}. Given the clinical significance of glioma, MRI with contrast and neurosurgical consultation is recommended to rule out glioma."
-            flag_table = Table(
-                [[Paragraph(flag_text, style_normal)]], colWidths=[7.2 * inch]
-            )
+            flag_table = Table([[Paragraph(flag_text, style_normal)]], colWidths=[7.2 * inch])
             flag_table.setStyle(
                 TableStyle(
                     [
@@ -1279,9 +1190,7 @@ def generate_brain_tumor_report(
             elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
-        img_orig = get_image_flowable(
-            scan.get("original_file_path"), "Original MRI Scan", style_normal
-        )
+        img_orig = get_image_flowable(scan.get("original_file_path"), "Original MRI Scan", style_normal)
         img_heatmap = get_image_flowable(
             getattr(inference_result, "heatmap_path", None),
             "AI-highlighted regions of interest",
@@ -1412,21 +1321,13 @@ def generate_brain_tumor_report(
                 )
                 canvas.setFillColor(colors.white)
                 canvas.setFont("Helvetica-Bold", 10)
-                canvas.drawString(
-                    0.6 * inch, A4[1] - 1.2 * inch, "EMERGENCY \u2014 GLIOMA SUSPECTED"
-                )
+                canvas.drawString(0.6 * inch, A4[1] - 1.2 * inch, "EMERGENCY \u2014 GLIOMA SUSPECTED")
 
             canvas.setFillColor(colors.black)
             canvas.setFont("Helvetica", 10)
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
-            )
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
-            )
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
-            )
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
             canvas.setStrokeColor(colors.gray)
             canvas.setLineWidth(1)
             canvas.line(0, A4[1] - 1.5 * inch, A4[0], A4[1] - 1.5 * inch)
@@ -1439,9 +1340,7 @@ def generate_brain_tumor_report(
             disclaimer = "This report is AI-assisted and requires clinical validation."
             canvas.drawCentredString(A4[0] / 2.0, 0.7 * inch, disclaimer)
             canvas.setFont("Helvetica", 9)
-            canvas.drawString(
-                0.5 * inch, 0.5 * inch, "Model: brain_tumor_v1 | Overall accuracy: 95%"
-            )
+            canvas.drawString(0.5 * inch, 0.5 * inch, "Model: brain_tumor_v1 | Overall accuracy: 95%")
             canvas.drawString(
                 0.5 * inch,
                 0.35 * inch,
@@ -1470,9 +1369,7 @@ def generate_brain_hemorrhage_report(
         os.makedirs(output_dir, exist_ok=True)
 
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join(
-            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
-        )
+        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
         scan_id = scan.get("scan_id", "unknown")
         filename = f"brain_hemorrhage_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
@@ -1503,12 +1400,8 @@ def generate_brain_hemorrhage_report(
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(
-                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
-                ),
-                Paragraph(
-                    f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
+                Paragraph(f"<b>Patient ID:</b> {scan.get('patient_id', 'N/A')}", style_normal),
             ],
             [
                 Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
@@ -1518,9 +1411,7 @@ def generate_brain_hemorrhage_report(
                 ),
             ],
             [
-                Paragraph(
-                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal),
                 "",
             ],
         ]
@@ -1546,9 +1437,7 @@ def generate_brain_hemorrhage_report(
                 [
                     Paragraph(
                         badge_text,
-                        ParagraphStyle(
-                            "Centered", parent=style_normal, alignment=TA_CENTER
-                        ),
+                        ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                     )
                 ]
             ],
@@ -1609,9 +1498,7 @@ def generate_brain_hemorrhage_report(
             "or neurosurgeon. Do not use this result as the sole basis "
             "for clinical decisions."
         )
-        warn_table = Table(
-            [[Paragraph(warning_text, style_normal)]], colWidths=[7.2 * inch]
-        )
+        warn_table = Table([[Paragraph(warning_text, style_normal)]], colWidths=[7.2 * inch])
         warn_table.setStyle(
             TableStyle(
                 [
@@ -1648,9 +1535,7 @@ def generate_brain_hemorrhage_report(
                 "\u25a1 Secure airway if GCS < 8<br/>"
                 "\u25a1 Notify attending physician"
             )
-            chk_table = Table(
-                [[Paragraph(chk_text, chk_style)]], colWidths=[7.2 * inch]
-            )
+            chk_table = Table([[Paragraph(chk_text, chk_style)]], colWidths=[7.2 * inch])
             chk_table.setStyle(
                 TableStyle(
                     [
@@ -1664,9 +1549,7 @@ def generate_brain_hemorrhage_report(
             elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
-        img_orig = get_image_flowable(
-            scan.get("original_file_path"), "Original CT Scan", style_normal
-        )
+        img_orig = get_image_flowable(scan.get("original_file_path"), "Original CT Scan", style_normal)
         img_heatmap = get_image_flowable(
             getattr(inference_result, "heatmap_path", None),
             "AI-highlighted regions of interest",
@@ -1777,15 +1660,9 @@ def generate_brain_hemorrhage_report(
             # Common header text (adjust color based on bg)
             canvas.setFillColor(colors.white if has_hemorrhage else colors.black)
             canvas.setFont("Helvetica", 10)
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}"
-            )
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}"
-            )
-            canvas.drawRightString(
-                A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}"
-            )
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.5 * inch, f"Report ID: {doc.report_id}")
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.7 * inch, f"Date: {doc.report_date}")
+            canvas.drawRightString(A4[0] - 0.5 * inch, A4[1] - 0.9 * inch, f"Time: {doc.report_time}")
 
             if not has_hemorrhage:
                 canvas.setStrokeColor(colors.gray)
@@ -1797,9 +1674,7 @@ def generate_brain_hemorrhage_report(
             canvas.setLineWidth(0.5)
             canvas.line(0.5 * inch, 0.85 * inch, A4[0] - 0.5 * inch, 0.85 * inch)
             canvas.setFont("Helvetica-Oblique", 8)
-            disclaimer = (
-                "CRITICAL: This is an AI screening tool, not a diagnostic device."
-            )
+            disclaimer = "CRITICAL: This is an AI screening tool, not a diagnostic device."
             canvas.drawCentredString(A4[0] / 2.0, 0.7 * inch, disclaimer)
             canvas.setFont("Helvetica", 9)
             canvas.drawString(
@@ -1840,9 +1715,7 @@ def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str
         normal_style.fontSize = 11
         normal_style.leading = 14
 
-        h1_style = ParagraphStyle(
-            "H1_Center", parent=styles["Heading1"], alignment=TA_CENTER
-        )
+        h1_style = ParagraphStyle("H1_Center", parent=styles["Heading1"], alignment=TA_CENTER)
         h2_style = styles["Heading2"]
         styles["Heading3"]
 
@@ -1889,9 +1762,7 @@ def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str
             ],
         ]
 
-        t_patient = Table(
-            patient_info_data, colWidths=[1.5 * inch, 2 * inch, 1.2 * inch, 2 * inch]
-        )
+        t_patient = Table(patient_info_data, colWidths=[1.5 * inch, 2 * inch, 1.2 * inch, 2 * inch])
         t_patient.setStyle(
             TableStyle(
                 [
@@ -1926,9 +1797,7 @@ def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str
             fontName="Helvetica-Bold",
             textColor=colors.HexColor("#2B6CB0"),
         )
-        elements.append(
-            Paragraph(inference_result.predicted_display, age_display_style)
-        )
+        elements.append(Paragraph(inference_result.predicted_display, age_display_style))
         elements.append(Spacer(1, 0.2 * inch))
 
         raw_pred_style = ParagraphStyle(
@@ -1944,9 +1813,7 @@ def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str
                 raw_pred_style,
             )
         )
-        elements.append(
-            Paragraph(f"Confidence: {inference_result.confidence_flag}", raw_pred_style)
-        )
+        elements.append(Paragraph(f"Confidence: {inference_result.confidence_flag}", raw_pred_style))
         elements.append(Spacer(1, 0.5 * inch))
 
         # Age Comparison Visual
@@ -1959,9 +1826,7 @@ def generate_bone_age_report(patient: dict, scan: dict, inference_result) -> str
             d.add(Line(50, 30, 350, 30, strokeColor=colors.black, strokeWidth=2))
 
             # Draw chronological age marker (blue)
-            d.add(
-                Rect(195, 20, 10, 20, fillColor=colors.blue, strokeColor=colors.black)
-            )
+            d.add(Rect(195, 20, 10, 20, fillColor=colors.blue, strokeColor=colors.black))
             d.add(
                 String(
                     200,
@@ -2064,9 +1929,7 @@ Provide patient date of birth for complete assessment."""
         original_path = scan.get("original_file_path", "")
         if os.path.exists(original_path):
             try:
-                img_row.append(
-                    Image(original_path, width=2.5 * inch, height=2.5 * inch)
-                )
+                img_row.append(Image(original_path, width=2.5 * inch, height=2.5 * inch))
             except Exception:
                 img_row.append(Paragraph("Error loading original image", normal_style))
         else:
@@ -2100,9 +1963,7 @@ Provide patient date of birth for complete assessment."""
 
         # Clinical Recommendation
         elements.append(Paragraph("Clinical Recommendation", h2_style))
-        elements.append(
-            Paragraph(inference_result.clinical_recommendation, normal_style)
-        )
+        elements.append(Paragraph(inference_result.clinical_recommendation, normal_style))
         elements.append(Spacer(1, 0.3 * inch))
 
         # Model Performance Note
@@ -2110,9 +1971,7 @@ Provide patient date of birth for complete assessment."""
         elements.append(
             Paragraph(
                 perf_note,
-                ParagraphStyle(
-                    "Per", parent=normal_style, fontSize=9, textColor=colors.dimgrey
-                ),
+                ParagraphStyle("Per", parent=normal_style, fontSize=9, textColor=colors.dimgrey),
             )
         )
 
@@ -2121,9 +1980,7 @@ Provide patient date of birth for complete assessment."""
             canvas.setFont("Helvetica", 9)
             canvas.drawString(inch, 0.75 * inch, f"Report ID: {scan.get('scan_id')}")
             canvas.drawRightString(A4[0] - inch, 0.75 * inch, f"Page {doc.page}")
-            canvas.drawCentredString(
-                A4[0] / 2.0, 0.75 * inch, "Model: bone_age_v1 | MAE: 7.34 months"
-            )
+            canvas.drawCentredString(A4[0] / 2.0, 0.75 * inch, "Model: bone_age_v1 | MAE: 7.34 months")
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=on_page, onLaterPages=on_page)
@@ -2158,18 +2015,14 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
         normal_style.fontSize = 11
         normal_style.leading = 14
 
-        h1_style = ParagraphStyle(
-            "H1_Center", parent=styles["Heading1"], alignment=TA_CENTER
-        )
+        h1_style = ParagraphStyle("H1_Center", parent=styles["Heading1"], alignment=TA_CENTER)
         h2_style = styles["Heading2"]
         h3_style = styles["Heading3"]
 
         elements = []
 
         # Header
-        elements.append(
-            Paragraph("MediScan AI — Diabetic Retinopathy Screening Report", h1_style)
-        )
+        elements.append(Paragraph("MediScan AI — Diabetic Retinopathy Screening Report", h1_style))
         elements.append(
             Paragraph(
                 "CONFIDENTIAL — FOR CLINICAL USE ONLY",
@@ -2225,9 +2078,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
             ],
         ]
 
-        t_patient = Table(
-            patient_info_data, colWidths=[1.5 * inch, 2 * inch, 1.2 * inch, 2 * inch]
-        )
+        t_patient = Table(patient_info_data, colWidths=[1.5 * inch, 2 * inch, 1.2 * inch, 2 * inch])
         t_patient.setStyle(
             TableStyle(
                 [
@@ -2281,11 +2132,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
                 normal_style,
             )
         )
-        elements.append(
-            Paragraph(
-                f"<b>Urgency:</b> {inference_result.urgency.upper()}", normal_style
-            )
-        )
+        elements.append(Paragraph(f"<b>Urgency:</b> {inference_result.urgency.upper()}", normal_style))
         elements.append(Spacer(1, 0.3 * inch))
 
         # Referable DR Box
@@ -2433,11 +2280,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
                         strokeColor=colors.lightgrey,
                     )
                 )
-                bar_d.add(
-                    Rect(
-                        0, 0, 1.5 * pct, 12, fillColor=grade_colors[i], strokeColor=None
-                    )
-                )
+                bar_d.add(Rect(0, 0, 1.5 * pct, 12, fillColor=grade_colors[i], strokeColor=None))
 
                 prob_data.append(
                     [
@@ -2466,9 +2309,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
         original_path = scan.get("original_file_path", "")
         if os.path.exists(original_path):
             try:
-                img_row.append(
-                    Image(original_path, width=2.5 * inch, height=2.5 * inch)
-                )
+                img_row.append(Image(original_path, width=2.5 * inch, height=2.5 * inch))
             except Exception:
                 img_row.append(Paragraph("Error loading original image", normal_style))
         else:
@@ -2508,14 +2349,10 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
 
         # Recommendations & Follow up
         elements.append(Paragraph("Clinical Recommendations", h2_style))
-        elements.append(
-            Paragraph(inference_result.clinical_recommendation, normal_style)
-        )
+        elements.append(Paragraph(inference_result.clinical_recommendation, normal_style))
         elements.append(Spacer(1, 0.2 * inch))
 
-        fu_msg = (
-            f"<b>Recommended Follow-up: {inference_result.follow_up_months} months</b>"
-        )
+        fu_msg = f"<b>Recommended Follow-up: {inference_result.follow_up_months} months</b>"
         fu_guide = {
             0: "Annual dilated eye exam. Maintain HbA1c < 7%.",
             1: "Repeat fundus imaging in 12 months.",
@@ -2573,17 +2410,11 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
                 )
             )
             if inference_result.override_notes:
-                elements.append(
-                    Paragraph(
-                        f"<b>Notes:</b> {inference_result.override_notes}", normal_style
-                    )
-                )
+                elements.append(Paragraph(f"<b>Notes:</b> {inference_result.override_notes}", normal_style))
             elements.append(
                 Paragraph(
                     f"<i>Override logged on {inference_result.override_timestamp.strftime('%Y-%m-%d %H:%M:%S')}</i>",
-                    ParagraphStyle(
-                        "Italic", parent=normal_style, textColor=colors.gray
-                    ),
+                    ParagraphStyle("Italic", parent=normal_style, textColor=colors.gray),
                 )
             )
             elements.append(Spacer(1, 0.3 * inch))
@@ -2593,9 +2424,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
         elements.append(
             Paragraph(
                 perf_note,
-                ParagraphStyle(
-                    "Per", parent=normal_style, fontSize=9, textColor=colors.dimgrey
-                ),
+                ParagraphStyle("Per", parent=normal_style, fontSize=9, textColor=colors.dimgrey),
             )
         )
 
@@ -2604,9 +2433,7 @@ def generate_retinopathy_report(patient: dict, scan: dict, inference_result) -> 
             canvas.setFont("Helvetica", 9)
             canvas.drawString(inch, 0.75 * inch, f"Report ID: {scan.get('scan_id')}")
             canvas.drawRightString(A4[0] - inch, 0.75 * inch, f"Page {doc.page}")
-            canvas.drawCentredString(
-                A4[0] / 2.0, 0.75 * inch, "Model: retinopathy_v1 | QWK: 0.8708"
-            )
+            canvas.drawCentredString(A4[0] / 2.0, 0.75 * inch, "Model: retinopathy_v1 | QWK: 0.8708")
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=on_page, onLaterPages=on_page)
@@ -2655,9 +2482,7 @@ if __name__ == "__main__":
     }
 
     logger.info("Generating test report with 'clear' confidence...")
-    report_path1 = generate_report(
-        dummy_patient, dummy_scan, dummy_inference_result, dummy_prognosis
-    )
+    report_path1 = generate_report(dummy_patient, dummy_scan, dummy_inference_result, dummy_prognosis)
 
     dummy_inference_result_inconclusive = InferenceResult(
         fracture_detected=False,
@@ -2687,14 +2512,8 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
     try:
         os.makedirs(output_dir, exist_ok=True)
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join(
-            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
-        )
-        scan_id = (
-            scan.get("id", "unknown")
-            if isinstance(scan, dict)
-            else getattr(scan, "id", "unknown")
-        )
+        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
+        scan_id = scan.get("id", "unknown") if isinstance(scan, dict) else getattr(scan, "id", "unknown")
         filename = f"fracture_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
@@ -2718,29 +2537,19 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
         style_normal.fontName = "Helvetica"
 
         # TITLE
-        elements.append(
-            Paragraph(
-                "<b>MediScan AI &mdash; Fracture Detection Report</b>", styles["Title"]
-            )
-        )
+        elements.append(Paragraph("<b>MediScan AI &mdash; Fracture Detection Report</b>", styles["Title"]))
         elements.append(Spacer(1, 0.2 * inch))
 
         # PATIENT INFO
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(
-                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
-                ),
-                Paragraph(
-                    f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
+                Paragraph(f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal),
             ],
             [
                 Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
-                Paragraph(
-                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal),
             ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
@@ -2777,9 +2586,7 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
                 [
                     Paragraph(
                         badge_text,
-                        ParagraphStyle(
-                            "Centered", parent=style_normal, alignment=TA_CENTER
-                        ),
+                        ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                     )
                 ]
             ],
@@ -2802,9 +2609,7 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
                 style_normal,
             )
         )
-        elements.append(
-            Paragraph(f"<b>Confidence:</b> {conf:.1f}% ({conf_flag})", style_normal)
-        )
+        elements.append(Paragraph(f"<b>Confidence:</b> {conf:.1f}% ({conf_flag})", style_normal))
         elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
@@ -2858,9 +2663,7 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
         override = getattr(scan, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
-            elements.append(
-                Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal)
-            )
+            elements.append(Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal))
             elements.append(
                 Paragraph(
                     f"<b>Notes:</b> {getattr(scan, 'override_notes', 'N/A')}",
@@ -2872,11 +2675,7 @@ def generate_fracture_report(scan, patient, prognosis=None, output_dir="reports/
         # RECOMMENDATION
         elements.append(Paragraph("CLINICAL RECOMMENDATION", style_h2))
         if conf_flag == "clear":
-            elements.append(
-                Paragraph(
-                    "Clear finding, clinical correlation recommended.", style_normal
-                )
-            )
+            elements.append(Paragraph("Clear finding, clinical correlation recommended.", style_normal))
         elif conf_flag == "inconclusive":
             elements.append(
                 Paragraph(
@@ -2904,14 +2703,8 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
     try:
         os.makedirs(output_dir, exist_ok=True)
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join(
-            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
-        )
-        scan_id = (
-            scan.get("id", "unknown")
-            if isinstance(scan, dict)
-            else getattr(scan, "id", "unknown")
-        )
+        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
+        scan_id = scan.get("id", "unknown") if isinstance(scan, dict) else getattr(scan, "id", "unknown")
         filename = f"arthritis_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
@@ -2935,29 +2728,19 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
         style_normal.fontName = "Helvetica"
 
         # TITLE
-        elements.append(
-            Paragraph(
-                "<b>MediScan AI &mdash; Arthritis Grading Report</b>", styles["Title"]
-            )
-        )
+        elements.append(Paragraph("<b>MediScan AI &mdash; Arthritis Grading Report</b>", styles["Title"]))
         elements.append(Spacer(1, 0.2 * inch))
 
         # PATIENT INFO
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(
-                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
-                ),
-                Paragraph(
-                    f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
+                Paragraph(f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal),
             ],
             [
                 Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
-                Paragraph(
-                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal),
             ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
@@ -2985,9 +2768,7 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
                 [
                     Paragraph(
                         badge_text,
-                        ParagraphStyle(
-                            "Centered", parent=style_normal, alignment=TA_CENTER
-                        ),
+                        ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                     )
                 ]
             ],
@@ -3066,9 +2847,7 @@ def generate_arthritis_report(scan, patient, output_dir="reports/"):
         override = getattr(scan, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
-            elements.append(
-                Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal)
-            )
+            elements.append(Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal))
             elements.append(
                 Paragraph(
                     f"<b>Notes:</b> {getattr(scan, 'override_notes', 'N/A')}",
@@ -3101,14 +2880,8 @@ def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
     try:
         os.makedirs(output_dir, exist_ok=True)
         date_str = datetime.now().strftime("%Y%m%d")
-        patient_name_safe = "".join(
-            [c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")]
-        )
-        scan_id = (
-            scan.get("id", "unknown")
-            if isinstance(scan, dict)
-            else getattr(scan, "id", "unknown")
-        )
+        patient_name_safe = "".join([c if c.isalnum() else "_" for c in patient.get("full_name", "Unknown")])
+        scan_id = scan.get("id", "unknown") if isinstance(scan, dict) else getattr(scan, "id", "unknown")
         filename = f"osteoporosis_{scan_id}_{patient_name_safe}_{date_str}.pd"
         filepath = os.path.join(output_dir, filename).replace("\\", "/")
 
@@ -3144,18 +2917,12 @@ def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
         elements.append(Paragraph("PATIENT INFORMATION", style_h2))
         patient_data = [
             [
-                Paragraph(
-                    f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal
-                ),
-                Paragraph(
-                    f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Name:</b> {patient.get('full_name', 'N/A')}", style_normal),
+                Paragraph(f"<b>Patient ID:</b> {patient.get('id', 'N/A')}", style_normal),
             ],
             [
                 Paragraph(f"<b>Age:</b> {patient.get('age', 'N/A')}", style_normal),
-                Paragraph(
-                    f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal
-                ),
+                Paragraph(f"<b>Gender:</b> {patient.get('gender', 'N/A')}", style_normal),
             ],
         ]
         t_patient = Table(patient_data, colWidths=[3.6 * inch, 3.6 * inch])
@@ -3178,9 +2945,7 @@ def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
                 [
                     Paragraph(
                         badge_text,
-                        ParagraphStyle(
-                            "Centered", parent=style_normal, alignment=TA_CENTER
-                        ),
+                        ParagraphStyle("Centered", parent=style_normal, alignment=TA_CENTER),
                     )
                 ]
             ],
@@ -3197,9 +2962,7 @@ def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
 
         conf = getattr(scan, "confidence", 0.0)
         conf_flag = getattr(scan, "confidence_flag", "low")
-        elements.append(
-            Paragraph(f"<b>Confidence:</b> {conf:.1f}% ({conf_flag})", style_normal)
-        )
+        elements.append(Paragraph(f"<b>Confidence:</b> {conf:.1f}% ({conf_flag})", style_normal))
         elements.append(Spacer(1, 0.2 * inch))
 
         # IMAGES
@@ -3229,9 +2992,7 @@ def generate_osteoporosis_report(scan, patient, output_dir="reports/"):
         override = getattr(scan, "clinician_override", None)
         if override:
             elements.append(Paragraph("CLINICIAN OVERRIDE", style_h2))
-            elements.append(
-                Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal)
-            )
+            elements.append(Paragraph(f"<b>Override Diagnosis:</b> {override}", style_normal))
             elements.append(
                 Paragraph(
                     f"<b>Notes:</b> {getattr(scan, 'override_notes', 'N/A')}",

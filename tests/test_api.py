@@ -63,9 +63,7 @@ def db_connection():
 @pytest.fixture(scope="function")
 def db(db_connection):
     """Provides a database session bound to the shared SQLite connection."""
-    TestingSessionLocal = sessionmaker(
-        autocommit=False, autoflush=False, bind=db_connection
-    )
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_connection)
     session = TestingSessionLocal()
     try:
         yield session
@@ -146,9 +144,7 @@ async def test_get_history_nonexistent_patient():
 async def test_patch_prognosis_override(db):
     """Tests that PATCH /prognosis/{id}/override updates prognosis details with clinician overrides."""
     # Seed patient
-    patient = db_models.Patient(
-        full_name="Ellen Ripley", age=32, gender="Female", comorbidities=[]
-    )
+    patient = db_models.Patient(full_name="Ellen Ripley", age=32, gender="Female", comorbidities=[])
     db.add(patient)
     db.flush()
 
@@ -194,9 +190,7 @@ async def test_patch_prognosis_override(db):
     }
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.patch(
-            f"/prognosis/{prognosis_id}/override", json=override_payload
-        )
+        response = await ac.patch(f"/prognosis/{prognosis_id}/override", json=override_payload)
 
         assert response.status_code == 200
         data = response.json()

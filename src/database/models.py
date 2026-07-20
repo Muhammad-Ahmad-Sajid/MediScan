@@ -54,9 +54,7 @@ class Patient(Base):
         default=uuid.uuid4,
         comment="UUID primary key identifying the patient",
     )
-    full_name = Column(
-        String(255), nullable=False, comment="Full legal name of the patient"
-    )
+    full_name = Column(String(255), nullable=False, comment="Full legal name of the patient")
     age = Column(Integer, nullable=False, comment="Age of the patient in years")
     gender = Column(
         String(50),
@@ -77,9 +75,7 @@ class Patient(Base):
     )
 
     # Bidirectional One-to-Many Relationship: Patient -> XrayScans
-    scans = relationship(
-        "XrayScan", back_populates="patient", cascade="all, delete-orphan"
-    )
+    scans = relationship("XrayScan", back_populates="patient", cascade="all, delete-orphan")
 
 
 class XrayScan(Base):
@@ -163,9 +159,7 @@ class FracturePrediction(Base):
         nullable=True,
         comment="Severity rating of the fracture if detected (NULL if no fracture)",
     )
-    confidence_score = Column(
-        Float, nullable=False, comment="Prediction confidence score between 0.0 and 1.0"
-    )
+    confidence_score = Column(Float, nullable=False, comment="Prediction confidence score between 0.0 and 1.0")
     heatmap_path = Column(
         String(512),
         nullable=True,
@@ -241,9 +235,7 @@ class PrognosisResult(Base):
         nullable=False,
         comment="Flag indicating if a clinician manually updated these values",
     )
-    override_notes = Column(
-        Text, nullable=True, comment="Reason or notes for the clinician override"
-    )
+    override_notes = Column(Text, nullable=True, comment="Reason or notes for the clinician override")
     override_timestamp = Column(
         DateTime(timezone=True),
         nullable=True,

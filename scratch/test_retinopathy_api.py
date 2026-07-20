@@ -81,9 +81,7 @@ def test_report(scan_id, token):
     headers = {"Authorization": f"Bearer {token}"}
     res = requests.get(f"{BASE_URL}/retinopathy/scan/{scan_id}/report", headers=headers)
     if res.status_code == 200:
-        print(
-            f"Report generated successfully. Content type: {res.headers.get('content-type')}"
-        )
+        print(f"Report generated successfully. Content type: {res.headers.get('content-type')}")
     else:
         print(f"Report generation failed: {res.status_code}")
         print(res.text)
@@ -96,9 +94,7 @@ def test_override(scan_id, token):
         "clinician_override": "Moderate Nonproliferative DR",
         "override_notes": "Tumor looks more like a moderate DR on secondary review.",
     }
-    res = requests.patch(
-        f"{BASE_URL}/retinopathy/scan/{scan_id}/override", json=data, headers=headers
-    )
+    res = requests.patch(f"{BASE_URL}/retinopathy/scan/{scan_id}/override", json=data, headers=headers)
     if res.status_code == 200:
         print("Override successful!")
     else:
@@ -109,9 +105,7 @@ def test_override(scan_id, token):
 def test_history(patient_id, token):
     print(f"\n--- Testing patient history ---")
     headers = {"Authorization": f"Bearer {token}"}
-    res = requests.get(
-        f"{BASE_URL}/patients/{patient_id}/retinopathy-history", headers=headers
-    )
+    res = requests.get(f"{BASE_URL}/patients/{patient_id}/retinopathy-history", headers=headers)
     if res.status_code == 200:
         print(f"History retrieved successfully. Found {len(res.json())} records.")
     else:

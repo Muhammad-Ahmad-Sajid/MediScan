@@ -23,9 +23,7 @@ def search_user_git():
 
     for dirpath, dirnames, filenames in os.walk(search_root):
         # Filter out skip directories in place
-        dirnames[:] = [
-            d for d in dirnames if d not in skip_dirs and not d.startswith(".")
-        ]
+        dirnames[:] = [d for d in dirnames if d not in skip_dirs and not d.startswith(".")]
 
         if "git.exe" in filenames:
             full_path = os.path.join(dirpath, "git.exe")

@@ -84,9 +84,7 @@ class FracAtlasDataset(Dataset):
         # Keep only records belonging to the current split (train/val)
         # Check image_path containing "/train/" or "/val/"
         split_pattern = f"/{split}/"
-        df_split = df[
-            df["image_path"].str.contains(split_pattern, case=False, na=False)
-        ]
+        df_split = df[df["image_path"].str.contains(split_pattern, case=False, na=False)]
 
         # Keep only fractured scans to map exactly to the 4 severity classes
         self.df = df_split[df_split["has_fracture"] is True].reset_index(drop=True)
@@ -210,9 +208,7 @@ class Stage2Dataset(Dataset):
         # Split is determined by the image_path starting folder:
         # e.g., 'data/stage2/train/' or 'data/stage2/val/'
         split_pattern = f"data/stage2/{split}/"
-        self.df = df_all[
-            df_all["image_path"].str.startswith(split_pattern, na=False)
-        ].reset_index(drop=True)
+        self.df = df_all[df_all["image_path"].str.startswith(split_pattern, na=False)].reset_index(drop=True)
 
     def __len__(self):
         return len(self.df)

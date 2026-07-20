@@ -25,9 +25,7 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 BEST_MODEL_PATH = os.path.join(CHECKPOINT_DIR, "lung_nodule_best.pth")
 HISTORY_JSON_PATH = os.path.join(CHECKPOINT_DIR, "lung_nodule_training_history.json")
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("mediscan.lung_nodule.train")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -53,9 +51,7 @@ def get_transforms(is_small_dataset):
                 transforms.ColorJitter(brightness=0.25, contrast=0.25),
                 transforms.ToTensor(),
                 transforms.RandomErasing(p=0.2),  # CutOut
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
     else:
@@ -67,9 +63,7 @@ def get_transforms(is_small_dataset):
                 transforms.RandomRotation(degrees=5),
                 transforms.ColorJitter(brightness=0.15),
                 transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
 
@@ -266,9 +260,7 @@ def main():
         sys.exit(1)
 
     logger.info(f"Loaded {total_images} total images.")
-    logger.info(
-        f"Splits -> Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}"
-    )
+    logger.info(f"Splits -> Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
 
     # Class Distribution
     train_pos = sum(y_train)
@@ -277,9 +269,7 @@ def main():
 
     is_small_dataset = total_images < 1000
     if is_small_dataset:
-        logger.info(
-            f"Small dataset detected ({total_images} images). Enabled heavy augmentation."
-        )
+        logger.info(f"Small dataset detected ({total_images} images). Enabled heavy augmentation.")
         global BATCH_SIZE, EPOCHS
         BATCH_SIZE = 4
         EPOCHS = 50
@@ -302,37 +292,23 @@ def main():
     ratio = train_neg / train_pos if train_pos > 0 else 1
 
     if ratio > 2.0 or ratio < 0.5:
-        logger.info(
-            f"Class imbalance ratio is {ratio:.2f}. Using WeightedRandomSampler and pos_weight."
-        )
+        logger.info(f"Class imbalance ratio is {ratio:.2f}. Using WeightedRandomSampler and pos_weight.")
         class_sample_counts = [train_neg, train_pos]
         weights = 1.0 / torch.tensor(class_sample_counts, dtype=torch.float)
         samples_weights = weights[[0 if y == 0 else 1 for y in y_train]]
-        sampler = WeightedRandomSampler(
-            weights=samples_weights, num_samples=len(samples_weights), replacement=True
-        )
-        train_loader = DataLoader(
-            train_ds, batch_size=BATCH_SIZE, sampler=sampler, num_workers=NUM_WORKERS
-        )
+        sampler = WeightedRandomSampler(weights=samples_weights, num_samples=len(samples_weights), replacement=True)
+        train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, sampler=sampler, num_workers=NUM_WORKERS)
         pos_weight = torch.tensor([train_neg / train_pos]).to(DEVICE)
         criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         strategy = "WeightedRandomSampler + pos_weight"
     else:
-        logger.info(
-            "Dataset is reasonably balanced. Using standard DataLoader and BCELoss."
-        )
-        train_loader = DataLoader(
-            train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS
-        )
+        logger.info("Dataset is reasonably balanced. Using standard DataLoader and BCELoss.")
+        train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS)
         criterion = nn.BCEWithLogitsLoss()
         strategy = "Standard"
 
-    val_loader = DataLoader(
-        val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
-    test_loader = DataLoader(
-        test_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
+    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
+    test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
 
     # Model & Optim
     model = build_model()
@@ -341,9 +317,7 @@ def main():
         lr=LR,
         weight_decay=WEIGHT_DECAY,
     )
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", patience=3, factor=0.5
-    )
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
     mlflow.set_experiment("lung_nodule_detection")
     best_val_loss = float("in")
@@ -366,20 +340,14 @@ def main():
             }
         )
 
-        print(
-            "\nEpoch | Train Loss | Train Acc | Val Loss | Val Acc | Sensitivity | Specificity | LR"
-        )
+        print("\nEpoch | Train Loss | Train Acc | Val Loss | Val Acc | Sensitivity | Specificity | LR")
         print("-" * 85)
 
         for epoch in range(1, EPOCHS + 1):
             if epoch == 6:
                 unfreeze_all(model)
-                optimizer = optim.Adam(
-                    model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY
-                )
-                scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, mode="min", patience=3, factor=0.5
-                )
+                optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+                scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
             current_lr = optimizer.param_groups[0]["lr"]
 
@@ -455,18 +423,12 @@ def main():
     checkpoint = torch.load(BEST_MODEL_PATH)
     model.load_state_dict(checkpoint["state_dict"])
 
-    _, test_acc, test_sens, test_spec, test_preds, test_labels = evaluate(
-        model, test_loader, criterion
-    )
+    _, test_acc, test_sens, test_spec, test_preds, test_labels = evaluate(model, test_loader, criterion)
 
     print("\nConfusion Matrix:")
     print(confusion_matrix(test_labels, test_preds))
     print("\nClassification Report:")
-    print(
-        classification_report(
-            test_labels, test_preds, target_names=["No Nodule", "Nodule"]
-        )
-    )
+    print(classification_report(test_labels, test_preds, target_names=["No Nodule", "Nodule"]))
     print(f"\n*** Nodule Sensitivity (Recall): {test_sens*100:.2f}% ***")
     print(f"Nodule Specificity: {test_spec*100:.2f}%")
 

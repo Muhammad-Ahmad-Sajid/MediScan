@@ -64,9 +64,7 @@ class GaussianNoise(object):
         return tensor
 
     def __repr__(self):
-        return (
-            self.__class__.__name__ + f"(p={self.p}, mean={self.mean}, std={self.std})"
-        )
+        return self.__class__.__name__ + f"(p={self.p}, mean={self.mean}, std={self.std})"
 
 
 class OsteoporosisDataset(Dataset):
@@ -90,9 +88,7 @@ class OsteoporosisDataset(Dataset):
 
         self.num_normal = self.labels.count(0)
         self.num_osteo = self.labels.count(1)
-        logger.info(
-            f"Found {len(self.filepaths)} images: {self.num_normal} Normal, {self.num_osteo} Osteoporosis"
-        )
+        logger.info(f"Found {len(self.filepaths)} images: {self.num_normal} Normal, {self.num_osteo} Osteoporosis")
 
     def __len__(self):
         return len(self.filepaths)
@@ -193,12 +189,8 @@ def train_model():
     train_dataset.dataset.transform = train_transform
     val_dataset.dataset.transform = val_transform
 
-    train_loader = DataLoader(
-        train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS
-    )
-    val_loader = DataLoader(
-        val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
 
     # Initialize Model
     model = create_model().to(device)
@@ -210,12 +202,8 @@ def train_model():
     pos_weight = torch.tensor([pos_weight_val]).to(device)
 
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-    optimizer = optim.Adam(
-        model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
-    )
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", patience=PATIENCE_LR, factor=FACTOR_LR
-    )
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=PATIENCE_LR, factor=FACTOR_LR)
 
     best_val_acc = 0.0
     best_epoch = 0
@@ -333,9 +321,7 @@ def train_model():
         logger.info(f"Best Val Accuracy: {best_val_acc:.4f} at Epoch {best_epoch}")
 
         # Load best model for final evaluation
-        model.load_state_dict(
-            torch.load(os.path.join(CHECKPOINT_DIR, "osteoporosis_best.pth"))
-        )
+        model.load_state_dict(torch.load(os.path.join(CHECKPOINT_DIR, "osteoporosis_best.pth")))
         model.eval()
 
         final_preds, final_targets = [], []
@@ -348,19 +334,13 @@ def train_model():
                 final_targets.extend(labels.cpu().numpy())
 
         cm = confusion_matrix(final_targets, final_preds)
-        report = classification_report(
-            final_targets, final_preds, target_names=["Normal", "Osteoporosis"]
-        )
+        report = classification_report(final_targets, final_preds, target_names=["Normal", "Osteoporosis"])
 
         # Sensitivity and Specificity
         # cm structure: [[TN, FP], [FN, TP]]
         tn, fp, fn, tp = cm.ravel()
-        sensitivity = (
-            tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        )  # Recall on Class 1 (Osteoporosis)
-        specificity = (
-            tn / (tn + fp) if (tn + fp) > 0 else 0.0
-        )  # Recall on Class 0 (Normal)
+        sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0.0  # Recall on Class 1 (Osteoporosis)
+        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0  # Recall on Class 0 (Normal)
 
         logger.info("\n=== FINAL EVALUATION ===")
         logger.info(f"\nConfusion Matrix:\n{cm}")
@@ -378,9 +358,7 @@ def train_model():
         )
 
         # Save History
-        history_path = os.path.join(
-            CHECKPOINT_DIR, "osteoporosis_training_history.json"
-        )
+        history_path = os.path.join(CHECKPOINT_DIR, "osteoporosis_training_history.json")
         with open(history_path, "w") as f:
             json.dump(history, f, indent=4)
         logger.info(f"Saved training history to {history_path}")

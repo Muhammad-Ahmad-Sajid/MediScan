@@ -116,9 +116,7 @@ class BrainHemorrhageDataset(Dataset):
 def get_model():
     model = models.resnet50(weights=ResNet50_Weights.DEFAULT)
     num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 1)
-    )
+    model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 1))
     return model.to(DEVICE)
 
 
@@ -129,13 +127,7 @@ def perform_discovery():
     for root, dirs, files in os.walk(BASE_DIR):
         level = root.replace(BASE_DIR, "").count(os.sep)
         indent = "  " * level
-        img_count = len(
-            [
-                f
-                for f in files
-                if f.lower().endswith((".png", ".jpg", ".jpeg", ".ti", ".dcm"))
-            ]
-        )
+        img_count = len([f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg", ".ti", ".dcm"))])
         total += img_count
         logger.info(f"{indent}{os.path.basename(root)}/  [{img_count} images]")
 
@@ -150,20 +142,12 @@ def perform_discovery():
                     csv_path = os.path.join(root, f)
 
     if total < 500:
-        logger.warning(
-            f"⚠️ Primary dataset has only {total} images. Checking alternative dataset..."
-        )
+        logger.warning(f"⚠️ Primary dataset has only {total} images. Checking alternative dataset...")
         if os.path.exists(ALT_DIR):
             for root, dirs, files in os.walk(ALT_DIR):
                 level = root.replace(ALT_DIR, "").count(os.sep)
                 indent = "  " * level
-                img_count = len(
-                    [
-                        f
-                        for f in files
-                        if f.lower().endswith((".png", ".jpg", ".jpeg", ".ti", ".dcm"))
-                    ]
-                )
+                img_count = len([f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg", ".ti", ".dcm"))])
                 logger.info(f"{indent}{os.path.basename(root)}/  [{img_count} images]")
         else:
             logger.info("Alternative dataset not found.")
@@ -183,13 +167,7 @@ def perform_discovery():
         X, y = [], []
         img_dir = None
         for root, dirs, files in os.walk(BASE_DIR):
-            img_count = len(
-                [
-                    f
-                    for f in files
-                    if f.lower().endswith((".png", ".jpg", ".jpeg", ".ti", ".dcm"))
-                ]
-            )
+            img_count = len([f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg", ".ti", ".dcm"))])
             if img_count > 0:
                 img_dir = root
                 break
@@ -368,20 +346,12 @@ def run_cross_validation(X, y):
         class_counts = np.bincount(y_train)
         weights = 1.0 / class_counts
         sample_weights = np.array([weights[int(label)] for label in y_train])
-        sampler = WeightedRandomSampler(
-            weights=sample_weights, num_samples=len(sample_weights), replacement=True
-        )
+        sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
 
-        train_loader = DataLoader(
-            train_ds, batch_size=BATCH_SIZE, sampler=sampler, num_workers=NUM_WORKERS
-        )
-        val_loader = DataLoader(
-            val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-        )
+        train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, sampler=sampler, num_workers=NUM_WORKERS)
+        val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
 
-        pos_weight = torch.tensor(
-            [class_counts[0] / class_counts[1]], dtype=torch.float32
-        ).to(DEVICE)
+        pos_weight = torch.tensor([class_counts[0] / class_counts[1]], dtype=torch.float32).to(DEVICE)
         criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
         model = get_model()
@@ -394,17 +364,13 @@ def run_cross_validation(X, y):
             lr=1e-4,
             weight_decay=1e-5,
         )
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode="min", patience=3, factor=0.5
-        )
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
         best_val_loss = float("in")
         patience_counter = 0
         best_sens = 0
 
-        logger.info(
-            "Epoch | Train Loss | Train Acc | Val Loss | Val Acc | Sensitivity | Specificity | LR"
-        )
+        logger.info("Epoch | Train Loss | Train Acc | Val Loss | Val Acc | Sensitivity | Specificity | LR")
         logger.info("-" * 85)
 
         for epoch in range(1, EPOCHS + 1):
@@ -412,24 +378,16 @@ def run_cross_validation(X, y):
                 for param in model.parameters():
                     param.requires_grad = True
                 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
-                scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, mode="min", patience=3, factor=0.5
-                )
+                scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
-            train_loss, train_acc = train_one_epoch(
-                model, train_loader, optimizer, criterion, epoch, EPOCHS
-            )
-            val_loss, val_acc, sens, spec, _, _, _ = evaluate(
-                model, val_loader, criterion
-            )
+            train_loss, train_acc = train_one_epoch(model, train_loader, optimizer, criterion, epoch, EPOCHS)
+            val_loss, val_acc, sens, spec, _, _, _ = evaluate(model, val_loader, criterion)
 
             lr = optimizer.param_groups[0]["lr"]
             logger.info(
                 f"{epoch:5d} | {train_loss:10.4f} | {train_acc:9.4f} | {val_loss:8.4f} | {val_acc:7.4f} | {sens:11.4f} | {spec:11.4f} | {lr:.2e}"
             )
-            logger.info(
-                f"🚨 Hemorrhage Sensitivity: {sens*100:.2f}% — target above 90%"
-            )
+            logger.info(f"🚨 Hemorrhage Sensitivity: {sens*100:.2f}% — target above 90%")
 
             if epoch >= 10 and sens < 0.80:
                 logger.warning(
@@ -469,9 +427,7 @@ def run_cross_validation(X, y):
 
     logger.info("=== CV SUMMARY ===")
     sens_scores = [m["sensitivity"] for m in fold_metrics]
-    logger.info(
-        f"Mean Sensitivity: {np.mean(sens_scores)*100:.2f}% ± {np.std(sens_scores)*100:.2f}%"
-    )
+    logger.info(f"Mean Sensitivity: {np.mean(sens_scores)*100:.2f}% ± {np.std(sens_scores)*100:.2f}%")
 
     total_time = time.time() - start_time
 

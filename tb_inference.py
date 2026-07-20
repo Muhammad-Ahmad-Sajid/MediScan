@@ -115,9 +115,7 @@ def preprocess_image(image_path: str):
         raise ValueError(f"Cannot load image: {image_path}")
 
     if img_gray.shape[0] < 50 or img_gray.shape[1] < 50:
-        raise ValueError(
-            f"Image too small: {img_gray.shape[1]}x{img_gray.shape[0]} pixels"
-        )
+        raise ValueError(f"Image too small: {img_gray.shape[1]}x{img_gray.shape[0]} pixels")
 
     # CLAHE with clipLimit=3.0 (higher for chest X-rays)
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
@@ -147,9 +145,7 @@ def _create_model():
     num_ftrs = model.fc.in_features
     # Architecture must match train_tb.py: Linear(2048,512)->ReLU->Dropout(0.5)->Linear(512,1)
     # Single output node was used with BCEWithLogitsLoss during training.
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 1)
-    )
+    model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 1))
     return model
 
 
@@ -202,9 +198,7 @@ def generate_heatmap(model, input_tensor, original_rgb):
         heatmap_resized = cv2.resize(grayscale_cam, (w, h))
 
         # Apply JET colormap
-        heatmap_colored = cv2.applyColorMap(
-            np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET
-        )
+        heatmap_colored = cv2.applyColorMap(np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET)
 
         # Blend: 0.6 * heatmap + 0.4 * original
         original_bgr = cv2.cvtColor(original_rgb, cv2.COLOR_RGB2BGR)

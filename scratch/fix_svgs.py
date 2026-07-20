@@ -8,9 +8,7 @@ for file in os.listdir(svg_dir):
             content = f.read()
 
         if 'xmlns="http://www.w3.org/2000/svg"' not in content:
-            content = content.replace(
-                "<svg ", '<svg xmlns="http://www.w3.org/2000/svg" '
-            )
+            content = content.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ')
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(content)
             print(f"Fixed {file}")

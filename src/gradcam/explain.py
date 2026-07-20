@@ -52,9 +52,7 @@ def generate_gradcam_heatmap(
     transform = get_inference_transform()
     # transform expects a numpy image and returns a dict with 'image' tensor
     transformed = transform(image=img_resized)
-    input_tensor = (
-        transformed["image"].unsqueeze(0).to(device)
-    )  # Shape: (1, 3, 224, 224)
+    input_tensor = transformed["image"].unsqueeze(0).to(device)  # Shape: (1, 3, 224, 224)
 
     # 2. Setup Grad-CAM target layers
     # For ResNet-50, the target layer is the final convolutional layer of layer4

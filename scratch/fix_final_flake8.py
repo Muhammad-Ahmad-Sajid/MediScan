@@ -3,9 +3,7 @@ import re
 # Fix check_models.py
 with open("check_models.py", "r", encoding="utf-8") as f:
     content = f.read()
-content = content.replace(
-    "import json, torch, os", "import json\nimport torch\nimport os"
-)
+content = content.replace("import json, torch, os", "import json\nimport torch\nimport os")
 with open("check_models.py", "w", encoding="utf-8") as f:
     f.write(content)
 

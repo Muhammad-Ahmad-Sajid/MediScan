@@ -143,13 +143,9 @@ def perform_discovery():
     for root, dirs, files in os.walk(BASE_DIR):
         level = root.replace(BASE_DIR, "").count(os.sep)
         indent = "  " * level
-        img_count = len(
-            [f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg"))]
-        )
+        img_count = len([f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg"))])
         other = len([f for f in files if f.lower().endswith((".csv", ".json", ".txt"))])
-        logger.info(
-            f"{indent}{os.path.basename(root)}/  [{img_count} images, {other} metadata files]"
-        )
+        logger.info(f"{indent}{os.path.basename(root)}/  [{img_count} images, {other} metadata files]")
         if img_count > 0:
             if "training" in root.lower() or img_dir is None:
                 img_dir = root
@@ -170,9 +166,7 @@ def perform_discovery():
                     logger.info(f"Head:\n{df.head(10)}")
                     for col in df.columns:
                         if "age" in col.lower() or "month" in col.lower():
-                            logger.info(
-                                f"\nAge column '{col}' stats:\n{df[col].describe()}"
-                            )
+                            logger.info(f"\nAge column '{col}' stats:\n{df[col].describe()}")
                 except Exception as e:
                     logger.error(f"Error reading CSV: {e}")
 
@@ -205,9 +199,7 @@ def prepare_data(csv_path, img_dir):
     if gender_col:
         logger.info("Gender feature: included")
         use_gender = True
-        df["gender"] = df[gender_col].apply(
-            lambda x: 0 if str(x).lower() in ["m", "male", "true", "1"] else 1
-        )
+        df["gender"] = df[gender_col].apply(lambda x: 0 if str(x).lower() in ["m", "male", "true", "1"] else 1)
     else:
         logger.info("Gender feature: not available")
 
@@ -232,16 +224,10 @@ def prepare_data(csv_path, img_dir):
 
     bins = [0, 24, 60, 120, 180, 228, float("in")]
     labels = ["0-24", "25-60", "61-120", "121-180", "181-228", "228+"]
-    df_valid["age_bin"] = pd.cut(
-        df_valid["age_months"], bins=bins, labels=labels, right=True
-    )
+    df_valid["age_bin"] = pd.cut(df_valid["age_months"], bins=bins, labels=labels, right=True)
 
-    train_df, test_val_df = train_test_split(
-        df_valid, test_size=0.2, stratify=df_valid["age_bin"], random_state=42
-    )
-    val_df, test_df = train_test_split(
-        test_val_df, test_size=0.5, stratify=test_val_df["age_bin"], random_state=42
-    )
+    train_df, test_val_df = train_test_split(df_valid, test_size=0.2, stratify=df_valid["age_bin"], random_state=42)
+    val_df, test_df = train_test_split(test_val_df, test_size=0.5, stratify=test_val_df["age_bin"], random_state=42)
 
     logger.info("  Split | Count | Age Range | Mean Age | Std Age")
     for name, split_df in [("train", train_df), ("val", val_df), ("test", test_df)]:
@@ -380,18 +366,14 @@ def main():
         lr=1e-4,
         weight_decay=1e-5,
     )
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", patience=3, factor=0.5
-    )
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
     best_val_mae = float("in")
     patience_counter = 0
     best_epoch = 0
     best_rmse = 0
 
-    logger.info(
-        "Epoch | Train Loss | Train MAE | Val Loss | Val MAE (months) | Val RMSE | Within ±12mo | LR"
-    )
+    logger.info("Epoch | Train Loss | Train MAE | Val Loss | Val MAE (months) | Val RMSE | Within ±12mo | LR")
     logger.info("-" * 95)
 
     start_time = time.time()
@@ -411,9 +393,7 @@ def main():
             for param in model.parameters():
                 param.requires_grad = True
             optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
-            scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode="min", patience=3, factor=0.5
-            )
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
@@ -423,16 +403,10 @@ def main():
             for param in model.parameters():
                 param.requires_grad = True
             optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
-            scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode="min", patience=3, factor=0.5
-            )
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
-        train_loss, train_mae = train_one_epoch(
-            model, train_loader, optimizer, criterion
-        )
-        val_loss, val_mae, val_rmse, within_12, _, _ = evaluate(
-            model, val_loader, criterion
-        )
+        train_loss, train_mae = train_one_epoch(model, train_loader, optimizer, criterion)
+        val_loss, val_mae, val_rmse, within_12, _, _ = evaluate(model, val_loader, criterion)
 
         lr = optimizer.param_groups[0]["lr"]
         logger.info(
@@ -487,9 +461,7 @@ def main():
     total_time = time.time() - start_time
 
     model.load_state_dict(torch.load(CHECKPOINT_PATH)["state_dict"])
-    _, test_mae, test_rmse, test_within_12, preds, actuals = evaluate(
-        model, test_loader, criterion
-    )
+    _, test_mae, test_rmse, test_within_12, preds, actuals = evaluate(model, test_loader, criterion)
 
     print("\n" + "=" * 50)
     print("FINAL EVALUATION")
@@ -520,9 +492,7 @@ def main():
         if np.sum(mask) > 0:
             g_mae = np.mean(np.abs(preds[mask] - actuals[mask]))
             g_w12 = np.mean(np.abs(preds[mask] - actuals[mask]) <= 12) * 100
-            print(
-                f"{labels[i]:14s} | {np.sum(mask):5d} | {g_mae:12.1f} | {g_w12:11.1f}%"
-            )
+            print(f"{labels[i]:14s} | {np.sum(mask):5d} | {g_mae:12.1f} | {g_w12:11.1f}%")
             if g_mae > 24:
                 print(f"  ⚠️ Warning: MAE for {labels[i]} exceeds 24 months")
 

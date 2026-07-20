@@ -13,9 +13,7 @@ checkpoint = torch.load(checkpoint_path, map_location="cpu")
 state_dict = checkpoint["model_state_dict"]
 
 # Check if it is the old single-head checkpoint
-is_old_checkpoint = (
-    "backbone.fc.1.weight" in state_dict and "severity_head.0.weight" not in state_dict
-)
+is_old_checkpoint = "backbone.fc.1.weight" in state_dict and "severity_head.0.weight" not in state_dict
 print(f"Is old single-head checkpoint: {is_old_checkpoint}")
 
 model = FractureModel(pretrained=False)

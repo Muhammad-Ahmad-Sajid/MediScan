@@ -67,18 +67,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def create_model():
     model = models.resnet50(weights=None)
     num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 256), nn.ReLU(), nn.Dropout(0.4), nn.Linear(256, 1)
-    )
+    model.fc = nn.Sequential(nn.Linear(num_ftrs, 256), nn.ReLU(), nn.Dropout(0.4), nn.Linear(256, 1))
     return model
 
 
 logger.info(f"Loading Osteoporosis model from {CHECKPOINT_PATH} to {device}")
 try:
     model = create_model()
-    model.load_state_dict(
-        torch.load(CHECKPOINT_PATH, map_location=device, weights_only=True)
-    )
+    model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=device, weights_only=True))
     model.to(device)
     model.eval()
     logger.info("Osteoporosis model loaded successfully.")
@@ -190,9 +186,7 @@ def run_inference(image_path: str) -> OsteoporosisResult:
             mlflow.set_experiment("osteoporosis_inference")
             run_name = f"osteoporosis_inf_{int(time.time())}"
             with mlflow.start_run(run_name=run_name):
-                mlflow.log_metrics(
-                    {"confidence": confidence_pct, "prediction_time_ms": pred_time_ms}
-                )
+                mlflow.log_metrics({"confidence": confidence_pct, "prediction_time_ms": pred_time_ms})
                 mlflow.log_params(
                     {
                         "prediction": "Osteoporosis" if has_osteo else "Normal",

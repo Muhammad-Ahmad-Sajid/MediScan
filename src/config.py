@@ -13,9 +13,7 @@ load_dotenv(dotenv_path=dotenv_path)
 # DATABASE SETTINGS
 # ------------------------------------------------------------------------------
 # PostgreSQL database connection URL (managed via pgAdmin 4)
-DATABASE_URL: str = os.getenv(
-    "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/bone_fracture_db"
-)
+DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/bone_fracture_db")
 
 # ------------------------------------------------------------------------------
 # PATHS AND FOLDERS
@@ -25,9 +23,7 @@ UPLOAD_FOLDER_RAW: str = os.getenv("UPLOAD_FOLDER", "uploads/")
 UPLOAD_FOLDER: Path = BASE_DIR / UPLOAD_FOLDER_RAW
 
 # File path to the saved PyTorch model weights (.pth)
-MODEL_CHECKPOINT_PATH_RAW: str = os.getenv(
-    "MODEL_CHECKPOINT_PATH", "checkpoints/best_model.pth"
-)
+MODEL_CHECKPOINT_PATH_RAW: str = os.getenv("MODEL_CHECKPOINT_PATH", "checkpoints/best_model.pth")
 MODEL_CHECKPOINT_PATH: Path = BASE_DIR / MODEL_CHECKPOINT_PATH_RAW
 
 # Folder for outputting Grad-CAM heatmap visualization images

@@ -51,13 +51,9 @@ def get_patient_detail(patient_id: UUID, db: Session = Depends(get_db)):
     Retrieves detailed clinical profile of a patient including their
     historical X-ray scans, predictions, and prognosis plans.
     """
-    patient = (
-        db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
-    )
+    patient = db.query(db_models.Patient).filter(db_models.Patient.id == patient_id).first()
     if not patient:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
 
     # Gather related records
     scans_list = []
@@ -114,9 +110,7 @@ def get_patient_detail(patient_id: UUID, db: Session = Depends(get_db)):
     }
 
 
-@router.post(
-    "/patients", response_model=PatientOut, status_code=status.HTTP_201_CREATED
-)
+@router.post("/patients", response_model=PatientOut, status_code=status.HTTP_201_CREATED)
 def create_patient(patient_in: PatientCreate, db: Session = Depends(get_db)):
     """Registers a new patient clinical record in the database."""
     new_patient = db_models.Patient(

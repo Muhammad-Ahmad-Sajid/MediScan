@@ -39,9 +39,7 @@ class MURAPretrainDataset(Dataset):
         self.samples = []
 
         if not self.split_dir.exists():
-            raise FileNotFoundError(
-                f"MURA directory split not found at: {self.split_dir}"
-            )
+            raise FileNotFoundError(f"MURA directory split not found at: {self.split_dir}")
 
         for label_name, label_idx in [("normal", 0), ("abnormal", 1)]:
             class_dir = self.split_dir / label_name
@@ -95,9 +93,7 @@ class MuraResNet50(nn.Module):
         self.backbone = models.resnet50(weights=ResNet50_Weights.DEFAULT)
 
         # Replace the final fully connected layer to output a single logit for binary classification
-        self.backbone.fc = nn.Sequential(
-            nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.4), nn.Linear(512, 1)
-        )
+        self.backbone.fc = nn.Sequential(nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.4), nn.Linear(512, 1))
 
     def forward(self, x):
         return self.backbone(x)
@@ -112,9 +108,7 @@ class MuraResNet50(nn.Module):
             if name in ["layer3", "layer4", "fc"]:
                 for param in child.parameters():
                     param.requires_grad = True
-        print(
-            "[*] Frozen lower layers: only layer3, layer4, and fc head are trainable."
-        )
+        print("[*] Frozen lower layers: only layer3, layer4, and fc head are trainable.")
 
     def unfreeze_all(self):
         """Unfreezes all layers for end-to-end training."""
@@ -150,9 +144,7 @@ def train_epoch(
             continue
 
         images = images.to(device)
-        labels = (
-            labels.to(device).float().unsqueeze(1)
-        )  # Shape: (B, 1) for BCEWithLogitsLoss
+        labels = labels.to(device).float().unsqueeze(1)  # Shape: (B, 1) for BCEWithLogitsLoss
 
         optimizer.zero_grad()
         outputs = model(images)
@@ -168,18 +160,11 @@ def train_epoch(
         correct += preds.eq(labels).sum().item()
 
         if (idx + 1) % 100 == 0 or (idx + 1) == len(loader):
-            print(
-                f"  Batch {idx+1}/{len(loader)} | Loss: {loss.item():.4f} | Acc: {100.0 * correct / total:.2f}%"
-            )
+            print(f"  Batch {idx+1}/{len(loader)} | Loss: {loss.item():.4f} | Acc: {100.0 * correct / total:.2f}%")
             gc.collect()
 
         # Save mid-epoch checkpoint
-        if (
-            save_freq > 0
-            and (idx + 1) % save_freq == 0
-            and (idx + 1) < len(loader)
-            and checkpoint_dir is not None
-        ):
+        if save_freq > 0 and (idx + 1) % save_freq == 0 and (idx + 1) < len(loader) and checkpoint_dir is not None:
             latest_checkpoint_path = checkpoint_dir / "mura_latest.pth"
             torch.save(
                 {
@@ -189,12 +174,8 @@ def train_epoch(
                     "optimizer_state_dict": optimizer.state_dict(),
                     "val_loss": 0.0,
                     "val_acc": 0.0,
-                    "best_val_loss": (
-                        best_val_loss if best_val_loss is not None else float("in")
-                    ),
-                    "early_stop_counter": (
-                        early_stop_counter if early_stop_counter is not None else 0
-                    ),
+                    "best_val_loss": (best_val_loss if best_val_loss is not None else float("in")),
+                    "early_stop_counter": (early_stop_counter if early_stop_counter is not None else 0),
                 },
                 latest_checkpoint_path,
             )
@@ -241,9 +222,7 @@ def val_epoch(model, loader, criterion, device):
 # ------------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description="MURA Stage 1 Pretraining")
-    parser.add_argument(
-        "--epochs", type=int, default=25, help="Total number of training epochs"
-    )
+    parser.add_argument("--epochs", type=int, default=25, help="Total number of training epochs")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument(
@@ -290,9 +269,7 @@ def main():
     class_weights = 1.0 / class_counts
     sample_weights = [class_weights[label] for label in train_labels]
 
-    sampler = WeightedRandomSampler(
-        weights=sample_weights, num_samples=len(sample_weights), replacement=True
-    )
+    sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
 
     # Note: set num_workers=0 on Windows to prevent multiprocessing errors
     train_loader = DataLoader(
@@ -368,9 +345,7 @@ def main():
                 else:
                     print(f"[*] Skipping unexpected key {k} from checkpoint")
             model.load_state_dict(filtered_state_dict, strict=False)
-            print(
-                "[*] Successfully loaded model weights (transferred backbone features, skipped mismatched fc head)."
-            )
+            print("[*] Successfully loaded model weights (transferred backbone features, skipped mismatched fc head).")
 
             # Check if checkpoint was saved mid-epoch
             batch_idx = checkpoint.get("batch_idx", None)
@@ -383,13 +358,9 @@ def main():
             else:
                 start_epoch = checkpoint["epoch"] + 1
                 start_batch = 0
-                print(
-                    f"[*] Successfully loaded checkpoint. Resuming from Epoch {start_epoch}"
-                )
+                print(f"[*] Successfully loaded checkpoint. Resuming from Epoch {start_epoch}")
 
-            best_val_loss = checkpoint.get(
-                "best_val_loss", checkpoint.get("val_loss", float("in"))
-            )
+            best_val_loss = checkpoint.get("best_val_loss", checkpoint.get("val_loss", float("in")))
             early_stop_counter = checkpoint.get("early_stop_counter", 0)
 
             # Align optimizer/scheduler state
@@ -400,13 +371,9 @@ def main():
                 except Exception as e:
                     print(f"[!] Warning: Could not load optimizer state: {e}")
             else:
-                print(
-                    "[*] Optimizer state loading skipped to prevent shape mismatch runtime errors."
-                )
+                print("[*] Optimizer state loading skipped to prevent shape mismatch runtime errors.")
         else:
-            print(
-                "[!] Warning: No checkpoint found to resume from. Starting from scratch."
-            )
+            print("[!] Warning: No checkpoint found to resume from. Starting from scratch.")
 
     # 7. Training loop
     for epoch in range(start_epoch, args.epochs + 1):
@@ -478,19 +445,13 @@ def main():
                 },
                 best_checkpoint_path,
             )
-            print(
-                f"  *** Val Loss improved! Saved best stage 1 model to: {best_checkpoint_path.name} ***"
-            )
+            print(f"  *** Val Loss improved! Saved best stage 1 model to: {best_checkpoint_path.name} ***")
         else:
             early_stop_counter += 1
-            print(
-                f"  Early stopping counter: {early_stop_counter}/{early_stop_patience}"
-            )
+            print(f"  Early stopping counter: {early_stop_counter}/{early_stop_patience}")
 
         if early_stop_counter >= early_stop_patience:
-            print(
-                f"\n[!] Early stopping triggered. Validation loss has not improved for {early_stop_patience} epochs."
-            )
+            print(f"\n[!] Early stopping triggered. Validation loss has not improved for {early_stop_patience} epochs.")
             break
 
     print("\n" + "=" * 80)

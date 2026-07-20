@@ -30,9 +30,7 @@ async def detect_fracture(
         ...,
         description="Clinician-designated bone affected (e.g., Radius, Tibia, Femur)",
     ),
-    dataset_source: str = Form(
-        "uploaded", description="Source: MURA, FracAtlas, or uploaded"
-    ),
+    dataset_source: str = Form("uploaded", description="Source: MURA, FracAtlas, or uploaded"),
     file: UploadFile = File(..., description="Grayscale X-ray image (PNG or JPG)"),
     db: Session = Depends(get_db),
 ):
@@ -49,9 +47,7 @@ async def detect_fracture(
             detail="Invalid patient_id format. Must be a UUID.",
         )
 
-    patient = (
-        db.query(db_models.Patient).filter(db_models.Patient.id == patient_uuid).first()
-    )
+    patient = db.query(db_models.Patient).filter(db_models.Patient.id == patient_uuid).first()
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -135,11 +131,7 @@ async def detect_fracture(
     try:
         # Use severity class for prognosis (default to hairline if normal to estimate base metrics,
         # but in a real system we only calculate prognosis if fracture is detected)
-        severity_for_prognosis = (
-            inference_result.severity
-            if inference_result.fracture_detected
-            else "hairline"
-        )
+        severity_for_prognosis = inference_result.severity if inference_result.fracture_detected else "hairline"
 
         prog_data = calculate_prognosis(
             severity=severity_for_prognosis,

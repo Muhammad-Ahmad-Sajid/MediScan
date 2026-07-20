@@ -20,12 +20,8 @@ class PrognosisOverride(BaseModel):
     cast_type: Optional[str] = Field(None, max_length=100)
     plaster_required: Optional[bool] = None
     weight_bearing_status: Optional[str] = Field(None, max_length=100)
-    referral_flag: Optional[str] = Field(
-        None, description="'conservative' or 'surgical'"
-    )
-    override_notes: str = Field(
-        ..., min_length=5, description="Justification for clinical override"
-    )
+    referral_flag: Optional[str] = Field(None, description="'conservative' or 'surgical'")
+    override_notes: str = Field(..., min_length=5, description="Justification for clinical override")
 
 
 # ------------------------------------------------------------------------------
@@ -34,23 +30,15 @@ class PrognosisOverride(BaseModel):
 
 
 @router.put("/{prognosis_id}/override")
-def override_prognosis(
-    prognosis_id: UUID, override_in: PrognosisOverride, db: Session = Depends(get_db)
-):
+def override_prognosis(prognosis_id: UUID, override_in: PrognosisOverride, db: Session = Depends(get_db)):
     """
     Allows a clinician to manually override recovery prognosis recommendations.
     Logs clinician details, override notes, and updates the database record.
     """
-    prognosis = (
-        db.query(db_models.PrognosisResult)
-        .filter(db_models.PrognosisResult.id == prognosis_id)
-        .first()
-    )
+    prognosis = db.query(db_models.PrognosisResult).filter(db_models.PrognosisResult.id == prognosis_id).first()
 
     if not prognosis:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Prognosis record not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prognosis record not found.")
 
     # Validate referral flag if provided
     if override_in.referral_flag:

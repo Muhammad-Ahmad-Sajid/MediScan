@@ -48,9 +48,7 @@ def run_dataset_discovery():
     for root, dirs, files in os.walk(BASE_DIR):
         level = root.replace(BASE_DIR, "").count(os.sep)
         indent = "  " * level
-        img_count = len(
-            [f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg"))]
-        )
+        img_count = len([f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg"))])
         logger.info(f"{indent}{os.path.basename(root)}/  [{img_count} images]")
 
         for f in files:
@@ -61,13 +59,8 @@ def run_dataset_discovery():
                 logger.info(f"Columns: {df.columns.tolist()}")
                 logger.info(f"\nHead:\n{df.head(10)}")
                 for col in df.columns:
-                    if any(
-                        kw in col.lower()
-                        for kw in ["label", "level", "diagnosis", "grade"]
-                    ):
-                        logger.info(
-                            f"\n{col} distribution:\n{df[col].value_counts().sort_index()}"
-                        )
+                    if any(kw in col.lower() for kw in ["label", "level", "diagnosis", "grade"]):
+                        logger.info(f"\n{col} distribution:\n{df[col].value_counts().sort_index()}")
 
     return csv_file
 
@@ -80,9 +73,7 @@ class RetinopathyDataset(Dataset):
 
         # Determine image id column (either 'id_code' or 'image')
         self.id_col = "id_code" if "id_code" in self.df.columns else self.df.columns[0]
-        self.label_col = (
-            "diagnosis" if "diagnosis" in self.df.columns else self.df.columns[1]
-        )
+        self.label_col = "diagnosis" if "diagnosis" in self.df.columns else self.df.columns[1]
 
         # Build an absolute path dictionary for lightning fast lookups
         self.image_paths = {}
@@ -100,16 +91,10 @@ class RetinopathyDataset(Dataset):
                     transforms.ToPILImage(),
                     transforms.RandomHorizontalFlip(p=0.5),
                     transforms.RandomVerticalFlip(p=0.5),
-                    transforms.RandomRotation(
-                        180
-                    ),  # 360 is effectively handled by 180 (±180)
-                    transforms.ColorJitter(
-                        brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1
-                    ),
+                    transforms.RandomRotation(180),  # 360 is effectively handled by 180 (±180)
+                    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
                     transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                    ),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ]
             )
         else:
@@ -117,9 +102,7 @@ class RetinopathyDataset(Dataset):
                 [
                     transforms.ToPILImage(),
                     transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                    ),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ]
             )
 
@@ -131,9 +114,7 @@ class RetinopathyDataset(Dataset):
         name_no_ext = os.path.splitext(img_id)[0]
 
         if name_no_ext not in self.image_paths and img_id not in self.image_paths:
-            raise ValueError(
-                f"Failed to find image: {img_id} anywhere in {self.base_dir}"
-            )
+            raise ValueError(f"Failed to find image: {img_id} anywhere in {self.base_dir}")
 
         img_path = self.image_paths.get(img_id, self.image_paths.get(name_no_ext))
 
@@ -167,12 +148,8 @@ def get_dataloaders(csv_file):
     label_col = "diagnosis" if "diagnosis" in df.columns else df.columns[1]
 
     # 80/10/10 split
-    train_df, temp_df = train_test_split(
-        df, test_size=0.2, stratify=df[label_col], random_state=42
-    )
-    val_df, test_df = train_test_split(
-        temp_df, test_size=0.5, stratify=temp_df[label_col], random_state=42
-    )
+    train_df, temp_df = train_test_split(df, test_size=0.2, stratify=df[label_col], random_state=42)
+    val_df, test_df = train_test_split(temp_df, test_size=0.5, stratify=temp_df[label_col], random_state=42)
 
     # Print distribution
     logger.info("\nClass Distribution:")
@@ -186,9 +163,7 @@ def get_dataloaders(csv_file):
             counts.get(3, 0),
             counts.get(4, 0),
         )
-        logger.info(
-            f"{name:5} | {c0:7} | {c1:7} | {c2:7} | {c3:7} | {c4:7} | {len(split_df)}"
-        )
+        logger.info(f"{name:5} | {c0:7} | {c1:7} | {c2:7} | {c3:7} | {c4:7} | {len(split_df)}")
 
     img_dir = os.path.join(os.path.dirname(csv_file), "train_images")
     if not os.path.exists(img_dir):
@@ -207,9 +182,7 @@ def get_dataloaders(csv_file):
 
     # WeightedRandomSampler
     sample_weights = [class_weights[label] for label in train_df[label_col].values]
-    sampler = WeightedRandomSampler(
-        weights=sample_weights, num_samples=len(sample_weights), replacement=True
-    )
+    sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
 
     train_loader = DataLoader(train_ds, batch_size=16, sampler=sampler, num_workers=0)
     val_loader = DataLoader(val_ds, batch_size=16, shuffle=False, num_workers=0)
@@ -223,9 +196,7 @@ class RetinopathyModel(nn.Module):
         super().__init__()
         self.backbone = resnet50(weights=ResNet50_Weights.DEFAULT)
         in_features = self.backbone.fc.in_features
-        self.backbone.fc = nn.Sequential(
-            nn.Linear(in_features, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 5)
-        )
+        self.backbone.fc = nn.Sequential(nn.Linear(in_features, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 5))
 
     def forward(self, x):
         return self.backbone(x)
@@ -242,9 +213,7 @@ def train_model():
         logger.error("No CSV found! Exiting.")
         return
 
-    train_loader, val_loader, test_loader, class_weights, test_df = get_dataloaders(
-        csv_file
-    )
+    train_loader, val_loader, test_loader, class_weights, test_df = get_dataloaders(csv_file)
 
     model = RetinopathyModel().to(DEVICE)
 
@@ -254,9 +223,7 @@ def train_model():
         lr=1e-4,
         weight_decay=1e-5,
     )
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="max", patience=3, factor=0.5
-    )
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", patience=3, factor=0.5)
 
     best_qwk = -1.0
     patience_counter = 0
@@ -273,9 +240,7 @@ def train_model():
             if checkpoint["epoch"] >= 5:
                 unfreeze_all(model)
                 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
-                scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, mode="max", patience=3, factor=0.5
-                )
+                scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", patience=3, factor=0.5)
 
             if "optimizer" in checkpoint:
                 optimizer.load_state_dict(checkpoint["optimizer"])
@@ -290,9 +255,7 @@ def train_model():
                 with open(HISTORY_PATH, "r") as f:
                     history = json.load(f)
 
-            logger.info(
-                f"Successfully resumed at Epoch {start_epoch} with Best QWK {best_qwk:.4f}"
-            )
+            logger.info(f"Successfully resumed at Epoch {start_epoch} with Best QWK {best_qwk:.4f}")
         except Exception as e:
             logger.error(f"Failed to load checkpoint: {e}")
 
@@ -306,15 +269,11 @@ def train_model():
             lr=1e-4,
             weight_decay=1e-5,
         )
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode="max", patience=3, factor=0.5
-        )
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", patience=3, factor=0.5)
 
     # mlflow.set_experiment removed
 
-    logger.info(
-        "\nEpoch | Train Loss | Train Acc | Val Loss | Val Acc | Val QWK | Grade4 Recall | LR"
-    )
+    logger.info("\nEpoch | Train Loss | Train Acc | Val Loss | Val Acc | Val QWK | Grade4 Recall | LR")
     logger.info("-" * 85)
 
     start_time = time.time()
@@ -329,9 +288,7 @@ def train_model():
                 lr=scheduler.optimizer.param_groups[0]["lr"],
                 weight_decay=1e-5,
             )
-            scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode="max", patience=3, factor=0.5
-            )
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", patience=3, factor=0.5)
 
         # Train
         model.train()
@@ -375,9 +332,7 @@ def train_model():
         qwk = cohen_kappa_score(all_labels, all_preds, weights="quadratic")
 
         # Recalls
-        recalls = recall_score(
-            all_labels, all_preds, average=None, labels=[0, 1, 2, 3, 4], zero_division=0
-        )
+        recalls = recall_score(all_labels, all_preds, average=None, labels=[0, 1, 2, 3, 4], zero_division=0)
         g4_recall = recalls[4] * 100.0 if len(recalls) > 4 else 0.0
 
         lr = optimizer.param_groups[0]["lr"]
@@ -386,9 +341,7 @@ def train_model():
         )
 
         logger.info(f"QWK: {qwk:.4f} — target above 0.70")
-        logger.info(
-            f"Grade 4 (Proliferative) Recall: {g4_recall:.2f}% — target above 70%"
-        )
+        logger.info(f"Grade 4 (Proliferative) Recall: {g4_recall:.2f}% — target above 70%")
 
         if epoch >= 10:
             if qwk < 0.50:
@@ -447,9 +400,7 @@ def train_model():
     conf_matrix = confusion_matrix(all_labels, all_preds)
     report = classification_report(all_labels, all_preds, digits=4, zero_division=0)
 
-    recalls_test = recall_score(
-        all_labels, all_preds, average=None, labels=[0, 1, 2, 3, 4], zero_division=0
-    )
+    recalls_test = recall_score(all_labels, all_preds, average=None, labels=[0, 1, 2, 3, 4], zero_division=0)
 
     logger.info(f"\nClassification Report:\n{report}")
     logger.info(f"\nConfusion Matrix (5x5):\n{conf_matrix}")
@@ -458,9 +409,7 @@ def train_model():
     logger.info("\nPer-class recall:")
     for i in range(5):
         if i == 4:
-            logger.info(
-                f"Grade 4 (Proliferative): {recalls_test[i]*100:.2f}% <- HIGHLIGHT"
-            )
+            logger.info(f"Grade 4 (Proliferative): {recalls_test[i]*100:.2f}% <- HIGHLIGHT")
         else:
             names = ["No DR", "Mild", "Moderate", "Severe"]
             logger.info(f"Grade {i} ({names[i]}): {recalls_test[i]*100:.2f}%")
@@ -472,9 +421,7 @@ def train_model():
     g34_true = [1 if label_idx in [3, 4] else 0 for label_idx in all_labels]
     g34_pred = [1 if p in [3, 4] else 0 for p in all_preds]
     combined_recall = recall_score(g34_true, g34_pred, pos_label=1, zero_division=0)
-    logger.info(
-        f"Clinically Critical Accuracy (G3+G4 combined recall): {combined_recall*100:.2f}%"
-    )
+    logger.info(f"Clinically Critical Accuracy (G3+G4 combined recall): {combined_recall*100:.2f}%")
 
     # Ordinal Error Analysis
     diffs = np.abs(np.array(all_labels) - np.array(all_preds))
@@ -482,9 +429,7 @@ def train_model():
     off_by_1 = np.mean(diffs <= 1) * 100
     dangerous_err = np.mean(diffs >= 2) * 100
 
-    missed_severe = sum(
-        1 for p, t in zip(all_preds, all_labels) if p == 0 and t in [3, 4]
-    )
+    missed_severe = sum(1 for p, t in zip(all_preds, all_labels) if p == 0 and t in [3, 4])
 
     logger.info("\nOrdinal Error Analysis:")
     logger.info(f"Average prediction error: {avg_err:.2f} grades")
@@ -508,9 +453,7 @@ def train_model():
     if combined_recall < 0.75:
         logger.warning("⚠️ Severe DR detection is inadequate for clinical use.")
     if dangerous_err > 5.0:
-        logger.warning(
-            f"⚠️ > 5% of predictions are dangerous errors ({dangerous_err:.1f}%)."
-        )
+        logger.warning(f"⚠️ > 5% of predictions are dangerous errors ({dangerous_err:.1f}%).")
 
 
 if __name__ == "__main__":

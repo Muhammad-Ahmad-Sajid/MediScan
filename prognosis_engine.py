@@ -111,9 +111,7 @@ CAST_LOOKUP: Dict[str, Dict[str, str]] = {
 }
 
 
-def get_prognosis(
-    bone: str, severity: str, age: int, comorbidities: List[str]
-) -> PrognosisResult:
+def get_prognosis(bone: str, severity: str, age: int, comorbidities: List[str]) -> PrognosisResult:
     """
     Computes recovery prognosis recommendations using AO Foundation guidelines and modifier metrics.
 
@@ -178,16 +176,12 @@ def get_prognosis(
         if severity_clean == "hairline":
             weight_bearing_status = "Full weight-bearing as tolerated"
         elif severity_clean == "simple":
-            weight_bearing_status = (
-                "Partial weight-bearing (touch-down) with assistive device"
-            )
+            weight_bearing_status = "Partial weight-bearing (touch-down) with assistive device"
         else:
             weight_bearing_status = "Non-weight-bearing (strict wheelchair/crutches)"
     else:
         # Upper limb bones: distal_radius, clavicle, humerus
-        weight_bearing_status = (
-            "Upper extremity: Non-weight-bearing (No lifting/pushing)"
-        )
+        weight_bearing_status = "Upper extremity: Non-weight-bearing (No lifting/pushing)"
 
     # 5. Determine Referral Flag (Surgical vs Conservative)
     # Displaced/comminuted bone fractures require reduction (surgery).
@@ -246,9 +240,7 @@ if __name__ == "__main__":
         print(
             f"\nExample {i}: Patient Profile - Age {ex['age']}, Bone: {ex['bone']}, Severity: {ex['severity']}, Comorbidities: {ex['comorbidities']}"
         )
-        print(
-            f"  -> Rest Weeks:       {res.rest_weeks_min} - {res.rest_weeks_max} weeks"
-        )
+        print(f"  -> Rest Weeks:       {res.rest_weeks_min} - {res.rest_weeks_max} weeks")
         print(f"  -> Cast Type:        {res.cast_type}")
         print(f"  -> Plaster Required: {res.plaster_required}")
         print(f"  -> Weight Bearing:   {res.weight_bearing_status}")

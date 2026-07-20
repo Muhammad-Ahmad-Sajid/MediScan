@@ -13,9 +13,7 @@ def main():
                 with open(log_path, "r") as f:
                     content = f.read()
                 if "Epoch 11" in content:
-                    print(
-                        "[*] Transition to Epoch 11 detected! Terminating training process..."
-                    )
+                    print("[*] Transition to Epoch 11 detected! Terminating training process...")
                     # Terminate any python processes running train_stage1.py on Windows
                     cmd = "wmic process where \"CommandLine like '%train_stage1.py%'\" call terminate"
                     subprocess.call(cmd, shell=True)

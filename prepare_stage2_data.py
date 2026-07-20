@@ -15,11 +15,7 @@ def list_directory_contents(dir_path):
             for item in sorted(os.listdir(path)):
                 item_path = path / item
                 prefix = "[DIR] " if item_path.is_dir() else "[FILE]"
-                size_str = (
-                    f" ({item_path.stat().st_size} bytes)"
-                    if item_path.is_file()
-                    else ""
-                )
+                size_str = f" ({item_path.stat().st_size} bytes)" if item_path.is_file() else ""
                 print(f"  {prefix} {item}{size_str}")
         else:
             print(f"  Path '{dir_path}' does not exist or is not a directory.")
@@ -71,9 +67,7 @@ def main():
 
     # 1. Early exit check if FracAtlas images folder is missing
     if not frac_images.exists():
-        print(
-            f"\n[!] ALERT: FracAtlas images folder is missing or wrong at: {frac_images}"
-        )
+        print(f"\n[!] ALERT: FracAtlas images folder is missing or wrong at: {frac_images}")
         # Print actual contents of d:/X-ray ML Model/fracatlas/
         list_directory_contents("d:/X-ray ML Model/fracatlas")
         print("\nExiting cleanly as requested.")
@@ -135,9 +129,7 @@ def main():
     print(f"Usable FracAtlas images after filtering: {len(df_frac)}")
 
     # Stratified split: combine body_region and fractured status
-    df_frac["stratify_col"] = (
-        df_frac["body_region"] + "_" + df_frac["fractured"].astype(str)
-    )
+    df_frac["stratify_col"] = df_frac["body_region"] + "_" + df_frac["fractured"].astype(str)
 
     frac_train_df, frac_val_df = train_test_split(
         df_frac, test_size=0.2, random_state=42, stratify=df_frac["stratify_col"]
@@ -261,9 +253,7 @@ def main():
         random_state=42,
         stratify=df_archive_tt["fractured"],
     )
-    print(
-        f"Archive Split (from train+test): Train={len(arch_train_df)}, Val={len(arch_val_df)}"
-    )
+    print(f"Archive Split (from train+test): Train={len(arch_train_df)}, Val={len(arch_val_df)}")
 
     # Copy Archive Train
     print("Copying Archive train images...")
@@ -311,9 +301,7 @@ def main():
                         }
                     )
 
-    print(
-        f"Copying Archive original val images ({len(original_val_list)} files) directly to validation..."
-    )
+    print(f"Copying Archive original val images ({len(original_val_list)} files) directly to validation...")
     for row in original_val_list:
         src_img = row["file_path"]
         copied_path = copy_file_safe(src_img, val_dest, "archive")
@@ -357,9 +345,7 @@ def main():
     print("\n" + "=" * 80)
     print("STAGE 2 FINE-TUNING DATA SUMMARY TABLE")
     print("=" * 80)
-    print(
-        f"{'Source':<10} | {'Split':<5} | {'Fractured':<9} | {'Region':<8} | {'Count'}"
-    )
+    print(f"{'Source':<10} | {'Split':<5} | {'Fractured':<9} | {'Region':<8} | {'Count'}")
     print("-" * 50)
 
     # Combinations list to guarantee order
@@ -377,10 +363,7 @@ def main():
         cnt = sum(
             1
             for r in records
-            if r["source"] == src
-            and r["split"] == split
-            and r["fractured"] == fractured_str
-            and r["region"] == region
+            if r["source"] == src and r["split"] == split and r["fractured"] == fractured_str and r["region"] == region
         )
         print(f"{src:<10} | {split:<5} | {fractured_str:<9} | {region:<8} | {cnt}")
 
@@ -395,12 +378,8 @@ def main():
     print("=" * 80)
 
     # 3. Class Balance Checks
-    train_frac_yes = sum(
-        1 for r in records if r["split"] == "train" and r["fractured"] == "yes"
-    )
-    train_frac_no = sum(
-        1 for r in records if r["split"] == "train" and r["fractured"] == "no"
-    )
+    train_frac_yes = sum(1 for r in records if r["split"] == "train" and r["fractured"] == "yes")
+    train_frac_no = sum(1 for r in records if r["split"] == "train" and r["fractured"] == "no")
 
     ratio_yes = train_frac_yes / total_train if total_train > 0 else 0
     ratio_no = train_frac_no / total_train if total_train > 0 else 0
@@ -412,15 +391,11 @@ def main():
     if ratio_yes > 0.70 or ratio_no > 0.70:
         print("  [WARNING] Fractured vs not fractured ratio is worse than 70/30!")
     else:
-        print(
-            "  [OK] Fractured vs not fractured ratio is within the balanced 70/30 threshold."
-        )
+        print("  [OK] Fractured vs not fractured ratio is within the balanced 70/30 threshold.")
 
     print("\nRegion Distribution (Train Set):")
     for reg in ["hand", "leg", "hip", "shoulder", "unknown"]:
-        reg_count = sum(
-            1 for r in records if r["split"] == "train" and r["region"] == reg
-        )
+        reg_count = sum(1 for r in records if r["split"] == "train" and r["region"] == reg)
         pct = reg_count / total_train * 100 if total_train > 0 else 0
         print(f"  {reg:<8}: {reg_count} ({pct:.2f}%)")
 

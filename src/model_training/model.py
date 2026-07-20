@@ -33,14 +33,10 @@ class FractureModel(nn.Module):
         self.backbone.fc = nn.Identity()
 
         # Output Head 1: severity_head (4-class classifier)
-        self.severity_head = nn.Sequential(
-            nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.4), nn.Linear(512, 4)
-        )
+        self.severity_head = nn.Sequential(nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.4), nn.Linear(512, 4))
 
         # Output Head 2: bone_head (6-class classifier)
-        self.bone_head = nn.Sequential(
-            nn.Linear(2048, 256), nn.ReLU(), nn.Dropout(p=0.3), nn.Linear(256, 6)
-        )
+        self.bone_head = nn.Sequential(nn.Linear(2048, 256), nn.ReLU(), nn.Dropout(p=0.3), nn.Linear(256, 6))
 
         # Freeze ResNet layers for Stage 1:
         # Freeze all layers except layer3, layer4, and fc (which is Identity)
@@ -64,17 +60,13 @@ class FractureModel(nn.Module):
         for param in self.bone_head.parameters():
             param.requires_grad = True
 
-        print(
-            "[*] Stage 1 Freezing Complete: ResNet backbone layers below layer3 are frozen."
-        )
+        print("[*] Stage 1 Freezing Complete: ResNet backbone layers below layer3 are frozen.")
 
     def unfreeze_all(self):
         """Unfreezes all parameters of the model (backbone + heads) for Stage 2 fine-tuning."""
         for param in self.parameters():
             param.requires_grad = True
-        print(
-            "[*] Stage 2 Unfreezing Complete: All layers unfrozen for end-to-end fine-tuning."
-        )
+        print("[*] Stage 2 Unfreezing Complete: All layers unfrozen for end-to-end fine-tuning.")
 
     def forward(self, x: torch.Tensor):
         """
@@ -115,22 +107,16 @@ class Stage2FractureModel(nn.Module):
         self.backbone.fc = nn.Identity()
 
         # Output Head 1: fracture_head (binary classifier)
-        self.fracture_head = nn.Sequential(
-            nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.4), nn.Linear(512, 2)
-        )
+        self.fracture_head = nn.Sequential(nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.4), nn.Linear(512, 2))
 
         # Output Head 2: region_head (5-class classifier)
-        self.region_head = nn.Sequential(
-            nn.Linear(2048, 256), nn.ReLU(), nn.Dropout(p=0.3), nn.Linear(256, 5)
-        )
+        self.region_head = nn.Sequential(nn.Linear(2048, 256), nn.ReLU(), nn.Dropout(p=0.3), nn.Linear(256, 5))
 
     def unfreeze_all(self):
         """Unfreezes all parameters of the model for end-to-end Stage 2 fine-tuning."""
         for param in self.parameters():
             param.requires_grad = True
-        print(
-            "[*] Stage 2 Unfreezing Complete: All layers unfrozen for end-to-end fine-tuning."
-        )
+        print("[*] Stage 2 Unfreezing Complete: All layers unfrozen for end-to-end fine-tuning.")
 
     def forward(self, x: torch.Tensor):
         """

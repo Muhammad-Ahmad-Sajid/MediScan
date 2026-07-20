@@ -15,9 +15,7 @@ def default_patient_data():
 
 
 # 1. Parameterized matrix of all 6 bones x 4 severities
-@pytest.mark.parametrize(
-    "bone", ["distal_radius", "clavicle", "ankle", "femur", "humerus", "metatarsal"]
-)
+@pytest.mark.parametrize("bone", ["distal_radius", "clavicle", "ankle", "femur", "humerus", "metatarsal"])
 @pytest.mark.parametrize("severity", ["hairline", "simple", "displaced", "comminuted"])
 def test_all_bones_and_severities(bone, severity, default_patient_data):
     """Verifies that all combinations return a valid PrognosisResult with min < max rest weeks."""
@@ -46,15 +44,9 @@ def test_age_modifier_increases_rest_time():
 def test_comorbidity_stacking_modifiers():
     """Verifies that osteoporosis (25%) and diabetes (20%) modifiers stack correctly to 45%."""
     res_none = get_prognosis("distal_radius", "simple", age=30, comorbidities=[])
-    res_osteo = get_prognosis(
-        "distal_radius", "simple", age=30, comorbidities=["Osteoporosis"]
-    )
-    res_diab = get_prognosis(
-        "distal_radius", "simple", age=30, comorbidities=["Diabetes"]
-    )
-    res_both = get_prognosis(
-        "distal_radius", "simple", age=30, comorbidities=["Osteoporosis", "Diabetes"]
-    )
+    res_osteo = get_prognosis("distal_radius", "simple", age=30, comorbidities=["Osteoporosis"])
+    res_diab = get_prognosis("distal_radius", "simple", age=30, comorbidities=["Diabetes"])
+    res_both = get_prognosis("distal_radius", "simple", age=30, comorbidities=["Osteoporosis", "Diabetes"])
 
     # 6 base weeks:
     # none: 1.0x -> 6

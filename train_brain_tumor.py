@@ -27,9 +27,7 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 BEST_MODEL_PATH = os.path.join(CHECKPOINT_DIR, "brain_tumor_best.pth")
 HISTORY_JSON_PATH = os.path.join(CHECKPOINT_DIR, "brain_tumor_training_history.json")
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("mediscan.brain_tumor.train")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -75,16 +73,12 @@ def discover_dataset():
     print(f"\nTotal image count across all folders: {total_images}")
 
     # Check if expected folders exist
-    if not os.path.exists(os.path.join(BASE_DIR, "Training")) or not os.path.exists(
-        os.path.join(BASE_DIR, "Testing")
-    ):
+    if not os.path.exists(os.path.join(BASE_DIR, "Training")) or not os.path.exists(os.path.join(BASE_DIR, "Testing")):
         expected_structure_found = False
 
     if not expected_structure_found:
         logger.error("⚠️ Dataset structure differs from expected.")
-        logger.error(
-            "Expected 'Training' and 'Testing' folders with class subdirectories."
-        )
+        logger.error("Expected 'Training' and 'Testing' folders with class subdirectories.")
         logger.error("Printed folder tree above. Adjust the script accordingly.")
         sys.exit(1)
 
@@ -188,9 +182,7 @@ def build_model():
     model = models.resnet50(weights=ResNet50_Weights.DEFAULT)
 
     num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 4)
-    )
+    model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), nn.ReLU(), nn.Dropout(0.4), nn.Linear(512, 4))
 
     # Freeze all except layer3, layer4, fc
     for name, param in model.named_parameters():
@@ -254,10 +246,7 @@ def evaluate(model, loader, criterion):
     cm_diag = cm.diagonal()
     cm_sums = cm.sum(axis=1)
 
-    recalls = {
-        CLASS_NAMES[i]: (cm_diag[i] / cm_sums[i] if cm_sums[i] > 0 else 0)
-        for i in range(4)
-    }
+    recalls = {CLASS_NAMES[i]: (cm_diag[i] / cm_sums[i] if cm_sums[i] > 0 else 0) for i in range(4)}
 
     return epoch_loss, epoch_acc, recalls, all_preds, all_labels
 
@@ -288,9 +277,7 @@ def main():
     print(
         f"train | {train_counts[0]:8} | {train_counts[1]:6} | {train_counts[2]:10} | {train_counts[3]:9} | {len(y_train)}"
     )
-    print(
-        f"val   | {val_counts[0]:8} | {val_counts[1]:6} | {val_counts[2]:10} | {val_counts[3]:9} | {len(y_val)}"
-    )
+    print(f"val   | {val_counts[0]:8} | {val_counts[1]:6} | {val_counts[2]:10} | {val_counts[3]:9} | {len(y_val)}")
     print(
         f"test  | {test_counts[0]:8} | {test_counts[1]:6} | {test_counts[2]:10} | {test_counts[3]:9} | {len(y_test)}\n"
     )
@@ -303,25 +290,15 @@ def main():
     from torch.utils.data import WeightedRandomSampler
 
     sample_weights = [2.5 if label == 1 else 1.0 for label in y_train]
-    sampler = WeightedRandomSampler(
-        sample_weights, num_samples=len(sample_weights), replacement=True
-    )
+    sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
 
-    train_ds = BrainTumorDataset(
-        X_train, y_train, transform=train_transforms, is_train=True
-    )
+    train_ds = BrainTumorDataset(X_train, y_train, transform=train_transforms, is_train=True)
     val_ds = BrainTumorDataset(X_val, y_val, transform=val_transforms)
     test_ds = BrainTumorDataset(X_test, y_test, transform=val_transforms)
 
-    train_loader = DataLoader(
-        train_ds, batch_size=BATCH_SIZE, sampler=sampler, num_workers=NUM_WORKERS
-    )
-    val_loader = DataLoader(
-        val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
-    test_loader = DataLoader(
-        test_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS
-    )
+    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, sampler=sampler, num_workers=NUM_WORKERS)
+    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
+    test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
 
     # Model & Optim
     model = build_model()
@@ -331,9 +308,7 @@ def main():
         lr=LR,
         weight_decay=WEIGHT_DECAY,
     )
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", patience=3, factor=0.5
-    )
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
     mlflow.set_experiment("brain_tumor_detection")
     best_val_loss = float("in")
@@ -363,12 +338,8 @@ def main():
         for epoch in range(1, EPOCHS + 1):
             if epoch == 6:
                 unfreeze_all(model)
-                optimizer = optim.Adam(
-                    model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY
-                )
-                scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, mode="min", patience=3, factor=0.5
-                )
+                optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+                scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
             current_lr = optimizer.param_groups[0]["lr"]
 
@@ -380,9 +351,7 @@ def main():
             print(
                 f"{epoch:5} | {t_loss:10.4f} | {t_acc:9.4f} | {v_loss:8.4f} | {v_acc:7.4f} | {recalls['glioma']:13.4f} | {recalls['meningioma']:17.4f} | {recalls['pituitary']:16.4f} | {current_lr:.2e}"
             )
-            print(
-                f"Glioma Recall: {recalls['glioma']*100:.2f}% — target above 85% (aggressive cancer)"
-            )
+            print(f"Glioma Recall: {recalls['glioma']*100:.2f}% — target above 85% (aggressive cancer)")
             print(f"Meningioma Recall: {recalls['meningioma']*100:.2f}%")
             print(f"Pituitary Recall: {recalls['pituitary']*100:.2f}%")
 
@@ -448,18 +417,12 @@ def main():
     checkpoint = torch.load(BEST_MODEL_PATH)
     model.load_state_dict(checkpoint["state_dict"])
 
-    _, test_acc, test_recalls, test_preds, test_labels = evaluate(
-        model, test_loader, criterion
-    )
+    _, test_acc, test_recalls, test_preds, test_labels = evaluate(model, test_loader, criterion)
 
     print("\nConfusion Matrix:")
     print(confusion_matrix(test_labels, test_preds, labels=[0, 1, 2, 3]))
     print("\nClassification Report:")
-    print(
-        classification_report(
-            test_labels, test_preds, target_names=CLASS_NAMES, zero_division=0
-        )
-    )
+    print(classification_report(test_labels, test_preds, target_names=CLASS_NAMES, zero_division=0))
 
     print("\nPer-class recall breakdown:")
     print(f"No Tumor recall:   {test_recalls['notumor']*100:.2f}%")
@@ -477,9 +440,7 @@ def main():
 
     for cls in CLASS_NAMES:
         if test_recalls[cls] < 0.70:
-            print(
-                f"⚠️ Warning: {cls} recall is below 70% ({test_recalls[cls]*100:.2f}%)"
-            )
+            print(f"⚠️ Warning: {cls} recall is below 70% ({test_recalls[cls]*100:.2f}%)")
 
     if all(test_recalls[cls] >= 0.95 for cls in CLASS_NAMES):
         print(

@@ -45,7 +45,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         const data = await res.json();
         
         if (res.ok && data.access_token) {
-            setAuth(data.access_token, data.user);
+            setAuth(data.access_token, { role: data.role });
             window.location.href = '/dashboard';
         } else {
             showToast(data.detail || 'Invalid credentials', 'error');

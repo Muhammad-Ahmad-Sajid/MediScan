@@ -3,7 +3,16 @@ const API_BASE = window.location.origin;
 
 // Auth
 const getToken = () => sessionStorage.getItem('mediscan_token');
-const getUser = () => JSON.parse(sessionStorage.getItem('mediscan_user') || 'null');
+const getUser = () => {
+    try {
+        const u = sessionStorage.getItem('mediscan_user');
+        if (!u || u === 'undefined') return null;
+        return JSON.parse(u);
+    } catch(e) {
+        sessionStorage.removeItem('mediscan_user');
+        return null;
+    }
+};
 const setAuth = (token, user) => {
     sessionStorage.setItem('mediscan_token', token);
     sessionStorage.setItem('mediscan_user', JSON.stringify(user));

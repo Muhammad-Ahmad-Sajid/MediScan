@@ -7,30 +7,35 @@ let overrides = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        const roleFilter = document.getElementById('user-role-filter');
+        if (roleFilter) {
+            roleFilter.addEventListener('change', renderUsers);
+        }
+
         await Promise.all([
             loadUsers(),
             loadOverrides(),
             loadStats()
         ]);
     } catch(err) {
-        console.error(err);
+        console.error("Admin init error:", err);
     }
 });
 
 async function loadStats() {
     try {
-        const pRes = await apiFetch('/patients/');
-        if(pRes && pRes.ok) {
-            const p = await pRes.json();
-            document.getElementById('stat-patients').textContent = p.length;
-            // Hack to get all scans: since we don't have a /scans global endpoint,
-            // we'll just sum up all patient scans if we fetched them, but for stats,
-            // we can just put a mock or calculate from patients if we had it.
-            // Let's mock the total scans for now:
-            document.getElementById('stat-scans').textContent = p.length * 3 + Math.floor(Math.random() * 20);
+        const res = await apiFetch('/admin/dashboard_stats');
+        if(res && res.ok) {
+            const data = await res.json();
+            document.getElementById('stat-patients').textContent = data.patients || 0;
+            document.getElementById('stat-scans').textContent = data.total_scans || 0;
+        } else {
+            document.getElementById('stat-patients').textContent = 'Error';
+            document.getElementById('stat-scans').textContent = 'Error';
         }
     } catch(err) {
         document.getElementById('stat-patients').textContent = 'Error';
+        document.getElementById('stat-scans').textContent = 'Error';
     }
 }
 
@@ -80,8 +85,6 @@ function renderUsers() {
         `);
     });
 }
-
-document.getElementById('user-role-filter').addEventListener('change', renderUsers);
 
 async function loadOverrides() {
     try {

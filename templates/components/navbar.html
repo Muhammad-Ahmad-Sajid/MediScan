@@ -1,42 +1,41 @@
-<header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30">
-    <div class="flex items-center">
-        <button id="sidebar-toggle" class="text-slate-500 hover:text-teal-700 mr-4 focus:outline-none xl:block hidden">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        </button>
-        <button id="mobile-menu-toggle" class="text-slate-500 hover:text-teal-700 mr-4 focus:outline-none xl:hidden block">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        </button>
-        <h1 class="text-xl font-semibold text-slate-800" id="page-title">Dashboard</h1>
+<!-- navbar.html -->
+<header style="
+    padding: 16px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    background: rgba(11, 20, 38, 0.5);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 40;
+">
+    <div>
+        <h2 id="page-title" style="font-size:20px; font-weight:600; color:#F1F5F9; margin:0;">Dashboard</h2>
+        <p id="page-breadcrumb" style="font-size:12px; color:#64748B; margin:4px 0 0;">
+            <!-- Filled by page JS -->
+        </p>
     </div>
-    
-    <div class="flex items-center space-x-4">
-        <div class="relative hidden md:block">
-            <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <input type="text" id="global-search" placeholder="Search patients..." class="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 w-64">
+
+    <div class="flex items-center gap-4">
+        <!-- Search -->
+        <div style="position:relative;">
+            <input type="text" id="global-search" placeholder="Search patients..."
+                style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:8px 16px 8px 36px; color:#F1F5F9; font-size:13px; width:220px; outline:none;"
+                onfocus="this.style.borderColor='rgba(20,184,166,0.4)'; this.style.boxShadow='0 0 15px rgba(20,184,166,0.08)'"
+                onblur="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.boxShadow='none'">
+            <svg style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#64748B;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
         </div>
-        <button class="text-slate-400 hover:text-teal-600 relative">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-            <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+
+        <!-- Notification bell -->
+        <button style="position:relative; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:10px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; color:#94A3B8; cursor:pointer;"
+            onmouseover="this.style.borderColor='rgba(20,184,166,0.3)'"
+            onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            <span id="notif-badge" class="hidden" style="position:absolute; top:6px; right:6px; width:8px; height:8px; background:#F87171; border-radius:50%; box-shadow: 0 0 8px rgba(248,113,113,0.5);"></span>
         </button>
-        <div class="h-8 w-px bg-slate-200"></div>
-        <span class="text-sm font-medium text-slate-700 hidden sm:block" id="nav-user-name">Loading...</span>
     </div>
 </header>
-<script>
-    if(document.getElementById('mobile-menu-toggle')) {
-        document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
-            const sidebar = document.getElementById('main-sidebar');
-            if(sidebar.style.transform === 'translateX(0px)') {
-                sidebar.style.transform = 'translateX(-100%)';
-            } else {
-                sidebar.style.transform = 'translateX(0px)';
-            }
-        });
-    }
-    
-    // Auto-setup page title based on document.title
-    const pt = document.getElementById('page-title');
-    if (pt && document.title) {
-        pt.textContent = document.title.replace('MediScan AI - ', '').replace('MediScan AI', 'Dashboard');
-    }
-</script>

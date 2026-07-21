@@ -1,28 +1,9 @@
-// Global Application State & Utilities
-const API_BASE = window.location.origin;
-
-// Auth
+// === AUTH STATE ===
+const API_BASE = '';
 const getToken = () => sessionStorage.getItem('mediscan_token');
-const getUser = () => {
-    try {
-        const u = sessionStorage.getItem('mediscan_user');
-        if (!u || u === 'undefined') return null;
-        return JSON.parse(u);
-    } catch(e) {
-        sessionStorage.removeItem('mediscan_user');
-        return null;
-    }
-};
-const setAuth = (token, user) => {
-    sessionStorage.setItem('mediscan_token', token);
-    sessionStorage.setItem('mediscan_user', JSON.stringify(user));
-};
-const clearAuth = () => {
-    sessionStorage.removeItem('mediscan_token');
-    sessionStorage.removeItem('mediscan_user');
-};
+const getUser = () => JSON.parse(sessionStorage.getItem('mediscan_user') || 'null');
 
-// Authenticated fetch wrapper
+// === AUTHENTICATED FETCH ===
 async function apiFetch(url, options = {}) {
     const token = getToken();
     if (!token && !url.includes('/auth/')) {
@@ -34,135 +15,123 @@ async function apiFetch(url, options = {}) {
     if (!(options.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
     }
-    
-    try {
-        const res = await fetch(API_BASE + url, { ...options, headers });
-        if (res.status === 401 && !url.includes('/auth/')) {
-            clearAuth();
-            window.location.href = '/login';
-            return;
-        }
-        return res;
-    } catch (err) {
-        console.error("API Fetch Error:", err);
-        throw err;
+    const res = await fetch(API_BASE + url, { ...options, headers });
+    if (res.status === 401) {
+        sessionStorage.clear();
+        window.location.href = '/login';
+        return;
     }
+    return res;
 }
 
-// Auth guards
-function requireAuth() {
-    if (!getToken()) {
-        window.location.href = '/login';
-    }
-}
+// === AUTH GUARDS ===
+function requireAuth() { if (!getToken()) window.location.href = '/login'; }
 function requireAdmin() {
     const user = getUser();
-    if (!user || user.role !== 'admin') {
-        window.location.href = '/dashboard';
-    }
+    if (!user || user.role !== 'admin') window.location.href = '/dashboard';
 }
 
-// Load sidebar + navbar components
+// === COMPONENT LOADER ===
 async function loadComponents() {
     try {
-        const sidebarHtml = await fetch('/templates/components/sidebar.html').then(r => r.text());
-        const navbarHtml = await fetch('/templates/components/navbar.html').then(r => r.text());
-        
-        const sidebarContainer = document.getElementById('sidebar-container');
-        const navbarContainer = document.getElementById('navbar-container');
-        
-        if (sidebarContainer) sidebarContainer.innerHTML = sidebarHtml;
-        if (navbarContainer) navbarContainer.innerHTML = navbarHtml;
-        
+        const [sidebarHtml, navbarHtml] = await Promise.all([
+            fetch('/templates/components/sidebar.html').then(r => r.text()),
+            fetch('/templates/components/navbar.html').then(r => r.text())
+        ]);
+        const sc = document.getElementById('sidebar-container');
+        const nc = document.getElementById('navbar-container');
+        if (sc) sc.innerHTML = sidebarHtml;
+        if (nc) nc.innerHTML = navbarHtml;
+
         // Active nav link
         const path = window.location.pathname;
         document.querySelectorAll('.nav-link').forEach(link => {
-            const href = link.getAttribute('href');
-            if (path === href || (path.startsWith('/scan/') && href === '/dashboard') || (path.startsWith('/results/') && href === '/dashboard')) {
+            if (path.startsWith(link.getAttribute('href'))) {
                 link.classList.add('active');
+                link.querySelector('span')?.classList.add('text-teal-400');
+                const leftBar = link.querySelector('.left-bar');
+                if (leftBar) leftBar.classList.remove('opacity-0');
             }
         });
-        
-        // Setup User Info
+
+        // User info
         const user = getUser();
         if (user) {
-            const nameEl = document.getElementById('sidebar-user-name');
-            const roleEl = document.getElementById('sidebar-user-role');
-            const initEl = document.getElementById('sidebar-user-initials');
-            
-            if (nameEl) nameEl.textContent = user.full_name || 'Dr. Unknown';
-            if (roleEl) roleEl.textContent = (user.role || 'Doctor').toUpperCase();
-            if (initEl && user.full_name) {
-                initEl.textContent = user.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            }
-            
-            const topNameEl = document.getElementById('nav-user-name');
-            if (topNameEl) topNameEl.textContent = user.full_name;
+            const nameEl = document.getElementById('user-name');
+            const roleEl = document.getElementById('user-role');
+            const initialsEl = document.getElementById('user-initials');
+            if (nameEl) nameEl.textContent = user.full_name;
+            if (roleEl) roleEl.textContent = user.role;
+            if (initialsEl) initialsEl.textContent = user.full_name.split(' ').map(n => n[0]).join('').toUpperCase();
         }
-        
-        // Hide Admin if not admin
+
+        // Hide admin nav if not admin
         if (!user || user.role !== 'admin') {
-            const adminLink = document.getElementById('nav-admin-link');
-            if (adminLink) adminLink.style.display = 'none';
+            document.getElementById('admin-nav')?.classList.add('hidden');
         }
-
-        // Setup Logout
-        const logoutBtn = document.getElementById('sidebar-logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                clearAuth();
-                window.location.href = '/login';
-            });
-        }
-        
-        // Setup Sidebar Toggle
-        const toggleBtn = document.getElementById('sidebar-toggle');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                const sidebar = document.getElementById('main-sidebar');
-                const mainContent = document.getElementById('main-content-area');
-                sidebar.classList.toggle('collapsed');
-                if (window.innerWidth >= 1280) { // xl
-                    if (sidebar.classList.contains('collapsed')) {
-                        mainContent.style.marginLeft = '64px';
-                        sidebar.style.width = '64px';
-                    } else {
-                        mainContent.style.marginLeft = '250px';
-                        sidebar.style.width = '250px';
-                    }
-                }
-            });
-        }
-
-    } catch(err) {
-        console.error("Error loading components", err);
+    } catch (e) {
+        console.error('Failed to load components:', e);
     }
 }
 
-// Toast System
+// === TOAST SYSTEM ===
 function showToast(message, type = 'success') {
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
         container.id = 'toast-container';
-        container.className = 'fixed top-5 right-5 z-50 flex flex-col gap-2';
         document.body.appendChild(container);
     }
-    
+    const icons = { success: '✓', error: '✕', warning: '⚠' };
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type} p-4 rounded-lg shadow-lg flex items-center justify-between min-w-[300px] border-l-4 bg-white`;
-    
-    let icon = '';
-    if (type === 'success') icon = '<svg class="w-5 h-5 text-emerald-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-    else if (type === 'error') icon = '<svg class="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-    else if (type === 'warning') icon = '<svg class="w-5 h-5 text-amber-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
-
-    toast.innerHTML = `
-        <div class="flex items-center text-slate-800 font-medium">${icon} ${message}</div>
-        <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-    `;
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<span>${icons[type] || ''}</span> <span>${message}</span>
+        <button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;color:#94A3B8;cursor:pointer;font-size:18px;">×</button>`;
     container.appendChild(toast);
-    setTimeout(() => { if(toast.parentElement) toast.remove(); }, 5000);
+    setTimeout(() => toast.remove(), 5000);
+}
+
+// === 3D TILT EFFECT (reusable) ===
+function initTiltCards() {
+    document.querySelectorAll('.tilt-card').forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width - 0.5;
+            const y = (e.clientY - rect.top) / rect.height - 0.5;
+            card.style.transform = `perspective(1000px) rotateY(${x * 16}deg) rotateX(${-y * 16}deg) scale(1.02)`;
+            card.style.transition = 'transform 0.1s ease';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'perspective(1000px) rotateY(0) rotateX(0) scale(1)';
+            card.style.transition = 'transform 0.5s ease';
+        });
+    });
+}
+
+// === GSAP PAGE ENTRANCE ===
+function animatePageEntrance() {
+    if (typeof gsap === 'undefined') return;
+    gsap.from('.page-content', { opacity: 0, y: 30, duration: 0.6, ease: 'power2.out' });
+    gsap.from('.stat-card', { opacity: 0, y: 20, duration: 0.5, stagger: 0.1, ease: 'power2.out', delay: 0.2 });
+    gsap.from('.module-card', { opacity: 0, y: 20, duration: 0.5, stagger: 0.08, ease: 'power2.out', delay: 0.4 });
+}
+
+// === COUNTER ANIMATION ===
+function animateCounter(el, target, duration = 1500) {
+    let start = 0;
+    const startTime = performance.now();
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        el.textContent = Math.floor(eased * target);
+        if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+}
+
+// === LOGOUT ===
+function logout() {
+    sessionStorage.clear();
+    window.location.href = '/login';
 }

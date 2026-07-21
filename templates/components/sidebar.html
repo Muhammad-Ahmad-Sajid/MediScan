@@ -1,37 +1,88 @@
-<aside id="main-sidebar" class="sidebar fixed top-0 left-0 h-screen w-[250px] bg-navy text-white flex flex-col z-40 transition-all duration-300">
-    <!-- Logo Area -->
-    <div class="h-16 flex items-center px-4 border-b border-slate-700 sidebar-logo">
-        <svg class="w-8 h-8 text-teal-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 14h-2v-4H7v-2h4V7h2v4h4v2h-4v4z"/>
-        </svg>
-        <span class="text-xl font-bold sidebar-logo-text whitespace-nowrap">MediScan AI</span>
-    </div>
-
-    <!-- Navigation -->
-    <nav class="flex-1 py-4 overflow-y-auto space-y-1">
-        <a href="/dashboard" class="nav-link flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white transition-colors sidebar-link">
-            <svg class="w-5 h-5 mr-3 sidebar-link-icon flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-            <span class="sidebar-text whitespace-nowrap">Dashboard</span>
-        </a>
-        <a href="/history" class="nav-link flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white transition-colors sidebar-link">
-            <svg class="w-5 h-5 mr-3 sidebar-link-icon flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <span class="sidebar-text whitespace-nowrap">Patient History</span>
-        </a>
-        <a href="/admin" id="nav-admin-link" class="nav-link flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white transition-colors sidebar-link">
-            <svg class="w-5 h-5 mr-3 sidebar-link-icon flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-            <span class="sidebar-text whitespace-nowrap">Admin Panel</span>
-        </a>
-    </nav>
-
-    <!-- User Profile & Logout -->
-    <div class="p-4 border-t border-slate-700 bg-slate-800/50 sidebar-user flex items-center">
-        <div class="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center font-bold flex-shrink-0" id="sidebar-user-initials">--</div>
-        <div class="ml-3 sidebar-user-details overflow-hidden">
-            <p class="text-sm font-semibold truncate" id="sidebar-user-name">Loading...</p>
-            <p class="text-xs text-slate-400 truncate" id="sidebar-user-role">Role</p>
+<!-- sidebar.html -->
+<nav id="sidebar" class="sidebar" style="
+    position: fixed; top: 0; left: 0; width: 260px; height: 100vh; z-index: 50;
+    background: rgba(11, 20, 38, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    display: flex; flex-direction: column;
+    padding: 24px 0;
+    transition: width 0.3s ease;
+">
+    <!-- Logo -->
+    <div style="padding: 0 24px; margin-bottom: 40px;">
+        <div class="flex items-center gap-3">
+            <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg, #0F766E, #22D3EE); display:flex; align-items:center; justify-content:center; box-shadow: 0 0 20px rgba(20,184,166,0.3);">
+                <svg width="22" height="22" viewBox="0 0 64 64">
+                    <polyline points="8,32 20,32 24,18 28,46 32,28 36,38 40,32 56,32" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="nav-label">
+                <span style="font-size:18px; font-weight:700; color:#F1F5F9;">MediScan</span>
+                <span style="font-size:18px; font-weight:300; color:#14B8A6;"> AI</span>
+            </div>
         </div>
     </div>
-    <button id="sidebar-logout-btn" class="w-full py-3 text-sm text-center text-slate-300 hover:text-white hover:bg-slate-800 sidebar-text whitespace-nowrap">
-        Sign Out
-    </button>
-</aside>
+
+    <!-- Nav Links -->
+    <div style="flex:1; padding: 0 12px;">
+        <a href="/dashboard" class="nav-link" data-page="dashboard">
+            <div class="nav-icon">
+                <!-- Grid icon SVG -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+            </div>
+            <span class="nav-label">Dashboard</span>
+        </a>
+
+        <a href="/scan/fracture" class="nav-link" data-page="scan">
+            <div class="nav-icon">
+                <!-- Upload icon SVG -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+            <span class="nav-label">New Scan</span>
+        </a>
+
+        <a href="/history" class="nav-link" data-page="history">
+            <div class="nav-icon">
+                <!-- Clock icon SVG -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </div>
+            <span class="nav-label">History</span>
+        </a>
+
+        <a href="/admin" class="nav-link" data-page="admin" id="admin-nav">
+            <div class="nav-icon">
+                <!-- Shield icon SVG -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <span class="nav-label">Admin</span>
+        </a>
+    </div>
+
+    <!-- User Section -->
+    <div style="padding: 0 20px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
+        <div class="flex items-center gap-3">
+            <div id="user-initials" style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0F766E, #22D3EE); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:white;">
+                AS
+            </div>
+            <div class="nav-label">
+                <div id="user-name" style="font-size:14px; font-weight:500; color:#F1F5F9;">Dr. Ahmad</div>
+                <div id="user-role" style="font-size:11px; color:#14B8A6; text-transform:capitalize;">doctor</div>
+            </div>
+        </div>
+        <button onclick="logout()" class="nav-label" style="margin-top:12px; width:100%; padding:8px 0; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); color:#94A3B8; font-size:13px; cursor:pointer; transition:all 0.2s;"
+            onmouseover="this.style.borderColor='rgba(248,113,113,0.3)'; this.style.color='#F87171'"
+            onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'; this.style.color='#94A3B8'">
+            Sign Out
+        </button>
+    </div>
+</nav>

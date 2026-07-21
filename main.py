@@ -337,6 +337,36 @@ def get_all_patients(db: Session = Depends(get_db), current_user=Depends(get_cur
     return db.query(db_models.Patient).all()
 
 
+@patient_router.get("/all_scans", tags=["Patients"])
+def get_all_scans_all_patients(db: Session = Depends(get_db), current_user=Depends(get_current_doctor)):
+    scans = []
+    models_to_check = [
+        (db_models.FractureScan, "fracture"),
+        (db_models.ArthritisScan, "arthritis"),
+        (db_models.OsteoporosisScan, "osteoporosis"),
+        (db_models.TBScan, "tb"),
+        (db_models.LungNoduleScan, "lung_nodule"),
+        (db_models.BrainTumorScan, "brain_tumor"),
+        (db_models.BrainHemorrhageScan, "brain_hemorrhage"),
+        (db_models.BoneAgeScan, "bone_age"),
+        (db_models.RetinopathyScan, "retinopathy"),
+    ]
+    for model_class, mod_name in models_to_check:
+        try:
+            records = db.query(model_class).all()
+            for r in records:
+                scans.append({
+                    "id": r.id,
+                    "patient_id": r.patient_id,
+                    "module": mod_name,
+                    "timestamp": r.upload_timestamp.isoformat() if r.upload_timestamp else None,
+                    "result": getattr(r, "diagnosis", getattr(r, "result_class", getattr(r, "predicted_class", getattr(r, "bone_age_months", "Unknown"))))
+                })
+        except Exception:
+            pass
+    return scans
+
+
 @patient_router.get("/{patient_id}/scans", tags=["Patients"])
 def get_patient_scans(
     patient_id: str,
@@ -507,7 +537,7 @@ def get_fracture_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pd",
+            media_type="application/pdf",
             filename=f"Fracture_Report_{scan_id}.pdf",
         )
 
@@ -522,8 +552,8 @@ def get_fracture_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pd",
-        filename=f"Fracture_Report_{scan_id}.pd",
+        media_type="application/pdf",
+        filename=f"Fracture_Report_{scan_id}.pdf",
     )
 
 
@@ -626,7 +656,7 @@ def get_arthritis_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pd",
+            media_type="application/pdf",
             filename=f"Arthritis_Report_{scan_id}.pdf",
         )
 
@@ -640,8 +670,8 @@ def get_arthritis_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pd",
-        filename=f"Arthritis_Report_{scan_id}.pd",
+        media_type="application/pdf",
+        filename=f"Arthritis_Report_{scan_id}.pdf",
     )
 
 
@@ -743,7 +773,7 @@ def get_osteo_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pd",
+            media_type="application/pdf",
             filename=f"Osteoporosis_Report_{scan_id}.pdf",
         )
 
@@ -757,8 +787,8 @@ def get_osteo_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pd",
-        filename=f"Osteoporosis_Report_{scan_id}.pd",
+        media_type="application/pdf",
+        filename=f"Osteoporosis_Report_{scan_id}.pdf",
     )
 
 
@@ -875,7 +905,7 @@ def get_tb_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pd",
+            media_type="application/pdf",
             filename=f"TB_Report_{scan_id}.pdf",
         )
 
@@ -900,7 +930,7 @@ def get_tb_report(
         raise HTTPException(500, "Failed to generate report")
     scan.report_path = report_path
     db.commit()
-    return FileResponse(report_path, media_type="application/pd", filename=f"TB_Report_{scan_id}.pd")
+    return FileResponse(report_path, media_type="application/pdf", filename=f"TB_Report_{scan_id}.pdf")
 
 
 @tb_router.patch("/{scan_id}/override", response_model=schemas.TBResponse)
@@ -1013,7 +1043,7 @@ def get_lung_nodule_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pd",
+            media_type="application/pdf",
             filename=f"LungNodule_Report_{scan_id}.pdf",
         )
 
@@ -1040,8 +1070,8 @@ def get_lung_nodule_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pd",
-        filename=f"LungNodule_Report_{scan_id}.pd",
+        media_type="application/pdf",
+        filename=f"LungNodule_Report_{scan_id}.pdf",
     )
 
 
@@ -1157,7 +1187,7 @@ def get_brain_tumor_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pd",
+            media_type="application/pdf",
             filename=f"BrainTumor_Report_{scan_id}.pdf",
         )
 
@@ -1184,8 +1214,8 @@ def get_brain_tumor_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pd",
-        filename=f"BrainTumor_Report_{scan_id}.pd",
+        media_type="application/pdf",
+        filename=f"BrainTumor_Report_{scan_id}.pdf",
     )
 
 
@@ -1304,7 +1334,7 @@ def get_brain_hemorrhage_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pd",
+            media_type="application/pdf",
             filename=f"BrainHemorrhage_Report_{scan_id}.pdf",
         )
 
@@ -1331,8 +1361,8 @@ def get_brain_hemorrhage_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pd",
-        filename=f"BrainHemorrhage_Report_{scan_id}.pd",
+        media_type="application/pdf",
+        filename=f"BrainHemorrhage_Report_{scan_id}.pdf",
     )
 
 
@@ -1449,7 +1479,7 @@ def get_bone_age_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pd",
+            media_type="application/pdf",
             filename=f"BoneAge_Report_{scan_id}.pdf",
         )
 
@@ -1477,8 +1507,8 @@ def get_bone_age_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pd",
-        filename=f"BoneAge_Report_{scan_id}.pd",
+        media_type="application/pdf",
+        filename=f"BoneAge_Report_{scan_id}.pdf",
     )
 
 
@@ -1580,7 +1610,7 @@ def get_retinopathy_report(
     if scan.report_path and os.path.exists(scan.report_path):
         return FileResponse(
             scan.report_path,
-            media_type="application/pd",
+            media_type="application/pdf",
             filename=f"Retinopathy_Report_{scan_id}.pdf",
         )
 
@@ -1609,8 +1639,8 @@ def get_retinopathy_report(
     db.commit()
     return FileResponse(
         report_path,
-        media_type="application/pd",
-        filename=f"Retinopathy_Report_{scan_id}.pd",
+        media_type="application/pdf",
+        filename=f"Retinopathy_Report_{scan_id}.pdf",
     )
 
 

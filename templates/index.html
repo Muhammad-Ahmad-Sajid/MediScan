@@ -1,657 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MediScan AI Dashboard</title>
-  <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediScan AI | Multi-Specialty Medical Imaging Intelligence</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#CCFBF1', 100: '#B2F5EA', 400: '#14B8A6', 600: '#0D9488', 700: '#0F766E', 800: '#0D5E57' },
+                        navy: { DEFAULT: '#0B1426', light: '#132040', medium: '#1A2D50' },
+                        cyan: { glow: '#22D3EE' },
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="bg-navy text-slate-100 overflow-x-hidden antialiased">
 
-  <!-- Auth View -->
-  <div id="auth-view">
-    <h2 style="text-align:center; color:var(--primary-color)">MediScan AI</h2>
-    <p style="text-align:center; color:var(--text-light); margin-bottom:2rem;">Clinical Decision Support System</p>
-    
-    <div id="login-form">
-      <input type="email" id="login-email" placeholder="Email" value="doctor@mediscan.com">
-      <input type="password" id="login-password" placeholder="Password" value="doctor123">
-      <button onclick="login()">Sign In</button>
-      <p style="text-align:center; margin-top:1rem; font-size:0.875rem;">
-        Need an account? <a href="#" onclick="toggleAuth()">Register</a>
-      </p>
-    </div>
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 glass border-none rounded-none backdrop-blur-md bg-navy/40 py-4 px-8 flex justify-between items-center transition-all duration-300" id="navbar">
+        <div class="flex items-center gap-3">
+            <img src="/static/img/logo.svg" alt="Logo" class="w-8 h-8 pulse-glow">
+            <span class="text-xl font-bold tracking-wide">MediScan <span class="text-teal-400">AI</span></span>
+        </div>
+        <div class="flex gap-4">
+            <a href="/login" class="px-6 py-2 rounded-full border border-white/20 hover:border-white transition">Sign In</a>
+        </div>
+    </nav>
 
-    <div id="register-form" style="display:none;">
-      <input type="text" id="reg-name" placeholder="Full Name">
-      <input type="email" id="reg-email" placeholder="Email">
-      <input type="password" id="reg-password" placeholder="Password">
-      <button onclick="register()">Register</button>
-      <p style="text-align:center; margin-top:1rem; font-size:0.875rem;">
-        Already have an account? <a href="#" onclick="toggleAuth()">Sign In</a>
-      </p>
-    </div>
-  </div>
-
-  <!-- Main Dashboard -->
-  <div id="dashboard-view" style="display:none;">
-    <header>
-      <div class="logo-title">MediScan AI</div>
-      <div class="user-info">
-        <a href="/history" style="color:var(--text-dark); text-decoration:none; margin-right:1rem; font-weight:600;">Patient History</a>
-        <span id="user-name">Dr. Smith</span>
-        <span id="user-role" class="role-badge">Doctor</span>
-        <button onclick="logout()" style="background-color:transparent; color:var(--text-light); border:1px solid var(--border-color);">Logout</button>
-      </div>
-    </header>
-
-    <div class="container">
-      <h2 style="margin-bottom:1.5rem;">Select AI Module</h2>
-      
-      <div class="module-grid">
-        <!-- Module 1 -->
-        <div class="module-card" style="--module-color: var(--module-1)" onclick="selectModule('fracture', 'Bone Fracture', '#1D6FA4')">
-          <h3>Bone Fracture</h3>
-          <p>X-ray Orthopedics</p>
-          <span class="metric-badge">98.15% accuracy</span>
-        </div>
-        <!-- Module 2 -->
-        <div class="module-card" style="--module-color: var(--module-2)" onclick="selectModule('arthritis', 'Arthritis', '#1D9E75')">
-          <h3>Arthritis</h3>
-          <p>X-ray Rheumatology</p>
-          <span class="metric-badge">KL Grading</span>
-        </div>
-        <!-- Module 3 -->
-        <div class="module-card" style="--module-color: var(--module-3)" onclick="selectModule('osteoporosis', 'Osteoporosis', '#7C5CBF')">
-          <h3>Osteoporosis</h3>
-          <p>X-ray Endocrinology</p>
-          <span class="metric-badge">91% sensitivity</span>
-        </div>
-        <!-- Module 4 -->
-        <div class="module-card" style="--module-color: var(--module-4)" onclick="selectModule('tb', 'TB Screening', '#BA7517')">
-          <h3>TB Screening</h3>
-          <p>CXR Pulmonology</p>
-          <span class="metric-badge">97% sensitivity</span>
-        </div>
-        <!-- Module 5 -->
-        <div class="module-card" style="--module-color: var(--module-5)" onclick="selectModule('lung-nodule', 'Lung Nodule', '#A32D2D')">
-          <h3>Lung Nodule</h3>
-          <p>CT Oncology</p>
-          <span class="metric-badge">Cancer screening</span>
-        </div>
-        <!-- Module 6 -->
-        <div class="module-card" style="--module-color: var(--module-6)" onclick="selectModule('brain-tumor', 'Brain Tumor', '#4C51BF')">
-          <h3>Brain Tumor</h3>
-          <p>MRI Neurology</p>
-          <span class="metric-badge">4-class MRI</span>
-        </div>
-        <!-- Module 7 -->
-        <div class="module-card emergency-card" id="brain-hemorrhage-card" style="--module-color: var(--module-7); border-color: #C53030; border-width: 2px;" onclick="selectModule('brain-hemorrhage', 'Brain Hemorrhage', '#C53030')">
-          <h3>Brain Hemorrhage <span style="color:#C53030; font-size:0.7em; vertical-align:middle; margin-left:5px;">🚨 EMERGENCY MODULE</span></h3>
-          <p>CT Emergency</p>
-          <span class="metric-badge">Emergency</span>
-        </div>
-        <!-- Module 8 -->
-        <div class="module-card" style="--module-color: var(--module-8)" onclick="selectModule('bone-age', 'Bone Age', '#2B6CB0')">
-          <h3>Bone Age</h3>
-          <p>X-ray Pediatrics</p>
-          <span class="metric-badge">Regression</span>
-        </div>
-        <!-- Module 9 -->
-        <div class="module-card" style="--module-color: var(--module-9)" onclick="selectModule('retinopathy', 'Retinopathy', '#38A169')">
-          <h3>Retinopathy</h3>
-          <p>Fundus Ophthalmology</p>
-          <span class="metric-badge">QWK 0.87</span>
-        </div>
-      </div>
-
-      <!-- Active Module Workspace -->
-      <div id="active-workspace" class="active-module-area">
-        <div class="patient-form">
-          <h3 id="active-module-title" style="margin-top:0;">Bone Fracture Analysis</h3>
-          
-          <div class="form-group">
-            <label>Patient Full Name</label>
-            <input type="text" id="pat-name" placeholder="John Doe">
-          </div>
-          
-          <div class="form-group" style="display:flex; gap:1rem;">
-            <div style="flex:1;">
-              <label>Age</label>
-              <input type="number" id="pat-age" placeholder="45">
+    <!-- 3D Hero Section -->
+    <section class="relative h-screen w-full flex flex-col justify-center items-center overflow-hidden">
+        <div id="hero-canvas" class="absolute inset-0 z-0 opacity-80"></div>
+        
+        <div class="relative z-10 text-center max-w-4xl px-4 mt-20">
+            <div class="gsap-hero inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6 border-teal-500/30 glow-teal">
+                <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+                <span class="text-sm text-teal-100 font-medium tracking-wide">Next-Generation Clinical Diagnostics</span>
             </div>
-            <div style="flex:1;">
-              <label>Gender</label>
-              <select id="pat-gender">
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
+            
+            <h1 class="gsap-hero text-6xl md:text-8xl font-bold mb-6 text-white text-glow tracking-tight leading-tight">
+                MediScan AI
+            </h1>
+            
+            <p class="gsap-hero text-xl md:text-2xl text-slate-400 mb-4 max-w-2xl mx-auto font-light">
+                Multi-Specialty Medical Imaging Intelligence
+            </p>
+            
+            <p class="gsap-hero text-sm md:text-base text-teal-400 mb-10 tracking-widest uppercase font-semibold">
+                9 AI Modules · 7 Medical Specialties · One Platform
+            </p>
+            
+            <div class="gsap-hero flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a href="/login" class="px-8 py-4 rounded-full bg-gradient-to-r from-teal-700 to-cyan-400 text-white font-semibold text-lg glow-teal-strong hover:scale-105 transition-all w-full sm:w-auto">
+                    Launch Platform &rarr;
+                </a>
+                <button onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="px-8 py-4 rounded-full border border-white/30 text-white font-semibold text-lg hover:bg-white/10 transition-all w-full sm:w-auto">
+                    Learn More &darr;
+                </button>
             </div>
-          </div>
-          
-          <div class="form-group">
-            <label>Comorbidities</label>
-            <div class="checkbox-group">
-              <label class="checkbox-label"><input type="checkbox" value="Diabetes" class="pat-comorb"> Diabetes</label>
-              <label class="checkbox-label"><input type="checkbox" value="Hypertension" class="pat-comorb"> Hypertension</label>
-              <label class="checkbox-label"><input type="checkbox" value="Osteoporosis" class="pat-comorb"> Osteoporosis</label>
-              <label class="checkbox-label"><input type="checkbox" value="Smoker" class="pat-comorb"> Smoker</label>
+        </div>
+        
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce z-10">
+            <span class="text-xs text-slate-500 uppercase tracking-widest mb-2">Scroll</span>
+            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-32 px-4 md:px-12 max-w-7xl mx-auto relative z-10">
+        <div class="text-center mb-20">
+            <h2 class="text-3xl md:text-5xl font-bold mb-6">Clinical-Grade Intelligence</h2>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto">Built for healthcare professionals, providing explainable AI insights across multiple imaging modalities with sub-second inference times.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="feature-card glass-strong p-8 rounded-2xl border-t border-white/10 hover:border-teal-400/50 transition-all group tilt-card">
+                <div class="w-14 h-14 rounded-full bg-teal-500/20 flex items-center justify-center mb-6 glow-teal group-hover:scale-110 transition">
+                    <svg class="w-7 h-7 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-white">9 Diagnostic Modules</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">Comprehensive coverage from neurology to orthopedics. Analyze X-rays, MRIs, and CT scans in a single unified dashboard.</p>
             </div>
-          </div>
-        </div>
 
-        <div class="upload-section">
-          <div class="upload-area" onclick="document.getElementById('file-input').click()">
-            <svg width="48" height="48" fill="none" stroke="var(--primary-color)" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:1rem;">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-            </svg>
-            <h4 style="margin:0 0 0.5rem 0; color:var(--text-dark)">Upload Scan Image</h4>
-            <p style="margin:0; color:var(--text-light)">Drop X-ray / MRI / CT / Fundus image here</p>
-            <input type="file" id="file-input" accept="image/png, image/jpeg" onchange="fileSelected(event)">
-          </div>
-          <div id="file-name-display" style="margin-top:1rem; text-align:center; font-weight:600; color:var(--primary-color)"></div>
-          
-          <div id="bone-age-extra-inputs" style="display:none; margin-top:1.5rem; padding:1rem; background-color:#f7fafc; border:1px solid var(--border-color); border-radius:0.5rem;">
-             <label style="display:block; font-weight:600; margin-bottom:0.5rem; color:#2d3748;">Patient's Chronological Age (optional)</label>
-             <p style="font-size:0.875rem; color:#718096; margin-bottom:0.5rem; margin-top:0;">Provide age in months for deviation assessment</p>
-             <input type="number" id="chrono-age-months" placeholder="e.g. 120" style="width:100%; padding:0.75rem; border:1px solid var(--border-color); border-radius:0.375rem;">
-          </div>
-          
-          <button onclick="analyzeScan()" style="width:100%; margin-top:1rem; padding:1rem; font-size:1.1rem;">Analyze Scan</button>
-        </div>
-      </div>
-
-      <!-- Results Panel -->
-      <div id="results-panel">
-        <div class="results-header">
-          <h2 style="margin:0">Analysis Results</h2>
-          <button id="download-report-btn" style="background-color:var(--text-dark)" onclick="downloadReport()">Download PDF Report</button>
-        </div>
-
-        <div class="result-badges" id="badges-container">
-          <!-- Populated via JS -->
-        </div>
-
-        <div class="recommendation-box" id="clinical-recommendation">
-          <!-- Populated via JS -->
-        </div>
-
-        <div class="image-comparison">
-          <div>
-            <h4 style="margin-top:0">Original Scan</h4>
-            <img id="img-original" src="" alt="Original Scan">
-          </div>
-          <div>
-            <h4 style="margin-top:0">AI Attention Heatmap</h4>
-            <img id="img-heatmap" src="" alt="Grad-CAM Heatmap">
-          </div>
-        </div>
-        
-        <div class="override-section" id="override-section">
-          <h4 style="margin-top:0; color:#7b341e">Clinician Override</h4>
-          <p style="font-size:0.875rem; color:var(--text-light); margin-bottom:1rem;">If you disagree with the AI prediction, please log an override to improve future model versions.</p>
-          <input type="text" id="override-diagnosis" placeholder="Correct Diagnosis / Grade" style="width:100%; padding:0.75rem; margin-bottom:1rem; border:1px solid var(--border-color); border-radius:0.375rem;">
-          <textarea id="override-notes" placeholder="Clinical reasoning..." style="width:100%; padding:0.75rem; margin-bottom:1rem; border:1px solid var(--border-color); border-radius:0.375rem; min-height:80px;"></textarea>
-          <button onclick="submitOverride()" style="background-color:#d69e2e; color:#7b341e">Submit Override</button>
-        </div>
-      </div>
-
-    </div>
-    
-    <footer>
-      MediScan AI v2.0 — Clinical Decision Support System<br>
-      AI-assisted analysis. All results require clinical validation.
-    </footer>
-  </div>
-
-  <div id="loading-overlay">
-    <div style="background:white; padding:2rem; border-radius:0.5rem; text-align:center;">
-      <div class="spinner" style="border-top-color:var(--primary-color); margin-bottom:1rem;"></div>
-      <h3 style="margin:0">Analyzing Scan...</h3>
-      <p style="margin:0; color:var(--text-light)">Running deep learning inference models.</p>
-    </div>
-  </div>
-
-  <script>
-    let currentModule = '';
-    let currentScanId = '';
-    
-    // Auth Check
-    window.onload = () => {
-      const token = sessionStorage.getItem('token');
-      if (token) {
-        document.getElementById('auth-view').style.display = 'none';
-        document.getElementById('dashboard-view').style.display = 'block';
-        fetchMe();
-      }
-    };
-
-    function toggleAuth() {
-      const lf = document.getElementById('login-form');
-      const rf = document.getElementById('register-form');
-      if (lf.style.display === 'none') {
-        lf.style.display = 'block';
-        rf.style.display = 'none';
-      } else {
-        lf.style.display = 'none';
-        rf.style.display = 'block';
-      }
-    }
-
-    async function login() {
-      const em = document.getElementById('login-email').value;
-      const pw = document.getElementById('login-password').value;
-      const formData = new URLSearchParams();
-      formData.append('username', em);
-      formData.append('password', pw);
-      
-      const res = await fetch('/auth/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: formData
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        sessionStorage.setItem('token', data.access_token);
-        window.location.reload();
-      } else {
-        alert("Login failed");
-      }
-    }
-
-    async function register() {
-      const nm = document.getElementById('reg-name').value;
-      const em = document.getElementById('reg-email').value;
-      const pw = document.getElementById('reg-password').value;
-      
-      const res = await fetch('/auth/register', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({full_name: nm, email: em, password: pw, role: 'doctor'})
-      });
-      
-      if (res.ok) {
-        alert("Registered! Please sign in.");
-        toggleAuth();
-      } else {
-        alert("Registration failed");
-      }
-    }
-
-    function logout() {
-      sessionStorage.removeItem('token');
-      window.location.reload();
-    }
-
-    async function fetchMe() {
-      const res = await fetch('/auth/me', {
-        headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
-      });
-      if (res.ok) {
-        const data = await res.json();
-        document.getElementById('user-name').innerText = data.full_name;
-        document.getElementById('user-role').innerText = data.role;
-      }
-    }
-
-    function selectModule(moduleId, moduleName, color) {
-      currentModule = moduleId;
-      const ws = document.getElementById('active-workspace');
-      ws.classList.add('visible');
-      ws.style.borderTopColor = color;
-      document.getElementById('active-module-title').innerText = `${moduleName} Analysis`;
-      
-      // Reset UI
-      document.getElementById('results-panel').classList.remove('visible');
-      document.getElementById('file-input').value = "";
-      document.getElementById('file-name-display').innerText = "";
-      
-      const extraInputs = document.getElementById('bone-age-extra-inputs');
-      if (extraInputs) {
-         extraInputs.style.display = (moduleId === 'bone-age') ? 'block' : 'none';
-      }
-    }
-
-    function fileSelected(e) {
-      if (e.target.files.length > 0) {
-        document.getElementById('file-name-display').innerText = e.target.files[0].name;
-      }
-    }
-
-    async function analyzeScan() {
-      if (!currentModule) return alert("Select a module first");
-      
-      const file = document.getElementById('file-input').files[0];
-      if (!file) return alert("Select a file first");
-      
-      const name = document.getElementById('pat-name').value;
-      const age = document.getElementById('pat-age').value;
-      const gender = document.getElementById('pat-gender').value;
-      
-      if (!name || !age) return alert("Enter patient details");
-
-      document.getElementById('loading-overlay').classList.add('visible');
-
-      // 1. Create Patient
-      let patientId;
-      try {
-        const comorbs = Array.from(document.querySelectorAll('.pat-comorb:checked')).map(cb => cb.value);
-        const pRes = await fetch('/patients/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-          },
-          body: JSON.stringify({full_name: name, age: parseInt(age), gender: gender, comorbidities: comorbs})
-        });
-        const pData = await pRes.json();
-        patientId = pData.id;
-      } catch (e) {
-        document.getElementById('loading-overlay').classList.remove('visible');
-        return alert("Failed to create patient");
-      }
-
-      // 2. Upload and Analyze
-      try {
-        const fd = new FormData();
-        fd.append('patient_id', patientId);
-        fd.append('file', file);
-        
-        if (currentModule === 'bone-age') {
-           const ca = document.getElementById('chrono-age-months').value;
-           if (ca) fd.append('chronological_age_months', ca);
-        }
-        
-        const res = await fetch(`/${currentModule}/scan/upload`, {
-          method: 'POST',
-          headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`},
-          body: fd
-        });
-        
-        const data = await res.json();
-        document.getElementById('loading-overlay').classList.remove('visible');
-        
-        if (res.ok) {
-          displayResults(data);
-        } else {
-          alert("Analysis failed: " + (data.detail || "Unknown error"));
-        }
-      } catch (e) {
-        document.getElementById('loading-overlay').classList.remove('visible');
-        alert("Upload failed");
-      }
-    }
-
-    function displayResults(data) {
-      document.getElementById('results-panel').classList.add('visible');
-      currentScanId = data.id || data.scan_id; // some endpoints use scan_id, schema says id
-      if (!currentScanId && data.id) currentScanId = data.id;
-
-      // Images
-      // Assuming data.original_file_path is mapped to static or direct
-      // Wait, main.py mounts /uploads and /heatmaps
-      // If path is "uploads/xxx.png", then URL is "/uploads/xxx.png"
-      document.getElementById('img-original').src = "/" + (data.original_file_path || data.file_path);
-      document.getElementById('img-heatmap').src = data.heatmap_path ? ("/" + data.heatmap_path) : (data.heatmap_url || "");
-      
-      // Dynamic Badges
-      const badges = document.getElementById('badges-container');
-      badges.innerHTML = '';
-      
-      let urgency = data.urgency || "routine";
-      let urgencyText = urgency.toUpperCase();
-      
-      let conf = data.confidence_flag || "inconclusive";
-      let confScore = data.confidence ? `${(data.confidence * (data.confidence < 1 ? 100 : 1)).toFixed(1)}%` : '';
-      if(data.fracture_confidence) confScore = `${(data.fracture_confidence * 100).toFixed(1)}%`;
-      
-      if (currentModule !== 'bone-age') {
-        badges.innerHTML += `<div class="badge urgency-${urgency}">Priority: ${urgencyText}</div>`;
-        badges.innerHTML += `<div class="badge confidence-${conf}">Confidence: ${confScore} (${conf})</div>`;
-      }
-      
-      // Module specific rendering
-      let rec = data.clinical_recommendation || data.message || "No recommendation provided.";
-      
-      if (currentModule === 'fracture') {
-        let det = data.fracture_detected ? "Fracture Detected" : "No Fracture";
-        let reg = data.body_region;
-        badges.innerHTML += `<div class="badge" style="background:#1D6FA4; color:white;">${det}</div>`;
-        if(reg) badges.innerHTML += `<div class="badge" style="background:#e2e8f0; color:#1a202c;">Region: ${reg}</div>`;
-        if (data.prognosis) {
-          rec = `<strong>Prognosis:</strong> ${data.prognosis.rest_weeks_min}-${data.prognosis.rest_weeks_max} weeks rest. 
-                 Cast: ${data.prognosis.cast_type}. 
-                 Referral: ${data.prognosis.referral_flag}.`;
-        }
-      }
-      else if (currentModule === 'arthritis') {
-        badges.innerHTML += `<div class="badge" style="background:#1D9E75; color:white;">Grade ${data.grade}: ${data.grade_name}</div>`;
-      }
-      else if (currentModule === 'osteoporosis') {
-        let det = data.has_osteoporosis ? "Osteoporosis Detected" : "Normal Bone Density";
-        badges.innerHTML += `<div class="badge" style="background:#7C5CBF; color:white;">${det}</div>`;
-      }
-      else if (currentModule === 'tb') {
-        let det = data.has_tb ? "TB DETECTED" : "NO TB DETECTED";
-        let color = data.has_tb ? "#D32F2F" : "#388E3C";
-        badges.innerHTML += `<div class="badge" style="background:${color}; color:white;">${det}</div>`;
-        
-        if (data.urgency === 'emergency') {
-            badges.innerHTML += `<div style="width:100%; padding:1rem; background-color:#FED7D7; color:#742A2A; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:1px solid #FC8181;">EMERGENCY &mdash; Immediate pulmonology referral required. Consider patient isolation.</div>`;
-        }
-      }
-      else if (currentModule === 'lung-nodule') {
-        let det = data.has_nodule ? "NODULE DETECTED" : "NO NODULE";
-        let color = data.has_nodule ? "#A32D2D" : "#388E3C";
-        badges.innerHTML += `<div class="badge" style="background:${color}; color:white;">${det}</div>`;
-        
-        if (data.urgency === 'urgent') {
-            badges.innerHTML += `<div style="width:100%; padding:1rem; background-color:#FEEBC8; color:#7B341E; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:1px solid #F6AD55;">URGENT &mdash; Lung nodules require follow-up imaging, not emergency intervention.</div>`;
-        }
-      }
-      else if (currentModule === 'brain-tumor') {
-        let tumorMap = {
-            'glioma': {name: 'GLIOMA', color: '#8B0000', border: '2px solid #ff0000'},
-            'meningioma': {name: 'MENINGIOMA', color: '#F57C00', border: 'none'},
-            'pituitary': {name: 'PITUITARY TUMOR', color: '#F57C00', border: 'none'},
-            'no_tumor': {name: 'NO TUMOR', color: '#388E3C', border: 'none'}
-        };
-        let t_info = tumorMap[data.tumor_type] || tumorMap['no_tumor'];
-        
-        badges.innerHTML += `<div class="badge" style="background:${t_info.color}; color:white; border:${t_info.border}; font-weight:bold;">${t_info.name}</div>`;
-        
-        if (data.tumor_type === "glioma") {
-            badges.innerHTML += `<div style="width:100%; padding:1rem; background-color:#FED7D7; color:#742A2A; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:1px solid #FC8181;">EMERGENCY &mdash; Glioma detected. Immediate neurosurgical referral required.</div>`;
-        } else if (data.glioma_risk_flag) {
-            badges.innerHTML += `<div style="width:100%; padding:1rem; background-color:#FEFCBF; color:#744210; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:1px solid #F6E05E;">&#9888; Glioma Risk Alert &mdash; elevated glioma probability detected. Additional imaging recommended.</div>`;
-        }
-        
-      }
-      else if (currentModule === 'brain-hemorrhage') {
-        let det = data.has_hemorrhage ? "HEMORRHAGE DETECTED" : "NO HEMORRHAGE";
-        let color = data.has_hemorrhage ? "#C53030" : "#388E3C";
-        badges.innerHTML += `<div class="badge" style="background:${color}; color:white;">${det}</div>`;
-        
-        // Dataset warning (always shown)
-        badges.innerHTML += `<div style="width:100%; padding:1rem; background-color:#FEFCBF; color:#744210; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:1px solid #F6E05E;">&#9888; This module was trained on 200 images. Results require radiologist confirmation.</div>`;
-        
-        if (data.has_hemorrhage) {
-            // Aggressive red banner
-            badges.innerHTML += `<div style="width:100%; padding:1.5rem; background-color:#C53030; color:white; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:2px solid #9B2C2C; font-size: 1.1rem; text-align:center;">&#128680; EMERGENCY &mdash; INTRACRANIAL HEMORRHAGE DETECTED<br/><span style="font-size:0.9rem; font-weight:normal;">Activate stroke/trauma protocol IMMEDIATELY. Neurosurgical consultation required.</span></div>`;
-        }
-      }
-      else if (currentModule === 'bone-age') {
-         // Display Age Result
-         badges.innerHTML += `
-            <div style="text-align:center; padding:1.5rem; background-color:#EBF8FF; border:2px solid #90CDF4; border-radius:0.5rem; margin-bottom:1.5rem;">
-                <h4 style="margin:0 0 0.5rem 0; color:#2B6CB0; font-size:1.1rem;">Estimated Bone Age</h4>
-                <div style="font-size:2rem; font-weight:bold; color:#2C5282; margin-bottom:0.5rem;">${data.predicted_display}</div>
-                <div style="font-size:0.9rem; color:#4A5568;">Raw prediction: ${data.predicted_months.toFixed(1)} months &plusmn; ${data.uncertainty_months.toFixed(1)} months</div>
-                <div class="badge confidence-${data.confidence_flag}" style="display:inline-block; margin-top:0.5rem;">Confidence: ${data.confidence_flag}</div>
+            <!-- Feature 2 -->
+            <div class="feature-card glass-strong p-8 rounded-2xl border-t border-white/10 hover:border-cyan-400/50 transition-all group tilt-card">
+                <div class="w-14 h-14 rounded-full bg-cyan-500/20 flex items-center justify-center mb-6 glow-cyan group-hover:scale-110 transition">
+                    <svg class="w-7 h-7 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-white">Explainable AI</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">Trust the results. Every scan generates a Grad-CAM heatmap, visually highlighting the exact regions that drove the AI's diagnosis.</p>
             </div>
-         `;
-         
-         // Deviation Assessment
-         if (data.chronological_age_months !== null) {
-            let ca = data.chronological_age_months;
-            let ba = data.predicted_months;
-            let dev = data.deviation_months;
-            let flag = data.skeletal_age_flag;
+
+            <!-- Feature 3 -->
+            <div class="feature-card glass-strong p-8 rounded-2xl border-t border-white/10 hover:border-blue-400/50 transition-all group tilt-card">
+                <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center mb-6 glow-blue group-hover:scale-110 transition">
+                    <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-white">Clinical-Grade Reports</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">Instantly generate downloadable, comprehensive PDF reports including patient history, heatmaps, and AI prognosis.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modules Showcase Section -->
+    <section class="py-24 px-4 overflow-hidden relative z-10 border-t border-white/5 bg-navy-light/50">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-12 text-center">Comprehensive Diagnostics</h2>
             
-            let color = "#38A169"; // Green
-            let label = "Age Appropriate";
-            if (flag === "advanced" || flag === "delayed") { color = "#D69E2E"; label = flag.charAt(0).toUpperCase() + flag.slice(1); }
-            else if (flag === "significantly_advanced" || flag === "significantly_delayed") { color = "#E53E3E"; label = flag.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '); }
-            
-            badges.innerHTML += `
-               <div style="background-color:#F7FAFC; padding:1rem; border-radius:0.5rem; border:1px solid #E2E8F0; margin-bottom:1rem;">
-                  <h5 style="margin:0 0 0.5rem 0; color:#4A5568;">Skeletal Maturity Assessment</h5>
-                  <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
-                     <span>Chronological Age: <span style="font-weight:bold;">${Math.floor(ca/12)}y ${ca%12}m</span></span>
-                     <span>Bone Age: <span style="font-weight:bold;">${Math.floor(ba/12)}y ${Math.round(ba%12)}m</span></span>
-                  </div>
-                  <div style="margin-bottom:0.5rem;">Deviation: <strong>${dev > 0 ? '+' : ''}${dev.toFixed(1)} months</strong></div>
-                  <div class="badge" style="background:${color}; color:white;">${label}</div>
-               </div>
-            `;
-         } else {
-            badges.innerHTML += `<div style="width:100%; padding:1rem; background-color:#EDF2F7; color:#4A5568; font-style:italic; border-radius:0.5rem; margin-bottom:1rem; border:1px solid #CBD5E0; text-align:center;">Provide chronological age for deviation assessment</div>`;
-         }
-      }
-      else if (currentModule === 'retinopathy') {
-        let gradeColors = {
-            0: {name: "No DR", color: "#38A169"},
-            1: {name: "Mild", color: "#D69E2E"},
-            2: {name: "Moderate", color: "#DD6B20"},
-            3: {name: "Severe", color: "#E53E3E"},
-            4: {name: "Proliferative", color: "#9B2C2C"}
-        };
-        let gInfo = gradeColors[data.grade] || {name: data.grade_name, color: "#718096"};
-        
-        badges.innerHTML += `<div class="badge" style="background:${gInfo.color}; color:white; font-size:1.2rem;">Grade ${data.grade}: ${gInfo.name}</div>`;
-        
-        // Severity Scale Visual
-        let scaleHtml = `<div style="display:flex; justify-content:space-between; margin-top:1rem; position:relative;">
-            <div style="position:absolute; top:50%; left:10%; right:10%; height:4px; background:#E2E8F0; z-index:0; transform:translateY(-50%);"></div>`;
-        for(let i=0; i<=4; i++) {
-            let isCurrent = (data.grade === i);
-            let bg = isCurrent ? gradeColors[i].color : "#EDF2F7";
-            let fg = isCurrent ? "white" : "#A0AEC0";
-            let border = isCurrent ? `2px solid #2D3748` : `2px solid ${gradeColors[i].color}`;
-            scaleHtml += `<div style="z-index:1; width:40px; height:40px; border-radius:50%; background:${bg}; color:${fg}; border:${border}; display:flex; align-items:center; justify-content:center; font-weight:bold; ${isCurrent ? 'transform:scale(1.2); box-shadow:0 4px 6px rgba(0,0,0,0.1);' : ''}">${i}</div>`;
-        }
-        scaleHtml += `</div><div style="text-align:center; margin-top:0.5rem; font-size:0.8rem; color:#718096;">Severity Scale</div>`;
-        badges.innerHTML += scaleHtml;
-        
-        // Referable DR indicator
-        if (data.referable_dr) {
-            badges.innerHTML += `<div style="width:100%; padding:1rem; background-color:#FEEBC8; color:#C05621; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:1px solid #DD6B20; text-align:center;">&#9888; Referable &mdash; Ophthalmology Required</div>`;
-        } else {
-            badges.innerHTML += `<div style="width:100%; padding:1rem; background-color:#F0FFF4; color:#2F855A; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:1px solid #38A169; text-align:center;">Non-Referable &mdash; Routine Monitoring</div>`;
-        }
-        
-        if (data.referable_risk_flag) {
-            badges.innerHTML += `<div style="width:100%; padding:1rem; background-color:#FEFCBF; color:#B7791F; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:1px solid #D69E2E;">&#9888; Elevated severe DR probability detected. Ophthalmology referral recommended.</div>`;
-        }
-        
-        if (data.grade === 4) {
-            badges.innerHTML += `<div style="width:100%; padding:1.5rem; background-color:#C53030; color:white; font-weight:bold; border-radius:0.5rem; margin-top:1rem; border:2px solid #9B2C2C; font-size: 1.1rem; text-align:center; animation: pulse 2s infinite;">&#128680; URGENT &mdash; Proliferative DR detected.<br/><span style="font-size:0.9rem; font-weight:normal;">Risk of vision loss. Immediate ophthalmology referral required.</span></div>`;
-        }
-        
-        badges.innerHTML += `<div style="margin-top:1rem; padding:0.5rem; background:#EBF8FF; border:1px solid #BEE3F8; border-radius:0.5rem; color:#2C5282; text-align:center; font-weight:bold;">Recommended follow-up: ${data.follow_up_months} months</div>`;
-        
-        badges.innerHTML += `<div class="badge confidence-${data.confidence_flag}" style="display:inline-block; margin-top:0.5rem;">Confidence: ${data.confidence_flag}</div>`;
-      }
-        
-        // Probability breakdown
-        if (data.all_probabilities) {
-            let probsHtml = '<div style="margin-top:1.5rem; width:100%;"><h4 style="margin-bottom:0.5rem; color:#4a5568;">Probability Breakdown</h4>';
-            let pobj = typeof data.all_probabilities === 'string' ? JSON.parse(data.all_probabilities) : data.all_probabilities;
-            
-            let keysToIterate = [];
-            let probMap = {};
-            
-            if (currentModule === 'brain-tumor') {
-                keysToIterate = ['glioma', 'meningioma', 'pituitary', 'no_tumor'];
-                probMap = {
-                    'glioma': {name: 'GLIOMA', color: '#8B0000'},
-                    'meningioma': {name: 'MENINGIOMA', color: '#F57C00'},
-                    'pituitary': {name: 'PITUITARY TUMOR', color: '#F57C00'},
-                    'no_tumor': {name: 'NO TUMOR', color: '#388E3C'}
-                };
-            } else if (currentModule === 'retinopathy') {
-                keysToIterate = ['0', '1', '2', '3', '4'];
-                probMap = {
-                    '0': {name: 'No DR', color: '#38A169'},
-                    '1': {name: 'Mild', color: '#D69E2E'},
-                    '2': {name: 'Moderate', color: '#DD6B20'},
-                    '3': {name: 'Severe', color: '#E53E3E'},
-                    '4': {name: 'Proliferative', color: '#9B2C2C'}
-                };
-            }
-            
-            for (const key of keysToIterate) {
-                let pval = pobj[key] || 0.0;
-                let pct = (pval <= 1.0 && Object.values(pobj).reduce((a,b)=>a+b, 0) <= 1.5) ? pval * 100 : pval;
-                let meta = probMap[key];
-                let isBold = (currentModule === 'brain-tumor' && data.tumor_type === key) || (currentModule === 'retinopathy' && String(data.grade) === key);
-                
-                probsHtml += `
-                    <div style="display:flex; align-items:center; margin-bottom:0.5rem; font-size:0.9rem;">
-                        <span style="width:100px; font-weight:${isBold ? 'bold' : 'normal'}">${meta.name}</span>
-                        <div style="flex-grow:1; background-color:#E2E8F0; height:8px; border-radius:4px; margin:0 10px; overflow:hidden;">
-                            <div style="width:${pct}%; background-color:${meta.color}; height:100%;"></div>
-                        </div>
-                        <span style="width:50px; text-align:right;">${pct.toFixed(1)}%</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div class="module-showcase glass p-6 flex items-center gap-4 hover:bg-white/5 transition border-l-4 border-l-blue-400">
+                    <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold glow-blue">Fx</div>
+                    <div>
+                        <h4 class="font-bold text-lg">Fracture Detection</h4>
+                        <p class="text-sm text-blue-300">98.15% Accuracy</p>
                     </div>
-                `;
+                </div>
+                
+                <!-- Card 2 -->
+                <div class="module-showcase glass p-6 flex items-center gap-4 hover:bg-white/5 transition border-l-4 border-l-violet-400">
+                    <div class="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold glow-violet">Ar</div>
+                    <div>
+                        <h4 class="font-bold text-lg">Arthritis Grading</h4>
+                        <p class="text-sm text-violet-300">KL Grade Classification</p>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="module-showcase glass p-6 flex items-center gap-4 hover:bg-white/5 transition border-l-4 border-l-red-400">
+                    <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 font-bold glow-red">Tu</div>
+                    <div>
+                        <h4 class="font-bold text-lg">Brain Tumor</h4>
+                        <p class="text-sm text-red-300">4-Class MRI Detection</p>
+                    </div>
+                </div>
+
+                <!-- Add more cards to hint at scale -->
+                <div class="module-showcase glass p-6 flex items-center gap-4 hover:bg-white/5 transition border-l-4 border-l-emerald-400">
+                    <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold glow-emerald">Ln</div>
+                    <div>
+                        <h4 class="font-bold text-lg">Lung Nodule</h4>
+                        <p class="text-sm text-emerald-300">Early Stage Detection</p>
+                    </div>
+                </div>
+
+                <div class="module-showcase glass p-6 flex items-center gap-4 hover:bg-white/5 transition border-l-4 border-l-amber-400">
+                    <div class="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold glow-amber">Tb</div>
+                    <div>
+                        <h4 class="font-bold text-lg">TB Screening</h4>
+                        <p class="text-sm text-amber-300">Chest X-Ray Analysis</p>
+                    </div>
+                </div>
+
+                <div class="module-showcase glass p-6 flex items-center justify-center hover:bg-white/5 transition text-teal-400 cursor-pointer" onclick="window.location.href='/login'">
+                    <span class="font-semibold">+ 4 More Modules</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 border-t border-white/5 text-center text-slate-500 text-sm z-10 relative bg-navy">
+        Built with PyTorch · FastAPI · Three.js
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/three-scenes.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // 1. Initialize 3D Hero Scene
+            if (typeof createMedicalScene === 'function') {
+                createMedicalScene('hero-canvas');
             }
-            probsHtml += '</div>';
-            badges.innerHTML += probsHtml;
-        }
-      }
-      
-      document.getElementById('clinical-recommendation').innerHTML = rec;
-      
-      const ovSection = document.getElementById('override-section');
-      if (ovSection) {
-         ovSection.style.display = (currentModule === 'bone-age') ? 'none' : 'block';
-      }
-      
-      document.getElementById('download-report-btn').style.display = 'block';
-      if (data.report_url) {
-        document.getElementById('download-report-btn').onclick = () => window.open(data.report_url, '_blank');
-      } else if (data.report_path) {
-        document.getElementById('download-report-btn').onclick = () => window.open("/" + data.report_path, '_blank');
-      } else {
-        document.getElementById('download-report-btn').onclick = () => window.open(`/${currentModule}/scan/${currentScanId}/report`, '_blank');
-      }
-    }
 
-    async function submitOverride() {
-      const diag = document.getElementById('override-diagnosis').value;
-      const notes = document.getElementById('override-notes').value;
-      
-      if(!diag) return alert("Enter correct diagnosis");
-      
-      const res = await fetch(`/${currentModule}/${currentScanId}/override`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-        },
-        body: JSON.stringify({clinician_override: diag, override_notes: notes})
-      });
-      
-      if(res.ok) {
-        alert("Override submitted successfully");
-      } else {
-        alert("Failed to submit override");
-      }
-    }
+            // 2. Initialize 3D Card Tilt effects
+            initTiltCards();
 
-  </script>
+            // 3. GSAP Animations
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Hero text entrance
+            gsap.from(".gsap-hero", {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.15,
+                ease: "power3.out",
+                delay: 0.2
+            });
+
+            // Feature cards reveal
+            gsap.from(".feature-card", {
+                scrollTrigger: {
+                    trigger: "#features",
+                    start: "top 80%",
+                },
+                y: 50,
+                opacity: 0,
+                duration: 0.8,
+                stagger: 0.2,
+                ease: "power2.out"
+            });
+
+            // Module showcase reveal
+            gsap.from(".module-showcase", {
+                scrollTrigger: {
+                    trigger: ".module-showcase",
+                    start: "top 85%",
+                },
+                x: -30,
+                opacity: 0,
+                duration: 0.6,
+                stagger: 0.1,
+                ease: "back.out(1.2)"
+            });
+
+            // Navbar scroll effect
+            window.addEventListener('scroll', () => {
+                const nav = document.getElementById('navbar');
+                if (window.scrollY > 50) {
+                    nav.classList.add('shadow-lg', 'border-b', 'border-white/10', 'bg-navy/80');
+                    nav.classList.remove('bg-navy/40', 'border-none');
+                } else {
+                    nav.classList.remove('shadow-lg', 'border-b', 'border-white/10', 'bg-navy/80');
+                    nav.classList.add('bg-navy/40', 'border-none');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

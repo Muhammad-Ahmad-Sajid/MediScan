@@ -3,97 +3,311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediScan AI - Dashboard</title>
+    <title>MediScan AI — Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: { 50: '#CCFBF1', 400: '#14B8A6', 700: '#0F766E', 800: '#0D5E57' },
-                        navy: '#1E3A5F',
-                        surface: '#FFFFFF',
-                        background: '#F8FAFC'
+                        primary: { 50: '#CCFBF1', 100: '#B2F5EA', 400: '#14B8A6', 600: '#0D9488', 700: '#0F766E', 800: '#0D5E57' },
+                        navy: { DEFAULT: '#0B1426', light: '#132040', medium: '#1A2D50' },
+                        cyan: { glow: '#22D3EE' },
                     }
                 }
             }
         }
     </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-background text-slate-800 font-sans antialiased overflow-hidden">
+<body style="background: #0B1426; margin: 0; min-height: 100vh; color: #F1F5F9;">
 
-    <div class="flex h-screen w-full">
-        <!-- Sidebar injected via JS -->
-        <div id="sidebar-container"></div>
+    <!-- PARTICLE BACKGROUND -->
+    <div id="particle-bg" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none;"></div>
 
-        <!-- Main Content -->
-        <div id="main-content-area" class="flex-1 flex flex-col main-content xl:ml-[250px] overflow-hidden">
-            <!-- Navbar injected via JS -->
-            <div id="navbar-container"></div>
+    <!-- SIDEBAR -->
+    <div id="sidebar-container"></div>
 
-            <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto p-6 md:p-8">
+    <!-- MAIN WRAPPER -->
+    <div class="page-content-wrapper" style="margin-left:260px; position:relative; z-index:1; transition: margin-left 0.3s ease;">
+
+        <!-- NAVBAR -->
+        <div id="navbar-container"></div>
+
+        <!-- PAGE CONTENT -->
+        <div class="page-content" style="padding: 32px 40px; max-width: 1400px; margin: 0 auto;">
+            
+            <div class="grid grid-cols-4 gap-5 mb-8" id="stats-row">
+                <!-- Card 1 -->
+                <div class="stat-card glass" style="padding:24px; border-radius:16px; position:relative; overflow:hidden;">
+                    <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #14B8A6, #22D3EE);"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p style="font-size:12px; color:#64748B; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;">Total Scans</p>
+                            <p class="stat-number" data-target="1247" style="font-size:32px; font-weight:700; color:#F1F5F9; margin:0;">0</p>
+                        </div>
+                        <div style="width:48px; height:48px; border-radius:12px; background:rgba(20,184,166,0.1); display:flex; align-items:center; justify-content:center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div style="position:absolute; top:0; left:-100%; width:200%; height:100%; background:linear-gradient(90deg, transparent, rgba(20,184,166,0.03), transparent); animation: shimmer 4s ease-in-out infinite; pointer-events:none;"></div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="stat-card glass" style="padding:24px; border-radius:16px; position:relative; overflow:hidden;">
+                    <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #3B82F6, #60A5FA);"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p style="font-size:12px; color:#64748B; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;">Active Patients</p>
+                            <p class="stat-number" data-target="853" style="font-size:32px; font-weight:700; color:#F1F5F9; margin:0;">0</p>
+                        </div>
+                        <div style="width:48px; height:48px; border-radius:12px; background:rgba(59,130,246,0.1); display:flex; align-items:center; justify-content:center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div style="position:absolute; top:0; left:-100%; width:200%; height:100%; background:linear-gradient(90deg, transparent, rgba(59,130,246,0.03), transparent); animation: shimmer 4s ease-in-out infinite; pointer-events:none; animation-delay: 1s;"></div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="stat-card critical glass" style="padding:24px; border-radius:16px; position:relative; overflow:hidden;">
+                    <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #EF4444, #F87171);"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p style="font-size:12px; color:#64748B; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;">Critical Alerts</p>
+                            <p class="stat-number" data-target="12" style="font-size:32px; font-weight:700; color:#F87171; margin:0;">0</p>
+                        </div>
+                        <div style="width:48px; height:48px; border-radius:12px; background:rgba(239,68,68,0.1); display:flex; align-items:center; justify-content:center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div style="position:absolute; top:0; left:-100%; width:200%; height:100%; background:linear-gradient(90deg, transparent, rgba(239,68,68,0.03), transparent); animation: shimmer 4s ease-in-out infinite; pointer-events:none; animation-delay: 2s;"></div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="stat-card glass" style="padding:24px; border-radius:16px; position:relative; overflow:hidden;">
+                    <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #A855F7, #C084FC);"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p style="font-size:12px; color:#64748B; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;">Reports Generated</p>
+                            <p class="stat-number" data-target="3892" style="font-size:32px; font-weight:700; color:#F1F5F9; margin:0;">0</p>
+                        </div>
+                        <div style="width:48px; height:48px; border-radius:12px; background:rgba(168,85,247,0.1); display:flex; align-items:center; justify-content:center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C084FC" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div style="position:absolute; top:0; left:-100%; width:200%; height:100%; background:linear-gradient(90deg, transparent, rgba(168,85,247,0.03), transparent); animation: shimmer 4s ease-in-out infinite; pointer-events:none; animation-delay: 3s;"></div>
+                </div>
+            </div>
+
+            <h3 style="font-size:16px; font-weight:600; color:#94A3B8; margin-bottom:20px; text-transform:uppercase; letter-spacing:1px;">
+                Diagnostic Modules
+            </h3>
+
+            <div class="grid grid-cols-3 gap-5" id="module-grid">
                 
-                <!-- Stats Row -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Stat 1 -->
-                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
-                        <div class="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mr-4">
-                            <svg class="w-6 h-6 text-primary-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-slate-500">Total Scans Today</p>
-                            <p class="text-2xl font-bold text-slate-800 stat-counter" data-target="0" id="stat-scans">0</p>
-                        </div>
+                <!-- 1. Fracture -->
+                <div class="module-card tilt-card glass" style="padding:28px; border-radius:16px; cursor:pointer; position:relative; overflow:hidden;"
+                     onclick="window.location.href='/scan/fracture'"
+                     onmouseover="this.querySelector('.accent-bar').style.boxShadow='0 0 20px rgba(96,165,250,0.3)'"
+                     onmouseout="this.querySelector('.accent-bar').style.boxShadow='none'">
+                    <div class="accent-bar" style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#60A5FA; transition: box-shadow 0.3s;"></div>
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(96,165,250,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2">
+                            <path d="M18.37 2.63a1 1 0 01.7.29l2.01 2.01a1 1 0 010 1.42L8.35 19.08a3 3 0 01-1.55.83l-3.28.82.82-3.28a3 3 0 01.83-1.55L18.08 2.92a1 1 0 01.29-.29z"/>
+                        </svg>
                     </div>
-                    <!-- Stat 2 -->
-                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
-                        <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-4">
-                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-slate-500">Total Patients</p>
-                            <p class="text-2xl font-bold text-slate-800 stat-counter" data-target="0" id="stat-patients">0</p>
-                        </div>
+                    <h4 style="font-size:16px; font-weight:600; color:#F1F5F9; margin:0 0 6px;">Bone Fracture</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 16px; line-height:1.5;">X-ray fracture detection with body region classification</p>
+                    <div class="flex items-center justify-between">
+                        <span style="font-size:12px; color:#64748B;"><span style="color:#60A5FA; font-weight:600;">98.15%</span> accuracy</span>
+                        <span style="font-size:12px; color:#14B8A6; font-weight:500;">Start Scan &rarr;</span>
                     </div>
-                    <!-- Stat 3 -->
-                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
-                        <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mr-4">
-                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-slate-500">Critical Alerts</p>
-                            <p class="text-2xl font-bold text-slate-800 stat-counter" data-target="0" id="stat-alerts">0</p>
-                        </div>
-                    </div>
-                    <!-- Stat 4 -->
-                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
-                        <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center mr-4">
-                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-slate-500">Reports Generated</p>
-                            <p class="text-2xl font-bold text-slate-800 stat-counter" data-target="0" id="stat-reports">0</p>
-                        </div>
-                    </div>
+                    <div style="position:absolute; inset:0; border-radius:16px; opacity:0; transition:opacity 0.3s; pointer-events:none; background:radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(96,165,250,0.06), transparent 60%);" class="hover-glow"></div>
                 </div>
 
-                <div class="mb-6 flex items-center justify-between">
-                    <h2 class="text-lg font-bold text-slate-800">Diagnostic Modules</h2>
-                    <p class="text-sm text-slate-500">Select a module to start a new scan</p>
+                <!-- 2. Arthritis -->
+                <div class="module-card tilt-card glass" style="padding:28px; border-radius:16px; cursor:pointer; position:relative; overflow:hidden;"
+                     onclick="window.location.href='/scan/arthritis'"
+                     onmouseover="this.querySelector('.accent-bar').style.boxShadow='0 0 20px rgba(167,139,250,0.3)'"
+                     onmouseout="this.querySelector('.accent-bar').style.boxShadow='none'">
+                    <div class="accent-bar" style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#A78BFA; transition: box-shadow 0.3s;"></div>
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(167,139,250,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-size:16px; font-weight:600; color:#F1F5F9; margin:0 0 6px;">Arthritis</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 16px; line-height:1.5;">KL grading (5-class) severity assessment</p>
+                    <div class="flex items-center justify-between">
+                        <span style="font-size:12px; color:#64748B;"><span style="color:#A78BFA; font-weight:600;">KL</span> grading</span>
+                        <span style="font-size:12px; color:#14B8A6; font-weight:500;">Start Scan &rarr;</span>
+                    </div>
+                    <div style="position:absolute; inset:0; border-radius:16px; opacity:0; transition:opacity 0.3s; pointer-events:none; background:radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(167,139,250,0.06), transparent 60%);" class="hover-glow"></div>
                 </div>
 
-                <!-- 3x3 Module Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="module-grid">
-                    <!-- Populated by dashboard.js -->
+                <!-- 3. Osteoporosis -->
+                <div class="module-card tilt-card glass" style="padding:28px; border-radius:16px; cursor:pointer; position:relative; overflow:hidden;"
+                     onclick="window.location.href='/scan/osteoporosis'"
+                     onmouseover="this.querySelector('.accent-bar').style.boxShadow='0 0 20px rgba(244,114,182,0.3)'"
+                     onmouseout="this.querySelector('.accent-bar').style.boxShadow='none'">
+                    <div class="accent-bar" style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#F472B6; transition: box-shadow 0.3s;"></div>
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(244,114,182,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#F472B6" stroke-width="2">
+                            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-size:16px; font-weight:600; color:#F1F5F9; margin:0 0 6px;">Osteoporosis</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 16px; line-height:1.5;">Bone density estimation & risk analysis</p>
+                    <div class="flex items-center justify-between">
+                        <span style="font-size:12px; color:#64748B;"><span style="color:#F472B6; font-weight:600;">91%</span> sensitivity</span>
+                        <span style="font-size:12px; color:#14B8A6; font-weight:500;">Start Scan &rarr;</span>
+                    </div>
+                    <div style="position:absolute; inset:0; border-radius:16px; opacity:0; transition:opacity 0.3s; pointer-events:none; background:radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(244,114,182,0.06), transparent 60%);" class="hover-glow"></div>
                 </div>
 
-            </main>
+                <!-- 4. TB Screening -->
+                <div class="module-card tilt-card glass" style="padding:28px; border-radius:16px; cursor:pointer; position:relative; overflow:hidden;"
+                     onclick="window.location.href='/scan/tb'"
+                     onmouseover="this.querySelector('.accent-bar').style.boxShadow='0 0 20px rgba(251,191,36,0.3)'"
+                     onmouseout="this.querySelector('.accent-bar').style.boxShadow='none'">
+                    <div class="accent-bar" style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#FBBF24; transition: box-shadow 0.3s;"></div>
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(251,191,36,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-size:16px; font-weight:600; color:#F1F5F9; margin:0 0 6px;">TB Screening</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 16px; line-height:1.5;">Chest X-ray tuberculosis detection</p>
+                    <div class="flex items-center justify-between">
+                        <span style="font-size:12px; color:#64748B;"><span style="color:#FBBF24; font-weight:600;">97%</span> sensitivity</span>
+                        <span style="font-size:12px; color:#14B8A6; font-weight:500;">Start Scan &rarr;</span>
+                    </div>
+                    <div style="position:absolute; inset:0; border-radius:16px; opacity:0; transition:opacity 0.3s; pointer-events:none; background:radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(251,191,36,0.06), transparent 60%);" class="hover-glow"></div>
+                </div>
+
+                <!-- 5. Lung Nodule -->
+                <div class="module-card tilt-card glass" style="padding:28px; border-radius:16px; cursor:pointer; position:relative; overflow:hidden;"
+                     onclick="window.location.href='/scan/lung-nodule'"
+                     onmouseover="this.querySelector('.accent-bar').style.boxShadow='0 0 20px rgba(52,211,153,0.3)'"
+                     onmouseout="this.querySelector('.accent-bar').style.boxShadow='none'">
+                    <div class="accent-bar" style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#34D399; transition: box-shadow 0.3s;"></div>
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(52,211,153,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5z"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-size:16px; font-weight:600; color:#F1F5F9; margin:0 0 6px;">Lung Nodule</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 16px; line-height:1.5;">Early detection of pulmonary nodules</p>
+                    <div class="flex items-center justify-between">
+                        <span style="font-size:12px; color:#64748B;"><span style="color:#34D399; font-weight:600;">100%</span> sensitivity</span>
+                        <span style="font-size:12px; color:#14B8A6; font-weight:500;">Start Scan &rarr;</span>
+                    </div>
+                    <div style="position:absolute; inset:0; border-radius:16px; opacity:0; transition:opacity 0.3s; pointer-events:none; background:radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(52,211,153,0.06), transparent 60%);" class="hover-glow"></div>
+                </div>
+
+                <!-- 6. Brain Tumor -->
+                <div class="module-card tilt-card glass" style="padding:28px; border-radius:16px; cursor:pointer; position:relative; overflow:hidden;"
+                     onclick="window.location.href='/scan/brain-tumor'"
+                     onmouseover="this.querySelector('.accent-bar').style.boxShadow='0 0 20px rgba(248,113,113,0.3)'"
+                     onmouseout="this.querySelector('.accent-bar').style.boxShadow='none'">
+                    <div class="accent-bar" style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#F87171; transition: box-shadow 0.3s;"></div>
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(248,113,113,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2">
+                            <path d="M12 2C8.69 2 6 4.69 6 8c0 1.95 1.15 3.65 2.85 4.5l-1.55 6.22A2 2 0 0 0 9.24 21h5.52a2 2 0 0 0 1.94-2.28l-1.55-6.22C16.85 11.65 18 9.95 18 8c0-3.31-2.69-6-6-6z"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-size:16px; font-weight:600; color:#F1F5F9; margin:0 0 6px;">Brain Tumor</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 16px; line-height:1.5;">4-class tumor classification (MRI)</p>
+                    <div class="flex items-center justify-between">
+                        <span style="font-size:12px; color:#64748B;"><span style="color:#F87171; font-weight:600;">95%</span> accuracy</span>
+                        <span style="font-size:12px; color:#14B8A6; font-weight:500;">Start Scan &rarr;</span>
+                    </div>
+                    <div style="position:absolute; inset:0; border-radius:16px; opacity:0; transition:opacity 0.3s; pointer-events:none; background:radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(248,113,113,0.06), transparent 60%);" class="hover-glow"></div>
+                </div>
+
+                <!-- 7. Brain Hemorrhage -->
+                <div class="module-card tilt-card glass" style="padding:28px; border-radius:16px; cursor:pointer; position:relative; overflow:hidden;"
+                     onclick="window.location.href='/scan/brain-hemorrhage'"
+                     onmouseover="this.querySelector('.accent-bar').style.boxShadow='0 0 20px rgba(251,146,60,0.3)'"
+                     onmouseout="this.querySelector('.accent-bar').style.boxShadow='none'">
+                    <div class="accent-bar" style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#FB923C; transition: box-shadow 0.3s;"></div>
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(251,146,60,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FB923C" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-size:16px; font-weight:600; color:#F1F5F9; margin:0 0 6px;">Brain Hemorrhage</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 16px; line-height:1.5;">Emergency hemorrhage detection</p>
+                    <div class="flex items-center justify-between">
+                        <span style="font-size:12px; color:#64748B;"><span style="color:#FB923C; font-weight:600;">Emergency</span> Protocol</span>
+                        <span style="font-size:12px; color:#14B8A6; font-weight:500;">Start Scan &rarr;</span>
+                    </div>
+                    <div style="position:absolute; inset:0; border-radius:16px; opacity:0; transition:opacity 0.3s; pointer-events:none; background:radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(251,146,60,0.06), transparent 60%);" class="hover-glow"></div>
+                </div>
+
+                <!-- 8. Bone Age -->
+                <div class="module-card tilt-card glass" style="padding:28px; border-radius:16px; cursor:pointer; position:relative; overflow:hidden;"
+                     onclick="window.location.href='/scan/bone-age'"
+                     onmouseover="this.querySelector('.accent-bar').style.boxShadow='0 0 20px rgba(34,211,238,0.3)'"
+                     onmouseout="this.querySelector('.accent-bar').style.boxShadow='none'">
+                    <div class="accent-bar" style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#22D3EE; transition: box-shadow 0.3s;"></div>
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(34,211,238,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="2">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-size:16px; font-weight:600; color:#F1F5F9; margin:0 0 6px;">Bone Age</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 16px; line-height:1.5;">Pediatric bone age regression assessment</p>
+                    <div class="flex items-center justify-between">
+                        <span style="font-size:12px; color:#64748B;"><span style="color:#22D3EE; font-weight:600;">7.34-month</span> MAE</span>
+                        <span style="font-size:12px; color:#14B8A6; font-weight:500;">Start Scan &rarr;</span>
+                    </div>
+                    <div style="position:absolute; inset:0; border-radius:16px; opacity:0; transition:opacity 0.3s; pointer-events:none; background:radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(34,211,238,0.06), transparent 60%);" class="hover-glow"></div>
+                </div>
+
+                <!-- 9. Retinopathy -->
+                <div class="module-card tilt-card glass" style="padding:28px; border-radius:16px; cursor:pointer; position:relative; overflow:hidden;"
+                     onclick="window.location.href='/scan/retinopathy'"
+                     onmouseover="this.querySelector('.accent-bar').style.boxShadow='0 0 20px rgba(129,140,248,0.3)'"
+                     onmouseout="this.querySelector('.accent-bar').style.boxShadow='none'">
+                    <div class="accent-bar" style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#818CF8; transition: box-shadow 0.3s;"></div>
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(129,140,248,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#818CF8" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-size:16px; font-weight:600; color:#F1F5F9; margin:0 0 6px;">Retinopathy</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 16px; line-height:1.5;">Diabetic retinopathy grading</p>
+                    <div class="flex items-center justify-between">
+                        <span style="font-size:12px; color:#64748B;"><span style="color:#818CF8; font-weight:600;">0.8708</span> QWK</span>
+                        <span style="font-size:12px; color:#14B8A6; font-weight:500;">Start Scan &rarr;</span>
+                    </div>
+                    <div style="position:absolute; inset:0; border-radius:16px; opacity:0; transition:opacity 0.3s; pointer-events:none; background:radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(129,140,248,0.06), transparent 60%);" class="hover-glow"></div>
+                </div>
+
+            </div>
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=1.1"></script>
-    <script src="/static/js/dashboard.js?v=1.1"></script>
+    <div id="toast-container"></div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/three-scenes.js"></script>
+    <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

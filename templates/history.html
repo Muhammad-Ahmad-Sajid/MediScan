@@ -3,111 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediScan AI - Patient History</title>
+    <title>MediScan AI — Scan History</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: { 50: '#CCFBF1', 400: '#14B8A6', 700: '#0F766E', 800: '#0D5E57' },
-                        navy: '#1E3A5F',
-                        surface: '#FFFFFF',
-                        background: '#F8FAFC'
+                        primary: { 50: '#CCFBF1', 100: '#B2F5EA', 400: '#14B8A6', 600: '#0D9488', 700: '#0F766E', 800: '#0D5E57' },
+                        navy: { DEFAULT: '#0B1426', light: '#132040', medium: '#1A2D50' },
+                        cyan: { glow: '#22D3EE' },
                     }
                 }
             }
         }
     </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
     <style>
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { font-family: 'Inter', sans-serif; }
+        
+        .history-tab {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #94A3B8;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .history-tab.active {
+            background: rgba(20,184,166,0.1);
+            color: #14B8A6;
+            border-color: rgba(20,184,166,0.3);
+            box-shadow: 0 0 10px rgba(20,184,166,0.1);
+        }
+        .history-tab:hover:not(.active) {
+            background: rgba(255,255,255,0.04);
+            color: #F1F5F9;
+        }
+        
+        /* Hide scrollbar for tabs */
+        .tabs-container::-webkit-scrollbar { display: none; }
+        .tabs-container { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-background text-slate-800 font-sans antialiased overflow-hidden">
+<body style="background: #0B1426; margin: 0; min-height: 100vh; color: #F1F5F9;">
 
-    <div class="flex h-screen w-full relative">
-        <div id="sidebar-container"></div>
+    <!-- PARTICLE BACKGROUND -->
+    <div id="particle-bg" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none;"></div>
 
-        <div id="main-content-area" class="flex-1 flex flex-col main-content xl:ml-[250px] overflow-hidden">
-            <div id="navbar-container"></div>
+    <!-- SIDEBAR -->
+    <div id="sidebar-container"></div>
 
-            <main class="flex-1 overflow-y-auto p-6 md:p-8">
-                
-                <!-- Patient Search -->
-                <div class="bg-surface rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4">Patient Search</h2>
-                    <form id="patient-search-form" class="flex flex-col sm:flex-row gap-4">
-                        <select id="patient-select" class="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-400 outline-none bg-white text-slate-700">
-                            <option value="">-- Select or Type Patient Name/ID --</option>
-                        </select>
-                        <button type="submit" class="px-6 py-3 bg-primary-700 hover:bg-primary-800 text-white rounded-lg font-medium transition-colors shadow-sm whitespace-nowrap">
-                            Load History
-                        </button>
-                    </form>
+    <!-- MAIN WRAPPER -->
+    <div class="page-content-wrapper" style="margin-left:260px; position:relative; z-index:1; transition: margin-left 0.3s ease;">
+
+        <!-- NAVBAR -->
+        <div id="navbar-container"></div>
+
+        <!-- PAGE CONTENT -->
+        <div class="page-content" style="padding: 32px 40px; max-width: 1200px; margin: 0 auto;">
+            
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 style="font-size:22px; font-weight:700; color:#F1F5F9; margin:0;">Scan History</h2>
+                    <p style="font-size:13px; color:#64748B; margin:4px 0 0;">Review past diagnostics and patient records</p>
                 </div>
 
-                <!-- Patient Info Card -->
-                <div id="patient-info-card" class="hidden bg-surface rounded-xl shadow-sm border border-slate-200 p-6 mb-8 flex items-center justify-between flex-wrap gap-4">
-                    <div class="flex items-center">
-                        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-600 mr-4" id="pat-initials"></div>
-                        <div>
-                            <h3 class="text-xl font-bold text-slate-800" id="pat-name">Loading...</h3>
-                            <p class="text-sm text-slate-500">ID: <span id="pat-id" class="font-medium"></span> &bull; Age: <span id="pat-age" class="font-medium"></span> &bull; <span id="pat-gender" class="font-medium"></span></p>
-                        </div>
-                    </div>
-                    <div class="flex space-x-8 text-center bg-slate-50 p-3 rounded-lg border border-slate-100">
-                        <div>
-                            <p class="text-2xl font-bold text-primary-700" id="pat-total-scans">0</p>
-                            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Scans</p>
-                        </div>
-                        <div>
-                            <p class="text-2xl font-bold text-slate-800" id="pat-last-scan">N/A</p>
-                            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Last Scan</p>
-                        </div>
-                    </div>
+                <div style="position:relative;">
+                    <input type="text" id="filter-search" placeholder="Search ID or Name..."
+                        class="glass-input pl-10" style="width: 260px;">
+                    <svg style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#64748B;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
                 </div>
+            </div>
 
-                <!-- History Area -->
-                <div id="history-area" class="hidden">
-                    
-                    <!-- Tabs & Controls -->
-                    <div class="flex flex-col xl:flex-row items-center justify-between mb-6 gap-4">
-                        <div class="w-full xl:w-auto overflow-x-auto pb-2 xl:pb-0 hide-scrollbar flex-1">
-                            <div class="flex space-x-2" id="module-tabs">
-                                <!-- Populated via JS -->
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-2 bg-slate-100 p-1 rounded-lg shrink-0">
-                            <button id="view-list" class="p-2 rounded bg-white shadow-sm text-slate-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
-                            <button id="view-grid" class="p-2 rounded text-slate-500 hover:text-slate-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg></button>
-                        </div>
-                    </div>
+            <!-- Horizontal Module Tabs -->
+            <div class="tabs-container flex gap-3 overflow-x-auto pb-2 mb-6" id="module-tabs">
+                <button class="history-tab active" data-module="all">All Scans</button>
+                <button class="history-tab" data-module="fracture">Bone Fracture</button>
+                <button class="history-tab" data-module="arthritis">Arthritis</button>
+                <button class="history-tab" data-module="osteoporosis">Osteoporosis</button>
+                <button class="history-tab" data-module="tb">TB Screening</button>
+                <button class="history-tab" data-module="lung_nodule">Lung Nodule</button>
+                <button class="history-tab" data-module="brain_tumor">Brain Tumor</button>
+                <button class="history-tab" data-module="brain_hemorrhage">Brain Hemorrhage</button>
+                <button class="history-tab" data-module="bone_age">Bone Age</button>
+                <button class="history-tab" data-module="retinopathy">Retinopathy</button>
+            </div>
 
-                    <!-- Scans Container -->
-                    <div id="scans-container" class="space-y-4">
-                        <!-- Populated via JS (List mode default) -->
-                    </div>
-
-                    <div id="empty-state" class="hidden text-center py-16 bg-surface rounded-xl border border-slate-200 border-dashed">
-                        <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                        <h3 class="text-lg font-medium text-slate-800">No Scans Found</h3>
-                        <p class="text-sm text-slate-500 mt-1">This patient has no scan history for the selected module.</p>
-                    </div>
-
+            <!-- Scans Grid -->
+            <div id="scans-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Loader -->
+                <div class="col-span-full py-12 flex justify-center">
+                    <div style="width:32px; height:32px; border:3px solid rgba(20,184,166,0.2); border-top-color:#14B8A6; border-radius:50%; animation:spin 1s linear infinite;"></div>
                 </div>
+            </div>
 
-            </main>
         </div>
     </div>
 
-    <!-- Lightbox Modal -->
-    <div id="lightbox" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4 cursor-pointer" onclick="this.classList.add('hidden')">
-        <img id="lightbox-img" src="" class="max-h-full max-w-full rounded shadow-2xl cursor-default" onclick="event.stopPropagation()">
+    <!-- Patient Details Modal (If clicked on patient info inside a scan card) -->
+    <div id="patient-modal" class="hidden" style="position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center;">
+        <div class="glass-strong" style="padding:32px; border-radius:20px; max-width:440px; width:90%; border:1px solid rgba(255,255,255,0.1);" id="patient-modal-card">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 style="font-size:20px; font-weight:700; color:#F1F5F9; margin:0 0 4px;" id="modal-patient-name">Patient Name</h3>
+                    <p style="font-size:13px; color:#64748B; margin:0;" id="modal-patient-details">ID: ...</p>
+                </div>
+                <button onclick="closePatientModal()" style="color:#94A3B8; background:none; border:none; cursor:pointer; font-size:24px;">&times;</button>
+            </div>
+            
+            <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:16px; margin-bottom:20px;">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><span style="font-size:12px; color:#64748B;">Age</span><div style="color:#F1F5F9; font-size:14px; font-weight:500;" id="modal-age">--</div></div>
+                    <div><span style="font-size:12px; color:#64748B;">Gender</span><div style="color:#F1F5F9; font-size:14px; font-weight:500;" id="modal-gender">--</div></div>
+                    <div class="col-span-2"><span style="font-size:12px; color:#64748B;">Comorbidities</span><div style="color:#F1F5F9; font-size:14px; font-weight:500;" id="modal-comorbidities">None</div></div>
+                </div>
+            </div>
+
+            <button onclick="closePatientModal()" style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.04); color:#94A3B8; cursor:pointer;">
+                Close
+            </button>
+        </div>
     </div>
 
-    <script src="/static/js/app.js?v=1.1"></script>
-    <script src="/static/js/history.js?v=1.1"></script>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/three-scenes.js"></script>
+    <script src="/static/js/history.js"></script>
 </body>
 </html>

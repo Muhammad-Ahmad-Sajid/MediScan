@@ -3,189 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediScan AI - New Scan</title>
+    <title>MediScan AI — New Scan</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: { 50: '#CCFBF1', 400: '#14B8A6', 700: '#0F766E', 800: '#0D5E57' },
-                        navy: '#1E3A5F',
-                        surface: '#FFFFFF',
-                        background: '#F8FAFC'
+                        primary: { 50: '#CCFBF1', 100: '#B2F5EA', 400: '#14B8A6', 600: '#0D9488', 700: '#0F766E', 800: '#0D5E57' },
+                        navy: { DEFAULT: '#0B1426', light: '#132040', medium: '#1A2D50' },
+                        cyan: { glow: '#22D3EE' },
                     }
                 }
             }
         }
     </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-background text-slate-800 font-sans antialiased overflow-hidden">
+<body style="background: #0B1426; margin: 0; min-height: 100vh; color: #F1F5F9;">
 
-    <div class="flex h-screen w-full relative">
-        <!-- Sidebar -->
-        <div id="sidebar-container"></div>
+    <!-- PARTICLE BACKGROUND -->
+    <div id="particle-bg" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none;"></div>
 
-        <!-- Main Content -->
-        <div id="main-content-area" class="flex-1 flex flex-col main-content xl:ml-[250px] overflow-hidden">
-            <!-- Navbar -->
-            <div id="navbar-container"></div>
+    <!-- SIDEBAR -->
+    <div id="sidebar-container"></div>
 
-            <main class="flex-1 overflow-y-auto p-6 md:p-8">
-                
-                <!-- Header -->
-                <div class="flex items-center mb-8 border-b border-slate-200 pb-4">
-                    <div id="mod-icon-bg" class="w-12 h-12 rounded-full flex items-center justify-center mr-4">
-                        <img id="mod-icon" src="" class="w-7 h-7">
-                    </div>
-                    <div>
-                        <div class="text-sm text-slate-500 font-medium mb-1">
-                            <a href="/dashboard" class="hover:text-primary-700">Dashboard</a> > 
-                            <span id="breadcrumb-mod">Module</span> > New Scan
-                        </div>
-                        <h2 id="mod-title" class="text-2xl font-bold text-slate-800">New Scan</h2>
-                    </div>
+    <!-- MAIN WRAPPER -->
+    <div class="page-content-wrapper" style="margin-left:260px; position:relative; z-index:1; transition: margin-left 0.3s ease;">
+
+        <!-- NAVBAR -->
+        <div id="navbar-container"></div>
+
+        <!-- PAGE CONTENT -->
+        <div class="page-content" style="padding: 32px 40px; max-width: 900px; margin: 0 auto;">
+            
+            <!-- Module Header -->
+            <div class="flex items-center gap-4 mb-8">
+                <div id="module-icon-container" style="width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:rgba(20,184,166,0.1);">
+                    <!-- Filled by JS based on module, defaulting to generic -->
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <div>
+                    <h2 id="module-name" style="font-size:22px; font-weight:700; color:#F1F5F9; margin:0; text-transform:capitalize;">{{ module.replace('_', ' ') }} Detection</h2>
+                    <p style="font-size:13px; color:#64748B; margin:4px 0 0;">Upload a medical image for AI analysis</p>
+                </div>
+            </div>
+
+            <!-- Step 1: Patient Selection -->
+            <div class="glass" style="padding:28px; border-radius:16px; margin-bottom:20px;">
+                <h3 style="font-size:14px; font-weight:600; color:#94A3B8; text-transform:uppercase; letter-spacing:1px; margin:0 0 16px;">
+                    Step 1 — Select Patient
+                </h3>
+
+                <!-- Search existing -->
+                <div style="position:relative; margin-bottom:16px;" id="patient-search-container">
+                    <input type="text" id="patient-search" placeholder="Search patient by ID or name..."
+                        class="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                        style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:#F1F5F9; padding-left:40px;"
+                        onfocus="this.style.borderColor='rgba(20,184,166,0.4)'; this.style.boxShadow='0 0 15px rgba(20,184,166,0.08)'"
+                        onblur="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.boxShadow='none'">
+                    <svg style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#64748B;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <!-- Autocomplete dropdown -->
+                    <div id="patient-dropdown" class="hidden glass" style="position:absolute; top:100%; left:0; right:0; margin-top:4px; border-radius:12px; max-height:200px; overflow-y:auto; z-index:20;"></div>
                 </div>
 
-                <div class="max-w-3xl mx-auto space-y-6">
-                    
-                    <!-- Step 1: Patient -->
-                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                            <h3 class="font-semibold text-slate-800 flex items-center">
-                                <span class="w-6 h-6 rounded-full bg-primary-700 text-white text-xs flex items-center justify-center mr-2">1</span>
-                                Select Patient
-                            </h3>
-                        </div>
-                        <div class="p-6">
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Search Existing Patient</label>
-                                <select id="patient-select" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-400 outline-none">
-                                    <option value="">-- Select Patient --</option>
-                                    <!-- populated via JS -->
-                                </select>
-                            </div>
-                            
-                            <div class="relative py-3">
-                                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
-                                <div class="relative flex justify-center"><span class="bg-white px-4 text-xs text-slate-500 uppercase">Or register new patient</span></div>
-                            </div>
-
-                            <form id="new-patient-form" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-700 mb-1">Full Name</label>
-                                    <input type="text" id="new-pat-name" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-400 outline-none text-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-700 mb-1">Patient ID (Optional)</label>
-                                    <input type="text" id="new-pat-id" placeholder="Auto-generated if blank" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-400 outline-none text-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-700 mb-1">Age</label>
-                                    <input type="number" id="new-pat-age" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-400 outline-none text-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-700 mb-1">Gender</label>
-                                    <select id="new-pat-gender" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-400 outline-none text-sm bg-white">
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                                <div class="md:col-span-2 flex justify-end">
-                                    <button type="button" id="btn-create-patient" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">
-                                        Create Patient
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                <!-- Selected patient display -->
+                <div id="selected-patient" class="hidden" style="padding:12px 16px; border-radius:10px; background:rgba(20,184,166,0.06); border:1px solid rgba(20,184,166,0.15); display:flex; align-items:center; justify-content:space-between;">
+                    <div>
+                        <span style="color:#14B8A6; font-weight:600; font-size:14px;" id="patient-name-display"></span>
+                        <span style="color:#64748B; font-size:12px; margin-left:8px;" id="patient-id-display"></span>
                     </div>
+                    <button onclick="clearPatient()" style="color:#F87171; background:none; border:none; cursor:pointer; font-size:18px;">&times;</button>
+                </div>
 
-                    <!-- Step 2: Upload -->
-                    <div class="bg-surface rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                            <h3 class="font-semibold text-slate-800 flex items-center">
-                                <span class="w-6 h-6 rounded-full bg-primary-700 text-white text-xs flex items-center justify-center mr-2">2</span>
-                                Upload Medical Image
-                            </h3>
-                        </div>
-                        <div class="p-6">
-                            <div id="drop-zone" class="drop-zone rounded-xl h-64 flex flex-col items-center justify-center relative overflow-hidden bg-slate-50">
-                                <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/*,.dcm">
-                                
-                                <div id="drop-placeholder" class="text-center pointer-events-none">
-                                    <svg class="w-12 h-12 text-slate-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                                    <p class="text-slate-600 font-medium">Drag & drop your medical image here</p>
-                                    <p class="text-slate-500 text-sm mt-1">or <span class="text-primary-700 underline">click to browse</span></p>
-                                    <p class="text-slate-400 text-xs mt-3">Supports PNG, JPG, JPEG, DICOM (Max 50MB)</p>
-                                </div>
+                <!-- OR divider -->
+                <div class="flex items-center gap-4 my-4" id="or-divider">
+                    <div style="flex:1; height:1px; background:rgba(255,255,255,0.06);"></div>
+                    <span style="font-size:11px; color:#64748B; text-transform:uppercase; letter-spacing:2px;">or register new</span>
+                    <div style="flex:1; height:1px; background:rgba(255,255,255,0.06);"></div>
+                </div>
 
-                                <div id="preview-container" class="hidden w-full h-full absolute top-0 left-0 bg-white p-4 flex flex-col items-center justify-center z-20">
-                                    <button type="button" id="btn-remove-file" class="absolute top-4 right-4 bg-red-100 text-red-600 p-2 rounded-full hover:bg-red-200 z-30">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                    </button>
-                                    <img id="img-preview" class="max-h-40 max-w-full rounded shadow-sm object-contain mb-3">
-                                    <p id="file-name" class="font-medium text-slate-700 text-sm truncate max-w-[80%]"></p>
-                                    <p id="file-size" class="text-slate-500 text-xs"></p>
-                                </div>
-                            </div>
-                        </div>
+                <!-- New patient form (collapsible) -->
+                <div id="new-patient-form">
+                    <div class="grid grid-cols-3 gap-4">
+                        <input type="text" id="new-name" placeholder="Full Name" class="glass-input">
+                        <input type="number" id="new-age" placeholder="Age" class="glass-input">
+                        <select id="new-gender" class="glass-input">
+                            <option value="" disabled selected style="color:#64748B;">Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
-
-                    <!-- Step 3: Module Specific (Injected via JS) -->
-                    <div id="module-specific-container" class="hidden bg-surface rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                            <h3 class="font-semibold text-slate-800 flex items-center">
-                                <span class="w-6 h-6 rounded-full bg-primary-700 text-white text-xs flex items-center justify-center mr-2">3</span>
-                                Scan Details
-                            </h3>
-                        </div>
-                        <div class="p-6" id="module-specific-fields"></div>
-                    </div>
-
-                    <!-- Submit -->
-                    <button id="btn-analyze" class="w-full py-4 bg-primary-700 hover:bg-primary-800 text-white font-bold text-lg rounded-xl shadow-lg transition-all transform hover:-translate-y-1 mt-4">
-                        Analyze Scan
+                    <button onclick="createPatient()" class="mt-3" style="padding:8px 20px; border-radius:10px; border:1px solid rgba(20,184,166,0.3); background:transparent; color:#14B8A6; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s;"
+                        onmouseover="this.style.background='rgba(20,184,166,0.1)'"
+                        onmouseout="this.style.background='transparent'">
+                        Create Patient
                     </button>
                 </div>
+            </div>
 
-            </main>
-        </div>
+            <!-- Step 2: Upload Image -->
+            <div class="glass" style="padding:28px; border-radius:16px; margin-bottom:20px;">
+                <h3 style="font-size:14px; font-weight:600; color:#94A3B8; text-transform:uppercase; letter-spacing:1px; margin:0 0 16px;">
+                    Step 2 — Upload Image
+                </h3>
 
-        <!-- Progress Overlay -->
-        <div id="progress-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center">
-            <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
-                <div class="relative w-20 h-20 mx-auto mb-6">
-                    <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-                    <div class="absolute inset-0 border-4 border-primary-400 rounded-full border-t-transparent animate-spin"></div>
-                    <div class="absolute inset-0 flex items-center justify-center pulse-loader text-primary-700">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                <div id="drop-zone" class="drop-zone hover:bg-white/5 transition" style="border-radius:16px; border: 1px dashed rgba(255,255,255,0.2); padding:48px; text-align:center; cursor:pointer; position:relative;"
+                     onclick="document.getElementById('file-input').click()">
+                    <input type="file" id="file-input" accept="image/*,.dcm" style="display:none;">
+
+                    <div id="drop-content">
+                        <div style="margin:0 auto 16px; width:72px; height:72px; border-radius:20px; background:rgba(20,184,166,0.08); display:flex; align-items:center; justify-content:center;">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="1.5">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <p style="font-size:16px; color:#94A3B8; margin:0 0 4px;">Drag & drop your medical image here</p>
+                        <p style="font-size:13px; color:#64748B; margin:0 0 12px;">or <span style="color:#14B8A6; text-decoration:underline;">click to browse</span></p>
+                        <p style="font-size:11px; color:#4A5568;">Supports PNG, JPG, JPEG, DICOM &middot; Max 50MB</p>
                     </div>
-                </div>
-                <h3 id="progress-title" class="text-lg font-bold text-slate-800 mb-4">Analyzing Scan...</h3>
-                <div class="space-y-3 text-sm text-left">
-                    <div id="step-1" class="flex items-center text-slate-400">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        <span>Image uploaded successfully</span>
-                    </div>
-                    <div id="step-2" class="flex items-center text-slate-400">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        <span>Preprocessing & normalization</span>
-                    </div>
-                    <div id="step-3" class="flex items-center text-primary-600 font-medium pulse-loader">
-                        <svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        <span>Running AI inference...</span>
+
+                    <!-- Preview -->
+                    <div id="file-preview" class="hidden" style="text-align:center;">
+                        <img id="preview-img" style="max-height:220px; border-radius:12px; border:1px solid rgba(255,255,255,0.08); margin:0 auto 12px;">
+                        <div class="flex items-center justify-center gap-3">
+                            <span id="file-name" style="font-size:13px; color:#94A3B8;"></span>
+                            <span id="file-size" style="font-size:12px; color:#64748B;"></span>
+                            <button onclick="event.stopPropagation(); clearFile()" style="color:#F87171; background:rgba(248,113,113,0.1); border:none; border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer;">Remove</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
+            <!-- Step 3: Conditional (Bone Age) -->
+            {% if module == 'bone_age' %}
+            <div id="bone-age-fields" class="glass" style="padding:24px; border-radius:16px; margin-bottom:20px;">
+                <h3 style="font-size:14px; font-weight:600; color:#94A3B8; text-transform:uppercase; letter-spacing:1px; margin:0 0 16px;">
+                    Step 3 — Patient Gender (Required for Bone Age)
+                </h3>
+                <div class="flex gap-3">
+                    <button class="gender-btn" id="gender-m" data-value="male"
+                        style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#94A3B8; font-size:14px; cursor:pointer; transition:all 0.2s;">
+                        Male
+                    </button>
+                    <button class="gender-btn" id="gender-f" data-value="female"
+                        style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#94A3B8; font-size:14px; cursor:pointer; transition:all 0.2s;">
+                        Female
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Submit -->
+            <button id="analyze-btn" disabled
+                style="width:100%; padding:16px; border-radius:14px; font-size:16px; font-weight:600; color:white; border:none; cursor:not-allowed; transition:all 0.3s;
+                       background:linear-gradient(135deg, #0F766E, #22D3EE); opacity:0.4;"
+                onmouseover="if(!this.disabled) { this.style.boxShadow='0 0 40px rgba(20,184,166,0.3)'; this.style.transform='translateY(-1px)'; }"
+                onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
+                Analyze Scan
+            </button>
+
+        </div>
     </div>
 
-    <!-- The module slug is passed via FastAPI TemplateResponse -->
-    <script>const currentModule = "{{ module }}";</script>
-    <script src="/static/js/app.js?v=1.1"></script>
-    <script src="/static/js/scan.js?v=1.1"></script>
+    <!-- Analysis Overlay -->
+    <div id="analysis-overlay" style="display:none; position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center;">
+        <div class="glass-strong" style="padding:48px; border-radius:24px; text-align:center; max-width:400px; width:90%; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="margin:0 auto 24px; width:80px; height:80px; position:relative;" class="pulse-glow" >
+                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60px; height:16px; background:linear-gradient(90deg, #14B8A6, #22D3EE); border-radius:8px;"></div>
+                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:16px; height:60px; background:linear-gradient(180deg, #14B8A6, #22D3EE); border-radius:8px;"></div>
+            </div>
+
+            <h3 id="analysis-title" style="font-size:18px; font-weight:600; color:#F1F5F9; margin:0 0 24px; text-transform: capitalize;">
+                Analyzing {{ module.replace('_', ' ') }} Scan...
+            </h3>
+
+            <div id="analysis-steps" style="text-align:left;">
+                <!-- Steps populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        window.MODULE_NAME = "{{ module }}";
+    </script>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/three-scenes.js"></script>
+    <script src="/static/js/scan.js"></script>
 </body>
 </html>
